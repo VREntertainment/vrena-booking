@@ -24,6 +24,10 @@
 }
 .app .calendar-session-block { min-height: 22px; padding: 3px 5px; }
 .app .calendar-session-compact { max-height: 100%; overflow: hidden; }
+.app .calendar-toolbar { justify-content: flex-end; }
+.app .calendar-booking-category { font-weight: 700; font-size: 0.8em; }
+.app .calendar-booking-category.birthday { color: var(--vrena-orange-500); }
+.app .calendar-booking-category.event { text-decoration: underline; text-underline-offset: 2px; }
 
 .app .calendar-edit-fields .calendar-outside-hours { display: flex; align-items: center; gap: 10px; }
 .app .calendar-edit-fields .calendar-outside-hours input { width: 18px; height: 18px; min-height: 18px; flex: 0 0 18px; accent-color: var(--vrena-orange-500); }

@@ -11,7 +11,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { StaffSavedBookingShare } from './staff/StaffSavedBookingShare'
 import { Trash2, X } from 'lucide-react'
 import { supabase } from '../lib/supabase/client'
-import { publicGameGuideCatalog } from '../lib/gameGuideCatalog'
+import { bookingCategory, bookingCategoryCopy, gameAvailableAtVenue, selectedBookingGames, type BookingCategory } from '../lib/bookingMetadata'
 import { staffBookingHours, validStaffBookingTime } from '../lib/staff/bookingHours'
 import { staffBookingCopy } from '../lib/staff/bookingCopy'
 import type { BookingForm, StaffGame, StaffOrder } from '../lib/staff/types'
@@ -19,7 +19,7 @@ import type { Session } from '../lib/bookingWidgetDomain'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 
 type Draft = {
-  name: string; date: string; time: string; venue: BookingForm['venueKey']; game: string
+  category: BookingCategory; name: string; date: string; time: string; venue: BookingForm['venueKey']; game: string
   players: number; duration: number; arenas: number; arenaId: string; status: string; notes: string; source: string; allowOutsideHours: boolean
 }
 const copy = {
@@ -53,7 +53,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
     void (async () => {
       try {
         const [booking, linked, catalog] = await Promise.all([
-          supabase.from('sessions').select('*').eq('id', sessionId).is('deleted_at', null).abortSignal(controller.signal).single(),
+          supabase.rpc('staff_get_booking_details', { p_session_id: sessionId }).abortSignal(controller.signal),
           supabase.from('staff_orders').select('*').eq('session_id', sessionId).abortSignal(controller.signal),
           supabase.from('staff_games').select('*').eq('active', true).order('name').abortSignal(controller.signal),
         ])
@@ -73,10 +73,10 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         setOrders(linked.data || [])
         setVersion(record.updated_at)
         setPersisted({ name: staffBookingName(record.name, activeGames.map((item) => item.name)), venue: record.venue_key || 'ha-do-centrosa', date: record.date, time: record.start_time.slice(0, 5) })
-        setDraft({ name: staffBookingName(record.name, activeGames.map((item) => item.name)), date: record.date, time: record.start_time.slice(0, 5), venue: record.venue_key || 'ha-do-centrosa',
-          game: record.confirmed_game_id || record.game_options?.[0] || '', players: record.ticket_player_count || record.max_players,
+        setDraft({ category: bookingCategory(record), name: staffBookingName(record.name, activeGames.map((item) => item.name)), date: record.date, time: record.start_time.slice(0, 5), venue: record.venue_key || 'ha-do-centrosa',
+          game: selectedBookingGames(record)[0] || '', players: record.ticket_player_count || record.max_players,
           duration: record.duration_minutes, arenas: record.arena_count ?? 1, arenaId: order?.arena_id || '', status: record.status,
-          notes: record.notes || '', source: order?.booking_source || '',
+          notes: record.notes || '', source: record.booking_source ?? order?.booking_source ?? '',
           allowOutsideHours: !validStaffBookingTime(record.venue_key || 'ha-do-centrosa', record.duration_minutes, record.start_time.slice(0, 5)),
         })
       } catch (cause) {
@@ -86,7 +86,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
     return () => { controller.abort(); if (previousFocus instanceof HTMLElement) previousFocus.focus() }
   }, [sessionId])
 
-  const availableGames = games.filter((game) => (publicGameGuideCatalog.find((item) => item.id === game.slug)?.venues || ['ha-do-centrosa']).includes(draft?.venue || 'ha-do-centrosa'))
+  const availableGames = games.filter((game) => gameAvailableAtVenue(game.slug, draft?.venue || 'ha-do-centrosa'))
   const game = availableGames.find((item) => item.slug === draft?.game)
   const isSimRacing = session?.confirmed_game_id === 'sim-racing'
   const arenas = isSimRacing ? ['sim-racing-1'] : draft?.venue === 'cafe-des-stagiaires' ? ['cafe:arena-1'] : (game?.available_arena_ids?.length ? game.available_arena_ids : ['arena-1', 'arena-2'])
@@ -101,10 +101,11 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
     try {
       const result = deleted
         ? await supabase.rpc('staff_delete_session_operation', { p_session_id: session.id, p_delete_reason: 'Deleted from shared booking calendar' })
-        : await supabase.rpc(isSimRacing ? 'staff_update_sim_racing_booking' : 'staff_update_calendar_booking', { p_session_id: session.id, p_booking: {
+        : await supabase.rpc(isSimRacing ? 'staff_update_sim_racing_booking' : 'staff_update_booking_details', { p_session_id: session.id, p_booking: {
           expected_updated_at: version, name: draft.name.trim(), date: draft.date, start_time: draft.time,
           venue_key: draft.venue, game_slug: draft.game, players: draft.players, duration_minutes: draft.duration,
           arena_count: draft.arenas, arena_id: draft.arenaId || arenas[0], status: draft.status, notes: draft.notes,
+          booking_category: draft.category, game_changed: draft.game !== (selectedBookingGames(session)[0] || ''),
           booking_source: draft.source || null, allow_outside_hours: draft.allowOutsideHours,
           order_adjustments: orders.filter((order) => prices[order.id] && Number(prices[order.id].total) !== order.total).map((order) => ({ order_id: order.id, total: Number(prices[order.id].total), reason: prices[order.id].reason.trim(), expected_updated_at: order.updated_at })),
         } })
@@ -136,16 +137,18 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         <label className="full">{text.name}<input disabled={isSimRacing} required maxLength={120} value={draft.name} onChange={(event) => patch({ name: event.target.value })} /></label>
         <label>{text.shop}<select disabled={isSimRacing} value={draft.venue} onChange={(event) => {
           const venue = event.target.value as Draft['venue']
-          const choices = games.filter((item) => (publicGameGuideCatalog.find((guide) => guide.id === item.slug)?.venues || ['ha-do-centrosa']).includes(venue))
-          const nextGame = choices.find((item) => item.slug === draft.game) || choices[0]
+          const choices = games.filter((item) => gameAvailableAtVenue(item.slug, venue))
+          const nextGame = choices.find((item) => item.slug === draft.game)
           patch({ venue, game: nextGame?.slug || '', duration: nextGame?.slug === draft.game ? draft.duration : nextGame?.duration_minutes || draft.duration, arenaId: venue === 'cafe-des-stagiaires' ? 'cafe:arena-1' : nextGame?.available_arena_ids?.[0] || 'arena-1', arenas: 1, time: !draft.allowOutsideHours && venue === 'cafe-des-stagiaires' && draft.time < '15:30' ? '15:30' : draft.time })
         }}>{locations.map((location) => <option key={location.venue_key} value={location.venue_key}>{location.name}</option>)}</select></label>
-        <label>{bookingText.bookingSource}<select value={draft.source} disabled={isSimRacing || !orders.length} onChange={(event) => patch({ source: event.target.value })}><option value="">{text.unspecified}</option>{Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <label>{bookingText.bookingSource}<select value={draft.source} disabled={isSimRacing} onChange={(event) => patch({ source: event.target.value })}><option value="">{text.unspecified}</option>{Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+        <label>{bookingCategoryCopy[language].label}<select disabled={isSimRacing} value={draft.category} onChange={(event) => patch({ category: event.target.value as BookingCategory })}>{(['standard', 'birthday', 'event'] as const).map((value) => <option key={value} value={value}>{bookingCategoryCopy[language][value]}</option>)}</select></label>
         <label>{text.date}<input required type="date" value={draft.date} onChange={(event) => patch({ date: event.target.value })} /></label>
         <label>{text.time}<input required type="time" min={draft.allowOutsideHours ? '00:00' : staffBookingHours(draft.venue, draft.duration).min} max={draft.allowOutsideHours ? '23:59' : staffBookingHours(draft.venue, draft.duration).max} value={draft.time} onChange={(event) => patch({ time: event.target.value })} /></label>
         <label className="full calendar-outside-hours"><input type="checkbox" checked={draft.allowOutsideHours} onChange={(event) => patch({ allowOutsideHours: event.target.checked })} /><span>{text.outsideHours}</span></label>
-        <StaffGamesPlayed sessionId={sessionId} language={language} disabled={saving} />
-        <label>{text.game}<select disabled={isSimRacing} required value={draft.game} onChange={(event) => patch({ game: event.target.value, arenaId: '' })}>{!game && <option value={draft.game}>{isSimRacing ? 'SIM Racing' : draft.game || text.unspecified}</option>}{availableGames.map((item) => <option key={item.id} value={item.slug}>{brandedGameName(item.slug, item.name)}</option>)}</select></label>
+        <StaffGamesPlayed sessionId={sessionId} language={language} disabled={saving || draft.venue !== session?.venue_key} />
+        {draft.venue !== session?.venue_key && <p className="field-help full">{language === 'vi' ? 'Lưu địa điểm mới trước khi sửa trò chơi đã chơi.' : 'Save the new venue before editing games played.'}</p>}
+        <label>{text.game}<select disabled={isSimRacing} value={draft.game} onChange={(event) => patch({ game: event.target.value, arenaId: '' })}><option value="">{bookingCategoryCopy[language].noGames}</option>{isSimRacing && <option value="sim-racing">SIM Racing</option>}{availableGames.map((item) => <option key={item.id} value={item.slug}>{brandedGameName(item.slug, item.name)}</option>)}</select></label>
         <label>{text.players}<input disabled={isSimRacing} required min={1} max={64} type="number" value={draft.players} onChange={(event) => patch({ players: Number(event.target.value) })} /></label>
         <label>{text.duration}<input disabled={isSimRacing} required min={isSimRacing ? 15 : 20} max={240} type="number" value={draft.duration} onChange={(event) => patch({ duration: Number(event.target.value) })} /></label>
         <label>{text.arenas}<select disabled={isSimRacing} value={draft.arenas} onChange={(event) => patch({ arenas: Number(event.target.value) })}>{isSimRacing && <option value={0}>SIM Racing</option>}<option value={1}>1</option>{draft.venue === 'ha-do-centrosa' && <option value={2}>2</option>}</select></label>
@@ -165,7 +168,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         })}
       </fieldset>
       <p className="field-help">{text.savedPrice}</p>
-      <div className="calendar-dialog-actions"><StaffSavedBookingShare sessionId={sessionId} language={language} disabled={saving || session?.status === 'cancelled'} /><button className="calendar-delete-action" disabled={saving} type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />{text.remove}</button><button className="secondary" disabled={saving} onClick={onClose} type="button">{text.close}</button><button className="primary" disabled={saving || (!game && !isSimRacing)} type="submit">{text.save}</button></div>
+      <div className="calendar-dialog-actions"><StaffSavedBookingShare sessionId={sessionId} language={language} disabled={saving || session?.status === 'cancelled'} /><button className="calendar-delete-action" disabled={saving} type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />{text.remove}</button><button className="secondary" disabled={saving} onClick={onClose} type="button">{text.close}</button><button className="primary" disabled={saving} type="submit">{text.save}</button></div>
     </form>)}
   </dialog>
 }

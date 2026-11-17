@@ -160,9 +160,10 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
       const guestCustomer = booking.guestBooking
       const hasManualDiscount = calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, quote.subtotal) > 0
       const paymentSplits = normalizePaymentSplits(booking.paymentSplits)
-      const { data, error } = await supabase.rpc('staff_create_booking', {
+      const { data, error } = await supabase.rpc('staff_create_booking_with_metadata', {
         p_booking_source: booking.bookingSource,
         p_booking: {
+          p_booking_category: booking.bookingCategory,
           p_booking_kind: booking.bookingKind,
           p_session_count: booking.sessionCount,
           p_session_length_minutes: booking.bookingKind === 'standard' ? quote.sessionMinutes : null,

@@ -207,7 +207,7 @@ export function createBookingSessionLoadingActions(getContext: () => SessionLoad
     const { sessionPageFromRpcPayload, optionalSessionMetadataMissing, setCreateStatus, normalizeSessionRow } = getContext()
 
     const client = await getSupabase()
-    const rpcResult = await client.rpc('sessions_list_page', {
+    const rpcResult = await client.rpc('booking_calendar_list_page', {
       p_start_date: startDate || null,
       p_end_date: endDate || null,
       p_limit: 500,

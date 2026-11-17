@@ -28,7 +28,7 @@ export function buildTicketBookingRequest(selection: TicketBookingSelection) {
     p_duration_minutes: selection.durationMinutes,
     p_player_count: selection.players,
     p_arena_count: selection.arenaCount,
-    p_game_options: [selection.defaultGame],
+    p_game_options: [] as string[],
   }
   const note = selection.note.trim().slice(0, 500) || null
   const guestName = selection.guestName.trim() || null

@@ -1,5 +1,6 @@
 'use client'
 
+import { bookingCategoryCopy, type BookingCategory } from '../../lib/bookingMetadata'
 import { useStaffLocations } from '../../hooks/useStaffLocations'
 import { brandedGameName } from '../../lib/anvio'
 
@@ -200,13 +201,17 @@ export default function NewSection({
                 <input type="checkbox" checked={booking.guestBooking} onChange={(event) => setGuestBooking(event.target.checked)} />
                 <span>{text.labels.guestBooking}</span>
               </label>
-              <label className="staff-guest-toggle">
-                <input type="checkbox" checked={booking.bookingKind === 'event'} onChange={(event) => setBooking((current) => ({
-                  ...current, bookingKind: event.target.checked ? 'event' : 'standard', allowOutsideHours: false,
-                  note: event.target.checked && !Object.values(staffBookingCopy).some((copy) => current.note.includes(copy.vatNotes.split('\n')[0]))
-                    ? [current.note, bookingText.vatNotes].filter(Boolean).join('\n\n') : current.note,
-                }))} />
-                <span>{bookingText.eventBooking}</span>
+              <label>
+                {bookingCategoryCopy[resolvedLanguage].label}
+                <select value={booking.bookingCategory} onChange={(event) => {
+                  const category = event.target.value as BookingCategory
+                  setBooking((current) => ({ ...current, bookingCategory: category, bookingKind: category === 'standard' ? 'standard' : 'event', allowOutsideHours: false,
+                    note: category === 'event' && !Object.values(staffBookingCopy).some((copy) => current.note.includes(copy.vatNotes.split('\n')[0]))
+                      ? [current.note, bookingText.vatNotes].filter(Boolean).join('\n\n') : current.note,
+                  }))
+                }}>
+                  {(['standard', 'birthday', 'event'] as const).map((value) => <option key={value} value={value}>{bookingCategoryCopy[resolvedLanguage][value]}</option>)}
+                </select>
               </label>
             </div>
             {booking.guestBooking && <p className="field-help full">{text.messages.guestBookingHelp}</p>}

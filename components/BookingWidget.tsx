@@ -13,6 +13,8 @@ import { gameCategoryDisplay } from '../lib/gameGuideCatalog'
 
 
 import { staffBookingName } from '../lib/staffBookingName'
+import { bookingCategory, bookingCategoryCopy, selectedBookingGames } from '../lib/bookingMetadata'
+import { brandedGameName } from '../lib/anvio'
 import { calendarRange } from '../lib/calendarRange'
 import dynamic from 'next/dynamic'
 import type { ChallengeTarget } from '../features/booking/ChallengeControls'
@@ -144,7 +146,6 @@ import {
   compactDisplayName,
   displayName,
   finiteNumber,
-  formatCalendarWeekRange,
   formatDayButton,
   formatShortDate,
   formatSpeedrunDuration,
@@ -860,7 +861,7 @@ function BookingWorkspace({
       const rows: Session[] = []
       const blocks: BlockedTime[] = []
       for (let offset = 0; ; offset += 250) {
-        const { data, error } = await client.rpc('sessions_list_page', {
+        const { data, error } = await client.rpc('booking_calendar_list_page', {
           p_start_date: startDate, p_end_date: endDate, p_limit: 250, p_offset: offset, p_include_blocked_times: offset === 0,
         })
         if (error) throw new Error(error.message)
@@ -5624,12 +5625,6 @@ function BookingWorkspace({
             {createSessionMode === 'calendar' ? (
               <div className={`calendar-panel calendar-venue-${bookingVenue}`} aria-label={text.calendarAvailabilityTitle} aria-busy={isCalendarLoading}>
                 <div className="calendar-toolbar">
-                  <div>
-                    <strong>{text.calendarAvailabilityTitle}</strong>
-                    <span className="calendar-shop-badge">{isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}</span>
-                    <span className="calendar-opening-hours">{minutesToTime(calendarOpenMinutes)}–{minutesToTime(calendarCloseMinutes)}</span>
-                    <span>{text.weekOf} {formatCalendarWeekRange(calendarWeekStart, language)}</span>
-                  </div>
                   <div className="calendar-nav">
                     <button
                       aria-label={text.previousWeek}
@@ -5696,7 +5691,9 @@ function BookingWorkspace({
                               )
                             })}
                             {daySessions.map((session) => {
-                              const coverGame = sessionCoverGame(session)
+                              const categoryText = bookingCategoryCopy[language]
+                              const gameTitles = selectedBookingGames(session).map((id) => brandedGameName(id, gameGuideCatalog.find((game) => game.id === id)?.title || games.find((game) => game.id === id)?.title || id)).join(', ')
+                              const categoryLabel = categoryText[bookingCategory(session)]
                               const isTicket = isTicketSession(session)
                               const start = timeToMinutes(session.start_time)
                               const end = start + session.duration_minutes
@@ -5728,12 +5725,14 @@ function BookingWorkspace({
                                   <span className="calendar-session-compact">
                                     <strong>{staffBookingName(session.name)}</strong>
                                     <span>{timeRangeLabel}</span>
-                                    <small>{coverGame.title}</small>
+                                    <span className={`calendar-booking-category ${bookingCategory(session)}`}>{categoryLabel}</span>
+                                    <small>{gameTitles || categoryText.noGames}</small>
                                   </span>
                                   <span className="calendar-session-popover" aria-hidden="true">
                                     <strong>{staffBookingName(session.name)}</strong>
                                     <span>{formatShortDate(session.date, language)} · {timeRangeLabel}</span>
-                                    <span>{coverGame.title}</span>
+                                    <span>{categoryLabel}</span>
+                                    <span>{gameTitles || categoryText.noGames}</span>
                                     <span>{session.duration_minutes} min · {sessionKind}</span>
                                     <span>{participantCount}/{capacity} {text.players}</span>
                                   </span>
