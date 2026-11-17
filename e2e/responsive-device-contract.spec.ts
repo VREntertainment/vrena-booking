@@ -24,7 +24,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
   test(`responsive calendar, details and staff form: ${venue}`, async ({ page }, info) => {
     if (process.env.SUPABASE_URL !== 'http://127.0.0.1:56431') throw new Error('Responsive fixtures require isolated services.')
     const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
-    const owner = await admin.from('profiles').select('id').eq('email', process.env.E2E_ADMIN_EMAIL!).single()
+    const owner = await admin.from('profiles').select('id,full_name').eq('email', process.env.E2E_ADMIN_EMAIL!).single()
     if (owner.error) throw owner.error
     const id = crypto.randomUUID()
     const date = futureDate(247)
@@ -37,6 +37,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
     }
     const inserted = await admin.from('sessions').insert(fixture)
     if (inserted.error) throw inserted.error
+    const creatorText = venue === 'ha-do-centrosa' ? `Reserved by: ${owner.data.full_name}` : 'Reserved by: Not recorded'
     const cleanupIds = [id]
     if (venue === 'ha-do-centrosa') {
       const parallelId = crypto.randomUUID()
@@ -45,6 +46,10 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       cleanupIds.push(parallelId)
     }
     try {
+      if (venue === 'ha-do-centrosa') {
+        const audit = await admin.from('audit_logs').insert({ actor_user_id: owner.data.id, operator_session_id: crypto.randomUUID(), action: 'kiosk_insert', entity_type: 'sessions', entity_id: id })
+        if (audit.error) throw audit.error
+      }
       await loginAsAdmin(page)
       await page.goto(`/create-session?mode=calendar&date=${date}&venue=${venue}&lang=en`)
       await expect(page.locator('.calendar-panel')).toHaveAttribute('aria-busy', 'false')
@@ -88,6 +93,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       expect(Math.abs(fixedTime!.x - gridBounds!.x)).toBeLessThan(3)
       await grid.evaluate(el => { el.scrollLeft = 0; el.scrollTop = 0 })
       await page.locator('.calendar-session-block').filter({ hasText: name }).click()
+      await expect(page.locator('.calendar-booking-creator')).toHaveText(creatorText)
       const dialog = page.getByRole('dialog', { name: 'Edit booking', exact: true })
       await expect(dialog.getByRole('checkbox', { name: 'Confirmed with client', exact: true })).toBeVisible()
       const box = await dialog.boundingBox()
@@ -98,6 +104,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       await dialog.getByRole('button', { name: 'Close', exact: true }).last().click()
       // Unsaved dialog edits must not silently persist.
       await page.locator('.calendar-session-block').filter({ hasText: name }).click()
+      await expect(page.locator('.calendar-booking-creator')).toHaveText(creatorText)
       await expect(dialog.getByRole('checkbox', { name: 'Confirmed with client', exact: true })).not.toBeChecked()
       await dialog.getByRole('button', { name: 'Close', exact: true }).last().click()
       await card.click()
@@ -138,6 +145,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       }
       await page.screenshot({ path: `/tmp/vrena-e2e-results/responsive-${venue}-${info.project.name}.png` })
     } finally {
+      await admin.from('audit_logs').delete().in('entity_id', cleanupIds)
       const removed = await admin.from('sessions').delete().in('id', cleanupIds)
       if (removed.error) throw removed.error
     }

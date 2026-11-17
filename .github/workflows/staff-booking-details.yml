@@ -1,0 +1,43 @@
+name: Staff booking detail device checks
+on:
+  pull_request:
+    paths:
+      - 'components/StaffCalendarBookingDialog.tsx'
+      - 'styles/booking/calendar.css'
+      - 'supabase/migrations/*staff_booking_creator.sql'
+      - 'e2e/responsive-device-contract.spec.ts'
+      - '.github/workflows/staff-booking-details.yml'
+permissions:
+  contents: read
+jobs:
+  device-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      E2E_PRODUCTION_BUILD: '1'
+      E2E_BOOKING_DEVICE_MATRIX: '1'
+      E2E_LOCAL_HOST: localhost
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520
+        with:
+          version: 2.106.0
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npm run test:services -- responsive-device-contract.spec.ts
+      - name: Save device evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: staff-booking-detail-devices
+          path: |
+            /tmp/vrena-e2e-results
+            /tmp/vrena-e2e-report
+          retention-days: 7
+      - if: always()
+        run: supabase stop --workdir e2e

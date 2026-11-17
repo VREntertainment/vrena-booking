@@ -100,3 +100,5 @@
   .app .calendar-client-confirmed { position: absolute; right: 0; top: 4px; width: 12px; height: 12px; flex-basis: 12px; }
   .calendar-session-block[data-calendar-short="true"] .calendar-session-time-range > span:last-child { display: none; }
 }
+
+.app .calendar-booking-creator { margin: 0; overflow-wrap: anywhere; }
