@@ -862,19 +862,8 @@ function BookingWorkspace({
     addDaysToDateValue,
     getLocalDateString: localDateString,
     loadCalendarRange: async (startDate, endDate, request) => {
-      const client = await getSupabase()
-      const rows: Session[] = []
-      const blocks: BlockedTime[] = []
-      for (let offset = 0; ; offset += 250) {
-        const { data, error } = await client.rpc('booking_calendar_list_page', {
-          p_start_date: startDate, p_end_date: endDate, p_limit: 250, p_offset: offset, p_include_blocked_times: offset === 0,
-        }).abortSignal(request.signal)
-        if (error) throw new Error(error.message)
-        const page = sessionPageFromRpcPayload(data)
-        rows.push(...page.sessions)
-        blocks.push(...page.blockedTimes)
-        if (page.sessions.length < 250) break
-      }
+      const { loadCalendarWeekRows } = await import('../lib/calendarWeekLoader')
+      const { rows, blocks } = await loadCalendarWeekRows(startDate, endDate, request.signal, sessionPageFromRpcPayload)
       if (!request.isCurrent()) return
       setCalendarData({ scope: calendarScope, sessions: rows, blockedTimes: blocks })
       setSessions((current) => sortSessionsByStart([...current.filter((session) => session.date < startDate || session.date > endDate), ...rows]))

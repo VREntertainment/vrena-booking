@@ -2,27 +2,30 @@
 
 import { useEffect, useEffectEvent } from 'react'
 
-/** Mobile standalone apps can sleep without a window focus event or a live socket. */
+/** Standalone mobile apps can sleep without a window focus event or a live socket. */
 export function useForegroundRefresh(enabled: boolean, refresh: () => void) {
   const refreshCurrentView = useEffectEvent(refresh)
   useEffect(() => {
     if (!enabled) return
-    const refreshVisible = () => {
-      if (document.visibilityState === 'visible') refreshCurrentView()
+    let disposed = false
+    let cleanup: (() => void) | undefined
+    const connect = () => {
+      if (disposed || cleanup) return
+      void import('../lib/foregroundRefresh').then(({ listenForForegroundRefresh }) => {
+        if (!disposed && !cleanup) {
+          cleanup = listenForForegroundRefresh(() => refreshCurrentView())
+          refreshCurrentView()
+        }
+      }).catch(() => { /* Retry module loading on reconnect or return to the app. */ })
     }
-    window.addEventListener('focus', refreshVisible)
-    window.addEventListener('pageshow', refreshVisible)
-    window.addEventListener('online', refreshVisible)
-    window.addEventListener('offline', refreshVisible)
-    document.addEventListener('visibilitychange', refreshVisible)
-    const timer = window.setInterval(refreshVisible, 30_000)
+    connect()
+    window.addEventListener('online', connect)
+    window.addEventListener('focus', connect)
     return () => {
-      window.removeEventListener('focus', refreshVisible)
-      window.removeEventListener('pageshow', refreshVisible)
-      window.removeEventListener('online', refreshVisible)
-      window.removeEventListener('offline', refreshVisible)
-      document.removeEventListener('visibilitychange', refreshVisible)
-      window.clearInterval(timer)
+      disposed = true
+      cleanup?.()
+      window.removeEventListener('online', connect)
+      window.removeEventListener('focus', connect)
     }
   }, [enabled])
 }

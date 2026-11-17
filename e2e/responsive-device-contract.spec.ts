@@ -124,8 +124,9 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       await page.locator('.country-menu input').fill('Vietnam')
       await page.locator('.country-list button').first().click()
       await fitsPage(page)
-      await page.locator('.staff-summary-export').scrollIntoViewIfNeeded()
       if (page.viewportSize()!.width <= 960) {
+        // Scroll for the mobile sticky-navigation assertion; desktop needs no scroll.
+        await page.locator('.staff-summary-export').scrollIntoViewIfNeeded()
         const nav = await page.locator('.staff-console-nav').boundingBox()
         const header = await page.locator('aside').boundingBox()
         expect(nav!.y).toBeGreaterThanOrEqual(header!.y + header!.height - 1)
