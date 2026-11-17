@@ -14,6 +14,11 @@ test('public booking inputs remain readable and within the viewport', async ({ p
     for (const size of sizes) expect(size).toBeGreaterThanOrEqual(16)
   }
   await page.screenshot({ path: `/tmp/vrena-e2e-results/public-booking-${info.project.name}.png` })
+  // The unused SIM form is deferred, but must still open normally when selected.
+  await page.goto('/tickets?venue=ha-do-centrosa&lang=en#sim-racing')
+  await expect(page.getByRole('heading', { name: 'SIM Racing', exact: true })).toBeVisible()
+  await expect(page.locator('.sim-racing-booking input[type="tel"]')).toBeVisible()
+  await fitsPage(page)
 })
 for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
   test(`responsive calendar, details and staff form: ${venue}`, async ({ page }, info) => {
@@ -124,8 +129,9 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       await page.locator('.country-menu input').fill('Vietnam')
       await page.locator('.country-list button').first().click()
       await fitsPage(page)
-      await page.locator('.staff-summary-export').scrollIntoViewIfNeeded()
       if (page.viewportSize()!.width <= 960) {
+        // Scroll for the mobile sticky-navigation assertion; desktop needs no scroll.
+        await page.locator('.staff-summary-export').scrollIntoViewIfNeeded()
         const nav = await page.locator('.staff-console-nav').boundingBox()
         const header = await page.locator('aside').boundingBox()
         expect(nav!.y).toBeGreaterThanOrEqual(header!.y + header!.height - 1)

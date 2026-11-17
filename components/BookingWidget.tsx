@@ -66,7 +66,7 @@ import { useArenaOccupancy } from '../hooks/useArenaOccupancy'
 
 import { useTicketCheckout } from '../hooks/useTicketCheckout'
 import { getSupabase } from '../lib/booking/client'
-import SimRacingBooking from './SimRacingBooking'
+const SimRacingBooking = dynamic(() => import('./SimRacingBooking'), { ssr: false, loading: () => <AppLoadingState className="section tickets-section" /> })
 
 
 import {
@@ -87,6 +87,7 @@ import {
   useRef,
   useState
 } from 'react'
+import { useForegroundRefresh } from '../hooks/useForegroundRefresh'
 import { useCreateSessionCalendar } from '../hooks/useCreateSessionCalendar'
 import { ageBandFromBirthday, isMinorBirthday } from '../lib/agePolicy'
 import {
@@ -843,9 +844,13 @@ function BookingWorkspace({
   const invitationPopupBodyText = looseText.invitationPopupBody || 'You have been invited to join this session.'
   const openInvitationText = looseText.openInvitation || 'Open invite'
   const addToCalendarText = looseText.addToCalendar || 'Add calendar'
+  // The calendar owns its complete week; rolling list loads must never erase it.
+  const calendarScope = `${userId}|${mfaAssuranceLevel}|${kioskOperator?.profileId || ''}`
+  const [calendarData, setCalendarData] = useState<{ scope: string; sessions: Session[]; blockedTimes: BlockedTime[] }>({ scope: '', sessions: [], blockedTimes: [] })
   const {
     calendarWeekStart,
     isCalendarLoading,
+    calendarError,
     loadCalendarWeek,
     createSessionMode,
     handleCreateSessionModeChange,
@@ -856,20 +861,22 @@ function BookingWorkspace({
     initialCalendarDate: incomingCalendar?.mode === 'calendar' && initialView === 'create' ? incomingCalendar.date : undefined,
     addDaysToDateValue,
     getLocalDateString: localDateString,
-    loadCalendarRange: async (startDate, endDate) => {
+    loadCalendarRange: async (startDate, endDate, request) => {
       const client = await getSupabase()
       const rows: Session[] = []
       const blocks: BlockedTime[] = []
       for (let offset = 0; ; offset += 250) {
         const { data, error } = await client.rpc('booking_calendar_list_page', {
           p_start_date: startDate, p_end_date: endDate, p_limit: 250, p_offset: offset, p_include_blocked_times: offset === 0,
-        })
+        }).abortSignal(request.signal)
         if (error) throw new Error(error.message)
         const page = sessionPageFromRpcPayload(data)
         rows.push(...page.sessions)
         blocks.push(...page.blockedTimes)
         if (page.sessions.length < 250) break
       }
+      if (!request.isCurrent()) return
+      setCalendarData({ scope: calendarScope, sessions: rows, blockedTimes: blocks })
       setSessions((current) => sortSessionsByStart([...current.filter((session) => session.date < startDate || session.date > endDate), ...rows]))
       setBlockedTimes((current) => [...current.filter((block) => block.date < startDate || block.date > endDate), ...blocks])
     },
@@ -1732,6 +1739,10 @@ function BookingWorkspace({
   }
 
   function refreshSessionsIfLoaded() {
+    if (activeView === 'create' && createSessionMode === 'calendar') {
+      void loadCalendarWeek(undefined, { background: true })
+      return
+    }
     if (!sessionsLoadedRef.current) return
     void loadSessions()
   }
@@ -3579,9 +3590,9 @@ function BookingWorkspace({
 
   const calendarSessions = useMemo(() => {
     return sortSessionsByStart(
-      sessions.filter((session) => session.date >= calendarWeekStart && session.date <= calendarWeekEnd && (session.venue_key || 'ha-do-centrosa') === bookingVenue && session.status !== 'cancelled' && !['cancelled', 'expired'].includes(session.ticket_status || ''))
+      (calendarData.scope === calendarScope ? calendarData.sessions : []).filter((session) => session.date >= calendarWeekStart && session.date <= calendarWeekEnd && (session.venue_key || 'ha-do-centrosa') === bookingVenue && session.status !== 'cancelled' && !['cancelled', 'expired'].includes(session.ticket_status || ''))
     )
-  }, [bookingVenue, calendarWeekEnd, calendarWeekStart, sessions])
+  }, [bookingVenue, calendarWeekEnd, calendarWeekStart, calendarData, calendarScope])
   const calendarSessionLanes = useMemo(() => calendarLanes(calendarSessions), [calendarSessions])
 
 
@@ -4063,7 +4074,7 @@ function BookingWorkspace({
       if (day.value < today && !canManageCalendarBookings) return
       const duration = isHaDoBookingVenue || canManageCalendarBookings ? TIME_STEP_MINUTES : activeTicketDuration
       const options = isHaDoBookingVenue
-        ? getAvailableTimeOptions(day.value, duration, 1, '', canManageCalendarBookings)
+        ? availableSessionTimes({ date: day.value, duration, arenaCount: 1, allowPast: canManageCalendarBookings, sessions: calendarData.scope === calendarScope ? calendarData.sessions : [], blockedTimes: calendarData.scope === calendarScope ? calendarData.blockedTimes : [], text: { arenaAvailable: text.arenaAvailable, arenasAvailable: text.arenasAvailable } })
         : getCafeSoftOpeningTimeOptions(day.value, duration, 1)
       options.forEach((option) => {
         const start = timeToMinutes(option.value)
@@ -4072,13 +4083,16 @@ function BookingWorkspace({
       })
     })
     return availableKeys
-  }, [activeTicketDuration, canManageCalendarBookings, calendarSessions, calendarWeekDays, getAvailableTimeOptions, getCafeSoftOpeningTimeOptions, isHaDoBookingVenue])
+  }, [activeTicketDuration, canManageCalendarBookings, calendarSessions, calendarWeekDays, calendarData, calendarScope, getCafeSoftOpeningTimeOptions, isHaDoBookingVenue, text.arenaAvailable, text.arenasAvailable])
 
   useEffect(() => {
     if (activeView === 'create' && createSessionMode === 'calendar' && !isProfileAuthLoading) void loadCalendarWeek()
     // Reload the shared calendar after route hydration or a change in staff access.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeView, createSessionMode, isProfileAuthLoading, canManageCalendarBookings])
+  }, [activeView, createSessionMode, isProfileAuthLoading, canManageCalendarBookings, calendarScope])
+  useForegroundRefresh(activeView === 'create' && createSessionMode === 'calendar' && !isProfileAuthLoading, () => {
+    void loadCalendarWeek(undefined, { background: true })
+  })
   const canStaffExpandTicketSessions = false
   const selectedClubHallId = selectedClub?.id ?? ''
   const selectedClubHallRankingCriterion = selectedClub?.ranking_criterion ?? null
@@ -5649,6 +5663,10 @@ function BookingWorkspace({
                   </div>
                   </div>
                 </div>
+                {calendarError && <div className="calendar-refresh-error" role="alert">
+                  <p>{language === 'vi' ? 'Không thể cập nhật lịch. Dữ liệu có thể chưa mới nhất. Vui lòng kiểm tra kết nối và thử lại.' : 'Could not refresh bookings. The calendar may be out of date. Check your connection and retry.'}</p>
+                  <button type="button" className="secondary" disabled={isCalendarLoading} onClick={() => void loadCalendarWeek()}>{language === 'vi' ? 'Thử lại' : 'Retry'}</button>
+                </div>}
                 <div className="calendar-scroll" role="region" aria-label={text.calendarAvailabilityTitle}>
                   <div className="calendar-time-column" aria-hidden="true">
                     <div className="calendar-day-header calendar-time-header" />
