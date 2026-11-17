@@ -12,7 +12,9 @@ function requiredEnv(name: string) {
 }
 
 export function e2eConfig() {
-  const baseURL = process.env.E2E_BASE_URL?.trim() || 'http://127.0.0.1:3000'
+  // Match Playwright's host so consent and auth cookies use the actual test origin.
+  const localBaseURL = process.env.E2E_LOCAL_HOST === 'localhost' ? 'http://localhost:3000' : 'http://127.0.0.1:3000'
+  const baseURL = process.env.E2E_BASE_URL?.trim() || localBaseURL
   assertNonProductionUrl(baseURL)
   const adminEmail = requiredEnv('E2E_ADMIN_EMAIL')
   const adminPassword = requiredEnv('E2E_ADMIN_PASSWORD')

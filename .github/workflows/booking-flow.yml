@@ -4,17 +4,12 @@ on:
   pull_request:
     paths:
       - 'AGENTS.md'
+      - 'app/**'
+      - 'components/**'
+      - 'features/**'
+      - 'hooks/**'
       - 'styles/**'
-      - 'app/globals.css'
-      - 'app/staff/**'
-      - 'components/Staff*'
-      - 'components/staff/**'
-      - 'components/Booking*'
-      - 'components/TicketBookingView.tsx'
-      - 'components/SimRacingBooking.tsx'
-      - 'features/booking/**'
-      - 'lib/booking*'
-      - 'app/api/profile/booking-contact/**'
+      - 'lib/**'
       - 'e2e/**'
       - 'playwright.config.ts'
       - '.github/workflows/booking-flow.yml'
@@ -31,7 +26,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        device: [windows-chrome, macos-safari, ipados-safari, ios-safari, android-chrome, samsung-a26, samsung-a26-compact, galaxy-fold-cover, galaxy-fold-open]
+        device: [windows-chrome, macos-safari, ipados-safari, ios-safari, android-chrome, samsung-a26, samsung-a26-compact, samsung-a26-landscape, galaxy-fold-cover, galaxy-fold-open]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:

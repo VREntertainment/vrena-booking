@@ -46,6 +46,7 @@ export default defineConfig({
     { name: 'android-chrome', use: { ...devices['Pixel 7'] } },
     { name: 'samsung-a26', use: { ...devices['Pixel 7'], viewport: { width: 412, height: 892 }, deviceScaleFactor: 2.625 } },
     { name: 'samsung-a26-compact', use: { ...devices['Pixel 7'], viewport: { width: 360, height: 780 }, deviceScaleFactor: 3 } },
+    { name: 'samsung-a26-landscape', use: { ...devices['Pixel 7'], viewport: { width: 892, height: 412 }, deviceScaleFactor: 2.625 } },
     { name: 'galaxy-fold-cover', use: { ...devices['Pixel 7'], viewport: { width: 320, height: 872 } } },
     { name: 'galaxy-fold-open', use: { ...devices['Pixel 7'], viewport: { width: 768, height: 900 } } },
   ] : [
