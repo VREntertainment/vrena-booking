@@ -325,6 +325,9 @@ export type MatchStatus = 'waiting' | 'next' | 'live' | 'completed' | 'pending'
 export type RealtimeRefreshTask = 'profile' | 'sessions' | 'leaderboard' | 'clubs' | 'tournament' | 'network' | 'expandedDetails' | 'expandedMessages'
 
 export type Session = {
+  booking_category?: import('./bookingMetadata').BookingCategory | null
+  booking_source?: string | null
+  game_selection_explicit?: boolean | null
   id: string
   venue_key?: string
   owner_id: string

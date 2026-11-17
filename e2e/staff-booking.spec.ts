@@ -3,6 +3,59 @@ import { createClient } from '@supabase/supabase-js'
 import { execFileSync } from 'node:child_process'
 import { futureDate, loginAsAdmin, openAdmin } from './support/admin'
 
+test('calendar: venue games and category/source edits work without a sales order', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'Use the dedicated local database once.')
+  if (process.env.SUPABASE_URL !== 'http://127.0.0.1:56431') throw new Error('Calendar write checks require isolated services.')
+  const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
+  const owner = await admin.from('profiles').select('id').eq('email', process.env.E2E_ADMIN_EMAIL!).single()
+  if (owner.error) throw owner.error
+  const id = crypto.randomUUID()
+  const date = futureDate(193)
+  const inserted = await admin.from('sessions').insert({
+    id, owner_id: owner.data.id, name: 'Calendar birthday verification', date, start_time: '15:30', duration_minutes: 60,
+    max_players: 4, arena_count: 1, game_options: ['joller-house'], game_votes: {}, visibility: 'private',
+    status: 'open', booking_type: 'ticket', ticket_type: 'birthday', ticket_player_count: 4,
+    ticket_status: 'confirmed', venue_key: 'cafe-des-stagiaires',
+  })
+  if (inserted.error) throw inserted.error
+  try {
+    await loginAsAdmin(page)
+    await page.goto(`/create-session?mode=calendar&date=${date}&venue=cafe-des-stagiaires`)
+    const block = page.locator('.calendar-session-block').filter({ hasText: 'Calendar birthday verification' })
+    await expect(block).toContainText('Birthday')
+    await expect(block).toContainText('Games not selected')
+    await expect(block).not.toContainText('Joller House')
+    await expect(page.locator('.calendar-shop-badge, .calendar-opening-hours')).toHaveCount(0)
+    await block.click()
+    const dialog = page.getByRole('dialog', { name: 'Edit booking', exact: true })
+    const source = dialog.getByRole('combobox', { name: 'Booking source', exact: true })
+    await expect(source).toBeEnabled()
+    await source.selectOption('whatsapp')
+    await dialog.getByRole('combobox', { name: 'Booking category', exact: true }).selectOption('event')
+    await expect(dialog.getByRole('combobox', { name: 'Game', exact: true })).toHaveValue('')
+    const played = dialog.getByRole('region', { name: 'Games played', exact: true })
+    await expect(played.getByRole('checkbox', { name: 'Revolta', exact: true })).toBeVisible()
+    await expect(played.getByRole('checkbox', { name: /^(Laser Tag|Joller House)$/ })).toHaveCount(0)
+    const saved = page.waitForResponse(response => response.url().endsWith('/rpc/staff_update_booking_details'))
+    await dialog.getByRole('button', { name: 'Save changes', exact: true }).click()
+    expect((await saved).ok()).toBe(true)
+    await expect(dialog).toHaveCount(0)
+    await expect(block).toContainText('Event')
+    const record = await admin.from('sessions').select('booking_category,booking_source,confirmed_game_id,game_options').eq('id', id).single()
+    expect(record.error).toBeNull()
+    expect(record.data).toMatchObject({ booking_category: 'event', booking_source: 'whatsapp', confirmed_game_id: null, game_options: [] })
+    const orders = await admin.from('staff_orders').select('id').eq('session_id', id)
+    expect(orders.data).toEqual([])
+    await block.click()
+    await expect(dialog.getByRole('combobox', { name: 'Booking source', exact: true })).toHaveValue('whatsapp')
+    await expect(dialog.getByRole('combobox', { name: 'Booking category', exact: true })).toHaveValue('event')
+    await dialog.getByRole('button', { name: 'Close', exact: true }).last().click()
+  } finally {
+    const removed = await admin.from('sessions').delete().eq('id', id)
+    if (removed.error) throw removed.error
+  }
+})
+
 test('staff booking: electronic payments, automatic offers, required override reason and country menu', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium', 'Use the isolated service once.')
   if (process.env.SUPABASE_URL !== 'http://127.0.0.1:56431') throw new Error('Staff booking write tests require isolated services.')
@@ -76,7 +129,7 @@ test('staff booking: electronic payments, automatic offers, required override re
     await page.getByRole('heading', { name: 'Payment splits', exact: true }).scrollIntoViewIfNeeded()
     await page.screenshot({ path: '/tmp/staff-new-payments-mobile.png', animations: 'disabled' })
     await page.setViewportSize({ width: 1142, height: 894 })
-    const response = page.waitForResponse((res) => res.url().endsWith('/rpc/staff_create_booking'))
+    const response = page.waitForResponse((res) => res.url().endsWith('/rpc/staff_create_booking_with_metadata'))
     await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
     const body = await (await response).json()
     sessionId = body.session_id
@@ -117,7 +170,10 @@ test('staff booking: inline client, shop games, discounts and responsive summary
   await name.press('Enter')
   await expect(page.getByRole('listbox')).toHaveCount(0)
   await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('cafe-des-stagiaires')
-  await expect(page.getByRole('combobox', { name: 'Game', exact: true }).locator('option')).toHaveText(['None', 'City Z · Powered by Anvio', 'Revolta · Powered by Anvio', 'Station Zarya · Powered by Anvio'])
+  await expect(page.getByRole('combobox', { name: 'Game', exact: true })).toHaveValue('none')
+  await expect(page.getByRole('combobox', { name: 'Game', exact: true }).locator('option')).toContainText(['None', 'City Z · Powered by Anvio', 'Revolta · Powered by Anvio', 'Station Zarya · Powered by Anvio'])
+  await expect(page.getByRole('combobox', { name: 'Game', exact: true }).locator('option').filter({ hasText: /^(Laser Tag|Joller House)$/ })).toHaveCount(0)
+  await expect(page.getByRole('combobox', { name: 'Booking category', exact: true })).toHaveValue('standard')
   await expect(page.getByRole('button', { name: 'Booking time', exact: true })).toHaveText('15:30')
   await expect(page.getByRole('combobox', { name: 'Arena', exact: true })).toHaveValue('cafe:arena-1')
   await page.getByRole('button', { name: 'Booking time', exact: true }).click()
@@ -148,8 +204,8 @@ test('staff booking: inline client, shop games, discounts and responsive summary
   await page.screenshot({ path: '/tmp/staff-booking-mobile.png' })
   await page.setViewportSize({ width: 1142, height: 894 })
   let writes = 0
-  page.on('request', (request) => { if (request.url().endsWith('/rpc/staff_create_booking')) writes += 1 })
-  const createdResponse = page.waitForResponse((response) => response.url().endsWith('/rpc/staff_create_booking'))
+  page.on('request', (request) => { if (request.url().endsWith('/rpc/staff_create_booking_with_metadata')) writes += 1 })
+  const createdResponse = page.waitForResponse((response) => response.url().endsWith('/rpc/staff_create_booking_with_metadata'))
   await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
   const created = await (await createdResponse).json() as { session_id: string; customer_id: string }
   testInfo.annotations.push({ type: 'local-fixture', description: created.session_id || 'creation failed' })
@@ -192,7 +248,7 @@ test('staff booking: repeated confirmation clicks recover after a failed check',
     await new Promise((resolve) => setTimeout(resolve, 600))
     await route.fulfill(rateChecks === 1 ? { status: 429, json: { message: 'QA temporary check failure' } } : { json: null })
   })
-  await page.route('**/rest/v1/rpc/staff_create_booking', async (route) => {
+  await page.route('**/rest/v1/rpc/staff_create_booking_with_metadata', async (route) => {
     writes += 1
     await route.fulfill({ json: { order_number: 'QA-SINGLE-BOOKING', total: 220000 } })
   })
@@ -223,7 +279,7 @@ test('staff booking: client contacts and available discounts follow the selectio
     max_uses: null, used_count: 0,
   }] }))
   let writes = 0
-  await page.route('**/rest/v1/rpc/staff_create_booking', async (route) => { writes += 1; await route.abort() })
+  await page.route('**/rest/v1/rpc/staff_create_booking_with_metadata', async (route) => { writes += 1; await route.abort() })
   await openAdmin(page)
   const name = page.getByRole('combobox', { name: 'Customer name', exact: true })
   await name.click()
@@ -290,7 +346,7 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
   await expect(page).toHaveURL(/mode=calendar/)
   const calendar = page.locator('.calendar-panel')
   await expect(calendar).toHaveAttribute('aria-busy', 'false')
-  await expect(calendar.locator('.calendar-shop-badge')).toHaveText('Vrena Thao Dien')
+  await expect(calendar.locator('.calendar-shop-badge')).toHaveCount(0)
   await expect(page.getByTestId('staff-console')).toHaveCount(0)
   // Existing weekly grid is shared by both audiences, and the shop remains selected.
   await expect(calendar.locator('.calendar-day-column')).toHaveCount(7)
@@ -300,7 +356,7 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
   await expect(page.getByRole('button', { name: 'Booking time', exact: true })).toHaveText('15:30')
   await page.getByRole('checkbox', { name: 'Guest booking', exact: true }).check()
   await page.getByRole('combobox', { name: 'Booking source', exact: true }).selectOption('social_media')
-  const createdResponse = page.waitForResponse((response) => response.url().endsWith('/rpc/staff_create_booking'))
+  const createdResponse = page.waitForResponse((response) => response.url().endsWith('/rpc/staff_create_booking_with_metadata'))
   await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
   const created = await (await createdResponse).json() as { session_id: string; order_id: string; total: number }
   expect(created.session_id).toBeTruthy()
@@ -314,17 +370,17 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
     await block.click()
     const dialog = page.getByRole('dialog', { name: 'Edit booking', exact: true })
     const played = dialog.getByRole('region', { name: 'Games played', exact: true })
-    await expect(played.getByRole('checkbox')).toHaveCount(76)
+    expect(await played.getByRole('checkbox').count()).toBeLessThan(76)
     await expect(played.getByRole('checkbox', { name: 'City Z', exact: true })).toBeVisible()
     await played.getByRole('checkbox', { name: 'City Z', exact: true }).check()
     await played.getByRole('searchbox').fill('Party Games')
     await played.getByRole('checkbox', { name: 'Car Wash · Mini-game', exact: true }).check()
-    await played.getByRole('searchbox').fill('Laser Limbo')
-    await played.getByRole('checkbox', { name: 'Drone Hunt · Mode', exact: true }).check()
+    await played.getByRole('searchbox').fill('Revolta')
+    await played.getByRole('checkbox', { name: 'Revolta', exact: true }).check()
     await played.getByRole('button', { name: 'Confirm games played', exact: true }).click()
     await expect(played).toContainText('3 selected · Confirmed')
     const recorded = await admin.from('staff_session_games_played').select('game_ids').eq('session_id', created.session_id).single()
-    expect(recorded.data?.game_ids).toEqual(['city-z', 'laser-limbo:modes:drone-hunt', 'party-games:games:car-wash'])
+    expect(recorded.data?.game_ids).toEqual(['city-z', 'party-games:games:car-wash', 'revolta'])
     await dialog.locator('.calendar-dialog-close').click()
     await page.reload()
     await expect(calendar).toHaveAttribute('aria-busy', 'false')
@@ -332,7 +388,7 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
     await expect(dialog.getByRole('region', { name: 'Games played', exact: true })).toContainText('3 selected · Confirmed')
     await expect(dialog.getByRole('checkbox', { name: 'City Z', exact: true })).toBeChecked()
     await expect(dialog.getByRole('checkbox', { name: 'Car Wash · Mini-game', exact: true })).toBeChecked()
-    await expect(dialog.getByRole('checkbox', { name: 'Drone Hunt · Mode', exact: true })).toBeChecked()
+    await expect(dialog.getByRole('checkbox', { name: 'Revolta', exact: true })).toBeChecked()
     await dialog.getByRole('region', { name: 'Games played', exact: true }).screenshot({ path: '/tmp/staff-games-played-reopened.png' })
     await expect(dialog.getByRole('combobox', { name: 'Booking source', exact: true })).toHaveValue('social_media')
     await dialog.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('ha-do-centrosa')
@@ -346,7 +402,7 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
     await dialog.getByRole('button', { name: 'Save changes', exact: true }).click()
     await expect(dialog).toHaveCount(0)
     await expect(calendar).toHaveAttribute('aria-busy', 'false')
-    await expect(calendar.locator('.calendar-shop-badge')).toHaveText('VRena Hà Đô Centrosa')
+    await expect(calendar.locator('.calendar-shop-badge')).toHaveCount(0)
     const order = await admin.from('staff_orders').select('booking_time,players_count,booking_source,total').eq('id', created.order_id).single()
     expect(order.data).toMatchObject({ booking_time: '17:00:00', players_count: 2, booking_source: 'whatsapp', total: created.total })
     await page.setViewportSize({ width: 1142, height: 894 })
@@ -398,7 +454,7 @@ test('staff booking: exact event duration, outside hours, contact and live confl
     await page.getByRole('combobox', { name: 'Customer name', exact: true }).fill(`Event company ${Date.now()}`)
     await page.getByRole('textbox', { name: 'Contact person', exact: true }).fill('Event coordinator')
     await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('cafe-des-stagiaires')
-    await page.getByRole('checkbox', { name: 'Event / corporate', exact: true }).check()
+    await page.getByRole('combobox', { name: 'Booking category', exact: true }).selectOption('event')
     await page.getByRole('checkbox', { name: 'Allow booking outside opening hours', exact: true }).check()
     await page.getByLabel('Booking date', { exact: true }).fill(futureDate(219))
     const setTime = async (value: string) => {
@@ -419,7 +475,7 @@ test('staff booking: exact event duration, outside hours, contact and live confl
     await page.setViewportSize({ width: 375, height: 667 })
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
     await page.screenshot({ path: '/tmp/staff-event-mobile.png', fullPage: true })
-    const response = page.waitForResponse((res) => res.url().endsWith('/rpc/staff_create_booking'))
+    const response = page.waitForResponse((res) => res.url().endsWith('/rpc/staff_create_booking_with_metadata'))
     await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
     const body = await (await response).json()
     expect(body.session_id).toBeTruthy()
@@ -433,7 +489,7 @@ test('staff booking: exact event duration, outside hours, contact and live confl
     expect(saved.data!.notes).toContain('Prepare room early')
     await page.getByRole('checkbox', { name: 'Guest booking', exact: true }).check()
     await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('cafe-des-stagiaires')
-    await page.getByRole('checkbox', { name: 'Event / corporate', exact: true }).check()
+    await page.getByRole('combobox', { name: 'Booking category', exact: true }).selectOption('event')
     await page.getByRole('checkbox', { name: 'Allow booking outside opening hours', exact: true }).check()
     await page.getByLabel('Booking date', { exact: true }).fill(futureDate(219))
     await setTime('12:19')
@@ -470,11 +526,11 @@ test('staff booking: annotated form, VAT notes, two arenas and JPEG sharing', as
     await expect(page.getByRole('textbox', { name: 'End time', exact: true })).toHaveAttribute('readonly', '')
     const notes = page.getByRole('textbox', { name: 'Booking notes / special requests', exact: true })
     await notes.fill('Keep this request')
-    const event = page.getByRole('checkbox', { name: 'Event / corporate', exact: true })
-    await event.check()
+    const event = page.getByRole('combobox', { name: 'Booking category', exact: true })
+    await event.selectOption('event')
     await expect(notes).toHaveValue('Keep this request\n\nDetails for VAT invoice:\nCompany name:\nCompany address:\nCompany VAT number:')
-    await event.uncheck()
-    await event.check()
+    await event.selectOption('standard')
+    await event.selectOption('event')
     expect((await notes.inputValue()).match(/Details for VAT invoice/g)).toHaveLength(1)
     await expect(page.getByRole('spinbutton', { name: 'Time booked (minutes)', exact: true })).toHaveCount(0)
     await expect(page.getByText('Opening hours:', { exact: false })).toHaveCount(0)
@@ -527,7 +583,7 @@ test('staff booking: annotated form, VAT notes, two arenas and JPEG sharing', as
     await page.setViewportSize({ width: 375, height: 667 })
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
     await page.screenshot({ path: '/tmp/staff-annotations-mobile.png', fullPage: true })
-    const response = page.waitForResponse((res) => res.url().endsWith('/rpc/staff_create_booking'))
+    const response = page.waitForResponse((res) => res.url().endsWith('/rpc/staff_create_booking_with_metadata'))
     await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
     const created = await (await response).json()
     const confirmedCard = page.getByRole('region', { name: 'Booking Confirmed', exact: true })
@@ -604,7 +660,7 @@ test('staff booking: session count follows the shared session length', async ({ 
   await page.getByLabel('Booking date', { exact: true }).fill(futureDate(186))
   await expect(end).toHaveValue('11:00')
   await expect(page.locator('.staff-price-lines')).toContainText('120 min')
-  await page.getByRole('checkbox', { name: 'Event / corporate', exact: true }).check()
+  await page.getByRole('combobox', { name: 'Booking category', exact: true }).selectOption('event')
   await page.getByRole('button', { name: 'End time', exact: true }).click()
   await page.getByRole('textbox', { name: 'End time: type a specific time', exact: true }).fill('12:17')
   await page.getByRole('textbox', { name: 'End time: type a specific time', exact: true }).press('Enter')

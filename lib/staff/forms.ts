@@ -15,6 +15,7 @@ import type {
 } from './types.ts'
 
 export const defaultBookingForm = (): BookingForm => ({
+  bookingCategory: 'standard',
   bookingKind: 'standard',
   arenaCount: 1,
   sessionCount: 1,

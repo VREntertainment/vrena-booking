@@ -11,6 +11,13 @@ const selection: TicketBookingSelection = {
   guestName: ' Guest ', guestPhone: '+84900000993',
 }
 
+test('online requests never turn a service default into a chosen game', () => {
+  for (const isHaDo of [true, false]) for (const authenticated of [true, false]) for (const ticketType of ['individual', 'birthday', 'corporate'] as const) {
+    const request = buildTicketBookingRequest({ ...selection, isHaDo, authenticated, ticketType, defaultGame: ticketType === 'birthday' ? 'joller-house' : 'laser-tag' })
+    assert.deepEqual(request.args.p_game_options, [])
+  }
+})
+
 test('Cafe requests leave pricing to the server and preserve validated player and arena counts', () => {
   for (const players of [5, 8, 9]) {
     const request = buildTicketBookingRequest({ ...selection, isHaDo: false, authenticated: false, players })

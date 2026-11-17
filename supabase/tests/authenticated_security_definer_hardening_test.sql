@@ -162,6 +162,7 @@ select case when (
     and has_function_privilege('authenticated', procedures.oid, 'execute')
 ) = array[
   'booking_arena_occupancy(date,date)',
+  'booking_calendar_list_page(date,date,integer,integer,boolean)',
   'claim_guest_ticket_booking(text,text)',
   'clubs_list_page()',
   'consume_booking_attempt_rate_limit(text)',
@@ -198,10 +199,12 @@ select case when (
   'staff_access_locations()',
   'staff_approve_attendance_period(date,date)',
   'staff_award_profile_achievement(uuid,text,text,text,text,text)',
+  'staff_create_booking_with_metadata(jsonb,text)',
   'staff_customer_profile_allowed(uuid)',
   'staff_delete_profile_account(uuid,text,boolean,text,text)',
   'staff_delete_session_operation(uuid,text)',
   'staff_employee_directory()',
+  'staff_get_booking_details(uuid)',
   'staff_get_player_achievement_history(uuid)',
   'staff_get_player_stat_overrides(uuid)',
   'staff_list_player_session_options(uuid,date)',
@@ -214,6 +217,7 @@ select case when (
   'staff_set_employee_locations(uuid,text[])',
   'staff_set_player_stat_overrides(uuid,integer,jsonb,jsonb)',
   'staff_sync_payroll_draft(date,boolean)',
+  'staff_update_booking_details(uuid,jsonb)',
   'staff_update_order_operation(uuid,uuid,date,time without time zone,integer)',
   'staff_update_session_operation(uuid,text,date,time without time zone,integer,integer,integer,text,text,text)',
   'staff_update_sim_racing_booking(uuid,jsonb)',

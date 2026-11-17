@@ -56,7 +56,7 @@ import { createStaffSettingsActions } from '../features/staff/lazySettingsAction
 import { ButtonIconText, StaffReportDateRangeModal } from '../features/staff/shared'
 
 
-import { publicGameGuideCatalog } from '../lib/gameGuideCatalog'
+import { gameAvailableAtVenue } from '../lib/bookingMetadata'
 import { staffBookingCopy } from '../lib/staff/bookingCopy'
 import { useStaffSessionLength } from '../hooks/useStaffSessionLength'
 import { staffBookingDuration } from '../lib/staff/bookingHours'
@@ -554,12 +554,9 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const activeGames = useMemo(() => games.filter((game) => game.active), [games])
   const discountRules = useMemo(() => discounts.filter((discount) => !discount.code), [discounts])
   const voucherRules = useMemo(() => discounts.filter((discount) => Boolean(discount.code)), [discounts])
-  const bookingGames = useMemo(() => activeGames.filter((game) => {
-    const venues = publicGameGuideCatalog.find((item) => item.id === game.slug)?.venues || ['ha-do-centrosa']
-    return venues.includes(booking.venueKey)
-  }), [activeGames, booking.venueKey])
+  const bookingGames = useMemo(() => activeGames.filter((game) => gameAvailableAtVenue(game.slug, booking.venueKey)), [activeGames, booking.venueKey])
   const sessionLength = useStaffSessionLength(booking.date)
-  const selectedGame = useMemo(() => booking.gameId === 'none' ? null : bookingGames.find((game) => game.id === booking.gameId) || bookingGames[0] || null, [bookingGames, booking.gameId])
+  const selectedGame = useMemo(() => booking.gameId === 'none' ? null : bookingGames.find((game) => game.id === booking.gameId) || null, [bookingGames, booking.gameId])
   const bookingArenas = booking.venueKey === 'cafe-des-stagiaires'
     ? ['cafe:arena-1']
     : selectedGame?.available_arena_ids?.length ? selectedGame.available_arena_ids : ['arena-1', 'arena-2']
