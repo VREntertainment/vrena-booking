@@ -14,6 +14,11 @@ test('public booking inputs remain readable and within the viewport', async ({ p
     for (const size of sizes) expect(size).toBeGreaterThanOrEqual(16)
   }
   await page.screenshot({ path: `/tmp/vrena-e2e-results/public-booking-${info.project.name}.png` })
+  // The unused SIM form is deferred, but must still open normally when selected.
+  await page.goto('/tickets?venue=ha-do-centrosa&lang=en#sim-racing')
+  await expect(page.getByRole('heading', { name: 'SIM Racing', exact: true })).toBeVisible()
+  await expect(page.locator('.sim-racing-booking input[type="tel"]')).toBeVisible()
+  await fitsPage(page)
 })
 for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
   test(`responsive calendar, details and staff form: ${venue}`, async ({ page }, info) => {

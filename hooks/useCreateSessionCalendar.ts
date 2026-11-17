@@ -56,13 +56,21 @@ export function useCreateSessionCalendar({
     const controller = new AbortController()
     pendingRequest.current = { id: request, startDate, controller }
     if (!options.background) setIsCalendarLoading(true)
-    const timeout = window.setTimeout(() => controller.abort(), 15_000)
+    let timeout: number | undefined
     try {
       if (!navigator.onLine) throw new Error('offline')
-      await loadCalendarRange(startDate, weekEnd, {
-        signal: controller.signal,
-        isCurrent: () => request === calendarRequest.current && !controller.signal.aborted,
-      })
+      await Promise.race([
+        loadCalendarRange(startDate, weekEnd, {
+          signal: controller.signal,
+          isCurrent: () => request === calendarRequest.current && !controller.signal.aborted,
+        }),
+        new Promise<never>((_, reject) => {
+          timeout = window.setTimeout(() => {
+            controller.abort()
+            reject(new Error('timeout'))
+          }, 15_000)
+        }),
+      ])
       if (request === calendarRequest.current) setCalendarError('')
     } catch (error) {
       if (request === calendarRequest.current) {
