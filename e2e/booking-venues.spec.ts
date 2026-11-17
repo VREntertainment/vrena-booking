@@ -78,7 +78,7 @@ test('Thao Dien calendar offers continuous booking starts across all seven days'
   await page.goto(`/create-session?mode=calendar&date=${futureDate(30)}&venue=cafe-des-stagiaires`)
   const calendar = page.locator('.calendar-panel')
   await expect(calendar).toHaveAttribute('aria-busy', 'false')
-  await expect(calendar.locator('.calendar-opening-hours')).toHaveText('15:30–23:00')
+  await expect(calendar.locator('.calendar-opening-hours, .calendar-shop-badge')).toHaveCount(0)
   const days = calendar.locator('.calendar-day-column')
   await expect(days).toHaveCount(7)
   for (let day = 0; day < 7; day++) {

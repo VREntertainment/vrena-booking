@@ -1,0 +1,29 @@
+name: Calendar release regression
+on:
+  push:
+    branches: [fix/calendar-venue-games-and-categories]
+    paths:
+      - e2e/booking-venues.spec.ts
+permissions:
+  contents: read
+jobs:
+  calendar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: '1'
+      E2E_PRODUCTION_BUILD: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: supabase/setup-cli@46f7f98c7f948ad727d22c1e67fab04c223a0520
+        with:
+          version: 2.106.0
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:services -- e2e/booking-venues.spec.ts --grep 'Thao Dien calendar offers continuous booking starts across all seven days'
+      - if: always()
+        run: supabase stop --workdir e2e
