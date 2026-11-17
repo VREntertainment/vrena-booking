@@ -96,8 +96,11 @@
   .app .staff-booking-toggles > label { min-width: 0; }
   .app .staff-booking-toggles select { width: 100%; }
   .app .staff-guest-toggle { min-height: 44px; }
-  .app .staff-payment-split-row:has(.staff-payment-remove) { grid-template-columns: minmax(0, 1fr) 44px; }
   .app .staff-console .staff-payment-splits .staff-list-head button.staff-payment-add.secondary:not(.primary):not(.danger),
   .app .staff-console .staff-payment-splits .staff-payment-split-row > button.staff-payment-remove { min-height: 44px; }
   .app .staff-console .staff-payment-splits .staff-payment-split-row > button.staff-payment-remove { width: 44px; min-width: 44px; height: 44px; }
+}
+
+@media (max-width: 600px) {
+  .app .staff-payment-split-row:has(.staff-payment-remove) { grid-template-columns: minmax(0, 1fr) 44px; }
 }

@@ -60,3 +60,8 @@
   .app .calendar-edit-fields .calendar-outside-hours { min-height: 44px; }
   .app .calendar-dialog-close { width: 44px; min-width: 44px; min-height: 44px; }
 }
+
+@media (max-width: 350px) {
+  .app .calendar-actions > label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .app .calendar-actions > button { align-self: end; }
+}
