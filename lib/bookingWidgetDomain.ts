@@ -326,7 +326,6 @@ export type RealtimeRefreshTask = 'profile' | 'sessions' | 'leaderboard' | 'club
 
 export type Session = {
   client_confirmed?: boolean
-  client_confirmed?: boolean
   booking_category?: import('./bookingMetadata').BookingCategory | null
   booking_source?: string | null
   game_selection_explicit?: boolean | null
