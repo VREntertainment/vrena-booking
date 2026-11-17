@@ -94,9 +94,9 @@
 .app .calendar-session-block[data-calendar-density="time-only"] .calendar-session-compact > small { display: none; }
 .app .calendar-session-block[data-calendar-density="time-only"] .calendar-session-time-range { font-size: 12px; line-height: 14px; font-weight: 900; }
 @container calendar-card (max-width: 100px) {
-  .calendar-session-time-row { align-items: flex-start; gap: 2px; }
-  .calendar-session-time-range { flex-direction: column; align-items: flex-start; font-size: 11px !important; line-height: 12px !important; }
-  .calendar-session-time-separator { display: none; }
-  .calendar-client-confirmed { width: 12px; height: 12px; flex-basis: 12px; }
+  .app .calendar-session-time-row { align-items: flex-start; gap: 2px; }
+  .app .calendar-session-time-range { flex-direction: column; align-items: flex-start; font-size: 11px !important; line-height: 12px !important; }
+  .app .calendar-session-time-separator { display: none; }
+  .app .calendar-client-confirmed { width: 12px; height: 12px; flex-basis: 12px; }
   .calendar-session-block[data-calendar-short="true"] .calendar-session-time-range > span:last-child { display: none; }
 }

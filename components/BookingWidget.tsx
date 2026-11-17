@@ -5708,7 +5708,7 @@ function BookingWorkspace({
                                   ? text.private
                                   : text.public
                               const timeRangeLabel = `${session.start_time.slice(0, 5)}-${minutesToTime(end)}`
-                              const compactBooking = visibleEnd - visibleStart <= 30
+                              const compactBooking = visibleEnd - visibleStart < 60
                               const confirmationMarker = canManageCalendarBookings && session.client_confirmed ? <CircleCheck className="calendar-client-confirmed" size={14} strokeWidth={2} role="img" aria-label={language === 'vi' ? 'Đã xác nhận với khách' : 'Confirmed with client'} /> : null
                               const lane = calendarSessionLanes.get(session.id) || { lane: 0, lanes: 1 }
                               const calendarSessionLabel = `${staffBookingName(session.name)} · ${isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}: ${formatShortDate(session.date, language)} ${timeRangeLabel}`
