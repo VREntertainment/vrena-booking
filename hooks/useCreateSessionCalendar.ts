@@ -1,7 +1,10 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { CreateSessionMode } from '../components/CreateSessionView'
 
-type LoadCalendarRange = (startDate: string, endDate: string) => Promise<unknown>
+type LoadCalendarRange = (startDate: string, endDate: string, request: {
+  signal: AbortSignal
+  isCurrent: () => boolean
+}) => Promise<unknown>
 
 type UseCreateSessionCalendarOptions = {
   initialCalendarDate?: string
@@ -35,18 +38,43 @@ export function useCreateSessionCalendar({
   const [createSessionMode, setCreateSessionMode] = useState<CreateSessionMode>(initialCalendarDate ? 'calendar' : 'form')
   const [calendarWeekStart, setCalendarWeekStart] = useState(() => startOfWeekDateValue(initialCalendarDate || getLocalDateString()))
   const [isCalendarLoading, setIsCalendarLoading] = useState(Boolean(initialCalendarDate))
+  const [calendarError, setCalendarError] = useState('')
   const calendarRequest = useRef(0)
+  const pendingRequest = useRef<{ id: number; startDate: string; controller: AbortController } | null>(null)
 
-  async function loadCalendarWeek(startDate = calendarWeekStart) {
+  useEffect(() => () => {
+    calendarRequest.current++
+    pendingRequest.current?.controller.abort()
+  }, [])
+
+  async function loadCalendarWeek(startDate = calendarWeekStart, options: { background?: boolean } = {}) {
+    // Focus, visibility and reconnect often arrive together on Android.
+    if (options.background && pendingRequest.current?.startDate === startDate) return
     const weekEnd = addDaysToDateValue(startDate, 6)
     const request = ++calendarRequest.current
-    setIsCalendarLoading(true)
+    pendingRequest.current?.controller.abort()
+    const controller = new AbortController()
+    pendingRequest.current = { id: request, startDate, controller }
+    if (!options.background) setIsCalendarLoading(true)
+    const timeout = window.setTimeout(() => controller.abort(), 15_000)
     try {
-      await loadCalendarRange(startDate, weekEnd)
+      if (!navigator.onLine) throw new Error('offline')
+      await loadCalendarRange(startDate, weekEnd, {
+        signal: controller.signal,
+        isCurrent: () => request === calendarRequest.current && !controller.signal.aborted,
+      })
+      if (request === calendarRequest.current) setCalendarError('')
     } catch (error) {
-      if (request === calendarRequest.current) onCreateStatusChange(error instanceof Error ? error.message : String(error))
+      if (request === calendarRequest.current) {
+        setCalendarError(error instanceof Error ? error.message : String(error))
+        if (!options.background) onCreateStatusChange('')
+      }
     } finally {
-      if (request === calendarRequest.current) setIsCalendarLoading(false)
+      window.clearTimeout(timeout)
+      if (request === calendarRequest.current) {
+        pendingRequest.current = null
+        setIsCalendarLoading(false)
+      }
     }
   }
 
@@ -95,6 +123,7 @@ export function useCreateSessionCalendar({
   return {
     calendarWeekStart,
     isCalendarLoading,
+    calendarError,
     createSessionMode,
     handleCreateSessionModeChange,
     loadCalendarWeek,
