@@ -5,6 +5,16 @@ import { futureDate, loginAsAdmin } from './support/admin'
 async function fitsPage(page: Page) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
 }
+test('public booking inputs remain readable and within the viewport', async ({ page }, info) => {
+  await page.goto('/tickets?venue=ha-do-centrosa&lang=en')
+  await expect(page.locator('.ticket-control select').first()).toBeVisible()
+  await fitsPage(page)
+  if (page.viewportSize()!.width <= 760) {
+    const sizes = await page.locator('.ticket-control input, .ticket-control select, .ticket-special-note-field textarea').evaluateAll(els => els.filter(el => el.getBoundingClientRect().width > 0).map(el => parseFloat(getComputedStyle(el).fontSize)))
+    for (const size of sizes) expect(size).toBeGreaterThanOrEqual(16)
+  }
+  await page.screenshot({ path: `/tmp/vrena-e2e-results/public-booking-${info.project.name}.png` })
+})
 for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
   test(`responsive calendar, details and staff form: ${venue}`, async ({ page }, info) => {
     if (process.env.SUPABASE_URL !== 'http://127.0.0.1:56431') throw new Error('Responsive fixtures require isolated services.')
@@ -71,8 +81,8 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       const shop = page.getByRole('combobox', { name: /^(Shop|Cửa hàng)$/ })
       await expect(shop).toHaveValue(venue)
       await shop.selectOption('cafe-des-stagiaires')
-      await expect(page.getByRole('combobox', { name: /^(Game|Trò chơi)$/ }).locator('option[value="laser-tag"]')).toHaveCount(0)
-      const country = page.getByRole('button', { name: 'Country Code', exact: true })
+      await expect(page.getByRole('combobox', { name: /^(Game|Trò chơi)$/ }).getByRole('option', { name: 'Laser Tag', exact: true })).toHaveCount(0)
+      const country = page.locator('.staff-phone-control .country-button')
       if (page.viewportSize()!.width <= 760) {
         expect((await country.boundingBox())!.height).toBeGreaterThanOrEqual(44)
         expect(await shop.evaluate(el => getComputedStyle(el).fontSize)).toBe('16px')
