@@ -38,3 +38,9 @@
   .app .calendar-booking-dialog { color-scheme: dark; }
   .app .calendar-dialog-close { color: var(--player-text-muted); }
 }
+
+.calendar-session-title { display: flex; align-items: center; gap: 6px; }
+.calendar-client-confirmed { flex-shrink: 0; color: var(--accent, currentColor); }
+
+.calendar-booking-title { display: flex; align-items: center; gap: 6px; }
+.calendar-client-confirmed { display: inline-flex; flex: 0 0 auto; color: var(--vrena-status-success-ink); }
