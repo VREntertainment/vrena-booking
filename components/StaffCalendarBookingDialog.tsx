@@ -20,11 +20,11 @@ import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient
 
 type Draft = {
   category: BookingCategory; name: string; date: string; time: string; venue: BookingForm['venueKey']; game: string
-  players: number; duration: number; arenas: number; arenaId: string; status: string; notes: string; source: string; allowOutsideHours: boolean
+  players: number; duration: number; arenas: number; arenaId: string; status: string; notes: string; source: string; clientConfirmed: boolean; allowOutsideHours: boolean
 }
 const copy = {
-  en: { title: 'Edit booking', shop: 'Shop', name: 'Booking name', date: 'Date', time: 'Time', game: 'Game', players: 'Players', duration: 'Duration (minutes)', arenas: 'Arenas', arena: 'Arena', status: 'Status', notes: 'Internal note', save: 'Save changes', close: 'Close', remove: 'Delete booking', confirm: 'Confirm deletion', keep: 'Keep booking', loading: 'Loading booking…', outsideHours: 'Reserve outside opening hours', reason: 'Reason for price change', paid: 'Recorded payments', due: 'Remaining to pay', invalidTime: 'Choose a time that ends on the same day and is within opening hours, or allow an outside-hours reservation.', savedPrice: 'Recorded payments stay unchanged. Enter a reason when changing the agreed total.', deleteHelp: 'This removes only this booking from the calendar and cancels its linked order. Recorded payments are retained; refunds are handled separately.', unspecified: 'Unspecified', open: 'Confirmed / open', completed: 'Completed', cancelled: 'Cancelled', total: 'Agreed total', conflict: 'This booking has changed. Close and reopen it before saving.' },
-  vi: { title: 'Sửa đặt chỗ', shop: 'Cửa hàng', name: 'Tên đặt chỗ', date: 'Ngày', time: 'Giờ', game: 'Trò chơi', players: 'Số người', duration: 'Thời lượng (phút)', arenas: 'Số arena', arena: 'Arena', status: 'Trạng thái', notes: 'Ghi chú nội bộ', save: 'Lưu thay đổi', close: 'Đóng', remove: 'Xóa đặt chỗ', confirm: 'Xác nhận xóa', keep: 'Giữ đặt chỗ', loading: 'Đang tải đặt chỗ…', outsideHours: 'Đặt chỗ ngoài giờ mở cửa', reason: 'Lý do thay đổi giá', paid: 'Đã thanh toán', due: 'Còn phải thanh toán', invalidTime: 'Chọn giờ kết thúc trong cùng ngày và trong giờ mở cửa, hoặc cho phép đặt ngoài giờ.', savedPrice: 'Giữ nguyên các khoản đã thanh toán. Nhập lý do khi thay đổi tổng tiền đã thỏa thuận.', deleteHelp: 'Chỉ xóa lượt đặt chỗ này khỏi lịch và hủy đơn liên kết. Các khoản đã thanh toán vẫn được giữ; hoàn tiền được xử lý riêng.', unspecified: 'Chưa xác định', open: 'Đã xác nhận / mở', completed: 'Hoàn tất', cancelled: 'Đã hủy', total: 'Tổng tiền đã thỏa thuận', conflict: 'Đặt chỗ đã thay đổi. Đóng và mở lại trước khi lưu.' },
+  en: { clientConfirmed: 'Confirmed with client', title: 'Edit booking', shop: 'Shop', name: 'Booking name', date: 'Date', time: 'Time', game: 'Game', players: 'Players', duration: 'Duration (minutes)', arenas: 'Arenas', arena: 'Arena', status: 'Status', notes: 'Internal note', save: 'Save changes', close: 'Close', remove: 'Delete booking', confirm: 'Confirm deletion', keep: 'Keep booking', loading: 'Loading booking…', outsideHours: 'Reserve outside opening hours', reason: 'Reason for price change', paid: 'Recorded payments', due: 'Remaining to pay', invalidTime: 'Choose a time that ends on the same day and is within opening hours, or allow an outside-hours reservation.', savedPrice: 'Recorded payments stay unchanged. Enter a reason when changing the agreed total.', deleteHelp: 'This removes only this booking from the calendar and cancels its linked order. Recorded payments are retained; refunds are handled separately.', unspecified: 'Unspecified', open: 'Confirmed / open', completed: 'Completed', cancelled: 'Cancelled', total: 'Agreed total', conflict: 'This booking has changed. Close and reopen it before saving.' },
+  vi: { clientConfirmed: 'Đã xác nhận với khách', title: 'Sửa đặt chỗ', shop: 'Cửa hàng', name: 'Tên đặt chỗ', date: 'Ngày', time: 'Giờ', game: 'Trò chơi', players: 'Số người', duration: 'Thời lượng (phút)', arenas: 'Số arena', arena: 'Arena', status: 'Trạng thái', notes: 'Ghi chú nội bộ', save: 'Lưu thay đổi', close: 'Đóng', remove: 'Xóa đặt chỗ', confirm: 'Xác nhận xóa', keep: 'Giữ đặt chỗ', loading: 'Đang tải đặt chỗ…', outsideHours: 'Đặt chỗ ngoài giờ mở cửa', reason: 'Lý do thay đổi giá', paid: 'Đã thanh toán', due: 'Còn phải thanh toán', invalidTime: 'Chọn giờ kết thúc trong cùng ngày và trong giờ mở cửa, hoặc cho phép đặt ngoài giờ.', savedPrice: 'Giữ nguyên các khoản đã thanh toán. Nhập lý do khi thay đổi tổng tiền đã thỏa thuận.', deleteHelp: 'Chỉ xóa lượt đặt chỗ này khỏi lịch và hủy đơn liên kết. Các khoản đã thanh toán vẫn được giữ; hoàn tiền được xử lý riêng.', unspecified: 'Chưa xác định', open: 'Đã xác nhận / mở', completed: 'Hoàn tất', cancelled: 'Đã hủy', total: 'Tổng tiền đã thỏa thuận', conflict: 'Đặt chỗ đã thay đổi. Đóng và mở lại trước khi lưu.' },
 }
 
 export default function StaffCalendarBookingDialog({ sessionId, language, onClose, onSaved }: {
@@ -76,7 +76,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         setDraft({ category: bookingCategory(record), name: staffBookingName(record.name, activeGames.map((item) => item.name)), date: record.date, time: record.start_time.slice(0, 5), venue: record.venue_key || 'ha-do-centrosa',
           game: selectedBookingGames(record)[0] || '', players: record.ticket_player_count || record.max_players,
           duration: record.duration_minutes, arenas: record.arena_count ?? 1, arenaId: order?.arena_id || '', status: record.status,
-          notes: record.notes || '', source: record.booking_source ?? order?.booking_source ?? '',
+          clientConfirmed: record.client_confirmed === true, notes: record.notes || '', source: record.booking_source ?? order?.booking_source ?? '',
           allowOutsideHours: !validStaffBookingTime(record.venue_key || 'ha-do-centrosa', record.duration_minutes, record.start_time.slice(0, 5)),
         })
       } catch (cause) {
@@ -106,7 +106,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
           venue_key: draft.venue, game_slug: draft.game, players: draft.players, duration_minutes: draft.duration,
           arena_count: draft.arenas, arena_id: draft.arenaId || arenas[0], status: draft.status, notes: draft.notes,
           booking_category: draft.category, game_changed: draft.game !== (selectedBookingGames(session)[0] || ''),
-          booking_source: draft.source || null, allow_outside_hours: draft.allowOutsideHours,
+          client_confirmed: draft.clientConfirmed, booking_source: draft.source || null, allow_outside_hours: draft.allowOutsideHours,
           order_adjustments: orders.filter((order) => prices[order.id] && Number(prices[order.id].total) !== order.total).map((order) => ({ order_id: order.id, total: Number(prices[order.id].total), reason: prices[order.id].reason.trim(), expected_updated_at: order.updated_at })),
         } })
       if (result.error) throw new Error(result.error.message)
@@ -134,6 +134,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
       <p>{text.deleteHelp}</p><div className="action-row"><button className="danger" disabled={saving} onClick={() => void mutate(true)} type="button">{text.confirm}</button><button className="secondary" disabled={saving} onClick={() => setConfirmDelete(false)} type="button">{text.keep}</button></div>
     </div> : <form onSubmit={submit}>
       <fieldset disabled={saving} className="calendar-edit-fields">
+        <label className="full calendar-outside-hours"><input type="checkbox" checked={draft.clientConfirmed} onChange={(event) => patch({ clientConfirmed: event.target.checked })} /><span>{text.clientConfirmed}</span></label>
         <label className="full">{text.name}<input disabled={isSimRacing} required maxLength={120} value={draft.name} onChange={(event) => patch({ name: event.target.value })} /></label>
         <label>{text.shop}<select disabled={isSimRacing} value={draft.venue} onChange={(event) => {
           const venue = event.target.value as Draft['venue']

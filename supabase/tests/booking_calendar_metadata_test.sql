@@ -34,6 +34,30 @@ begin
   if row_value.booking_category<>'birthday' or row_value.booking_source<>'zalo' or cardinality(row_value.game_options)<>0 or row_value.confirmed_game_id is not null or row_value.game_selection_explicit then raise exception 'No-order metadata save failed.'; end if;
   if exists(select 1 from public.staff_orders where session_id=fixture) then raise exception 'Saving metadata created an order.'; end if;
 
+  -- Human confirmation starts empty, persists independently and can be cleared.
+  if (public.staff_get_booking_details(fixture)->>'client_confirmed')::boolean then raise exception 'Booking started client-confirmed.'; end if;
+  perform public.staff_update_booking_details(fixture,payload||'{"client_confirmed":true}');
+  if not (public.staff_get_booking_details(fixture)->>'client_confirmed')::boolean then raise exception 'Client confirmation did not persist.'; end if;
+  if not exists(select 1 from private.booking_client_confirmations where session_id=fixture and confirmed_by=actor and confirmed_at is not null) then raise exception 'Confirmation actor/time missing.'; end if;
+  if not exists(select 1 from public.sessions where id=fixture and status='cancelled' and ticket_status='cancelled') then raise exception 'Confirmation changed reservation status.'; end if;
+  perform public.staff_update_booking_details(fixture,payload);
+  if not (public.staff_get_booking_details(fixture)->>'client_confirmed')::boolean then raise exception 'Old client payload cleared confirmation.'; end if;
+  begin
+   perform public.staff_update_booking_details(fixture,payload||'{"client_confirmed":"true"}');
+   raise exception 'Invalid confirmation was accepted.';
+  exception when others then
+   if sqlerrm<>'Invalid client confirmation.' then raise; end if;
+  end;
+  begin
+   perform public.staff_update_booking_details(fixture,payload||'{"client_confirmed":false,"expected_updated_at":"2000-01-01T00:00:00Z"}');
+   raise exception 'Stale confirmation edit was accepted.';
+  exception when others then
+   if sqlerrm<>'This booking has changed. Close and reopen it before saving.' then raise; end if;
+  end;
+  if not (public.staff_get_booking_details(fixture)->>'client_confirmed')::boolean then raise exception 'Stale save cleared confirmation.'; end if;
+  perform public.staff_update_booking_details(fixture,payload||'{"client_confirmed":false}');
+  if (public.staff_get_booking_details(fixture)->>'client_confirmed')::boolean then raise exception 'Confirmation did not clear.'; end if;
+
   -- Every category and an explicitly empty source can be saved and reloaded.
   perform public.staff_update_booking_details(fixture,payload||'{"booking_category":"event","booking_source":"whatsapp","game_changed":false}');
   select * into row_value from public.sessions where id=fixture;
@@ -77,12 +101,20 @@ begin
     'p_game_id',null,'p_order_status','confirmed','p_payment_splits','[]'::jsonb),'phone');
   if not exists(select 1 from public.sessions where id=(created->>'session_id')::uuid and booking_category='birthday' and booking_source='phone' and not game_selection_explicit and confirmed_game_id is null and cardinality(game_options)=0) then raise exception 'Staff creation did not preserve category/source/empty games.'; end if;
 
+  if not (public.staff_get_booking_details((created->>'session_id')::uuid)->>'client_confirmed')::boolean then raise exception 'Staff-created confirmed booking missing contact icon.'; end if;
   perform set_config('request.jwt.claim.sub','',true);
   perform set_config('request.jwt.claims','{"role":"anon"}',true);
   perform set_config('request.jwt.claim.role','anon',true);
   begin
    perform public.staff_update_booking_details(fixture,payload);
    raise exception 'Anonymous metadata edit was accepted.';
+  exception when others then
+   if sqlerrm<>'Staff access required.' then raise; end if;
+  end;
+  if (private.calendar_booking_metadata(fixture)->>'client_confirmed')::boolean then raise exception 'Anonymous calendar exposed staff confirmation.'; end if;
+  begin
+   perform private.save_booking_client_confirmation(fixture,'{"client_confirmed":true}');
+   raise exception 'Anonymous confirmation edit accepted.';
   exception when others then
    if sqlerrm<>'Staff access required.' then raise; end if;
   end;

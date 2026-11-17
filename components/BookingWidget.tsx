@@ -1,5 +1,5 @@
 'use client'
-import { Crown } from 'lucide-react'
+import { CircleCheck, Crown } from 'lucide-react'
 
 import { CUSTOMER_SOCIAL_FEATURES_ENABLED, customerView } from '../lib/customerExperience'
 import { birthdayPackageDurationMinutes, birthdayPackageSelection, selectedBirthdayPackage, withoutBirthdayPackageNote } from '../lib/birthdayPackages'
@@ -5722,7 +5722,7 @@ function BookingWorkspace({
                                   onClick={() => openSessionFromCalendar(session)}
                                 >
                                   <span className="calendar-session-compact">
-                                    <strong>{staffBookingName(session.name)}</strong>
+                                    <strong className="calendar-session-title">{staffBookingName(session.name)}{canManageCalendarBookings && session.client_confirmed && <CircleCheck className="calendar-client-confirmed" size={16} strokeWidth={2} role="img" aria-label={language === 'vi' ? 'Đã xác nhận với khách' : 'Confirmed with client'} />}</strong>
                                     <span>{timeRangeLabel}</span>
                                     <span className={`calendar-booking-category ${bookingCategory(session)}`}>{categoryLabel}</span>
                                     <small>{gameTitles || categoryText.noGames}</small>
