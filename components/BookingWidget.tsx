@@ -5624,7 +5624,11 @@ function BookingWorkspace({
           >
             {createSessionMode === 'calendar' ? (
               <div className={`calendar-panel calendar-venue-${bookingVenue}`} aria-label={text.calendarAvailabilityTitle} aria-busy={isCalendarLoading}>
-                <div className="calendar-toolbar">
+                <div className="calendar-actions">
+                  <label>{text.date}<input type="date" aria-label={text.date} value={calendarWeekStart} disabled={isCalendarLoading} onChange={(event) => { if (event.target.value) openCreateSessionCalendar(event.target.value) }} /></label>
+                  <button className="secondary" disabled={isCalendarLoading} type="button" onClick={() => openCreateSessionCalendar(localDateString())}>{text.sessionCtaTodayAction}</button>
+                  <div className="calendar-booking-controls">
+                  {canManageCalendarBookings && <button type="button" onClick={() => startCalendarBooking(calendarWeekStart, isHaDoBookingVenue ? '09:00' : '15:30')}>{language === 'vi' ? 'Đặt chỗ mới' : 'New booking'}</button>}
                   <div className="calendar-nav">
                     <button
                       aria-label={text.previousWeek}
@@ -5643,12 +5647,7 @@ function BookingWorkspace({
                       <ChevronRight aria-hidden="true" size={18} />
                     </button>
                   </div>
-                </div>
-                <div className="calendar-actions">
-                  <p className="muted calendar-hint">{text.calendarAvailabilityHint}</p>
-                  <label>{text.date}<input type="date" aria-label={text.date} value={calendarWeekStart} disabled={isCalendarLoading} onChange={(event) => { if (event.target.value) openCreateSessionCalendar(event.target.value) }} /></label>
-                  <button className="secondary" disabled={isCalendarLoading} type="button" onClick={() => openCreateSessionCalendar(localDateString())}>{text.sessionCtaTodayAction}</button>
-                  {canManageCalendarBookings && <button type="button" onClick={() => startCalendarBooking(calendarWeekStart, isHaDoBookingVenue ? '09:00' : '15:30')}>{language === 'vi' ? 'Đặt chỗ mới' : 'New booking'}</button>}
+                  </div>
                 </div>
                 <div className="calendar-scroll" role="region" aria-label={text.calendarAvailabilityTitle}>
                   <div className="calendar-time-column" aria-hidden="true">
