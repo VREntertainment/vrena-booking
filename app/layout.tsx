@@ -21,6 +21,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
+  applicationName: "VRena Booking",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "VRena Booking", statusBarStyle: "default" },
   title: "VRena_Booking_App",
   description: "Book and play VR games at VRena",
   alternates: {

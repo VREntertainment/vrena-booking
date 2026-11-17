@@ -72,3 +72,26 @@
   .app .calendar-edit-fields :is(input:not([type="checkbox"]), select, textarea) { min-height: 44px; font-size: 16px; }
   .app .calendar-dialog-close { width: 44px; min-width: 44px; min-height: 44px; }
 }
+
+/* Give text real line boxes: flex-shrink used to cut through every row.
+   Scale both venues by minutes so card height still represents actual duration. */
+.app .calendar-panel .calendar-time-label,
+.app .calendar-panel .calendar-slot { height: var(--calendar-slot-height); min-height: var(--calendar-slot-height); }
+.app .calendar-panel .calendar-days { grid-template-columns: repeat(7, minmax(200px, 1fr)); min-width: 1400px; }
+.app .calendar-panel .calendar-session-block { padding: 6px; }
+.app .calendar-panel .calendar-session-compact { flex: 0 0 auto; width: 100%; max-height: none; gap: 2px; }
+.app .calendar-panel .calendar-session-compact > * { flex: 0 0 auto; }
+.app .calendar-panel .calendar-session-compact strong { font-size: 14px; line-height: 18px; }
+.app .calendar-panel .calendar-session-compact > span { font-size: 13px; line-height: 18px; }
+.app .calendar-panel .calendar-session-compact > .calendar-booking-category { font-size: 11px; line-height: 16px; }
+.app .calendar-panel .calendar-session-compact small { font-size: 12px; line-height: 17px; }
+.app .calendar-session-title { min-width: 0; }
+.app .calendar-client-confirmed { flex: 0 0 16px; }
+.app .calendar-session-block[data-calendar-density="compact"] .calendar-session-compact small,
+.app .calendar-session-block[data-calendar-density="minimal"] .calendar-booking-category,
+.app .calendar-session-block[data-calendar-density="minimal"] .calendar-session-compact small { display: none; }
+@media (max-width: 960px) {
+  .app .calendar-panel .calendar-days { grid-template-columns: repeat(7, minmax(216px, 1fr)); min-width: 1512px; }
+}
+
+.app .calendar-session-title > .calendar-session-name { min-width: 0; flex: 1 1 auto; font: inherit; color: inherit; line-height: inherit; overflow: hidden; text-overflow: ellipsis; }
