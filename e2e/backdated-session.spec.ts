@@ -40,7 +40,7 @@ test('Staff Console saves backdated bookings through its authorized RPC', async 
   await page.getByRole('button', { name: 'Booking time', exact: true }).click()
   await page.getByRole('textbox', { name: 'Booking time: type a specific time', exact: true }).fill('10:00')
   await page.getByRole('textbox', { name: 'Booking time: type a specific time', exact: true }).press('Enter')
-  const saved = page.waitForResponse(response => response.url().endsWith('/rpc/staff_create_booking'))
+  const saved = page.waitForResponse(response => response.url().endsWith('/rpc/staff_create_booking_with_metadata'))
   await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
   const response = await saved
   expect(response.status()).toBe(200)

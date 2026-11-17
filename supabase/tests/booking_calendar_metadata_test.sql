@@ -1,4 +1,6 @@
 begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
 select plan(1);
 -- Run after the migration. The exception subtransaction rolls every fixture back,
 -- including queued notifications, orders, reservations and audit entries.
@@ -8,9 +10,12 @@ declare
  played jsonb; stamp timestamptz;
 begin
  begin
-  select p.id into actor from public.profiles p join auth.users u on u.id=p.id
-    where p.role in ('owner','admin') and p.deleted_at is null and u.email<>'contact@vre-vietnam.com' and exists(select 1 from auth.mfa_factors f where f.user_id=p.id and f.status='verified') order by p.role limit 1;
-  if actor is null then raise exception 'A staff test actor is required.'; end if;
+  perform set_config('request.jwt.claims','{"role":"service_role"}',true);
+  actor:=gen_random_uuid();
+  insert into auth.users(id,email) values(actor,'calendar-'||actor::text||'@vrena.local');
+  insert into public.profiles(id,full_name,role) values(actor,'Isolated calendar verification','admin') on conflict(id) do update set role='admin';
+  insert into auth.mfa_factors(id,user_id,factor_type,status,secret,created_at,updated_at)
+    values(gen_random_uuid(),actor,'totp','verified','LOCAL-TEST-ONLY',now(),now());
   perform set_config('request.jwt.claims',jsonb_build_object('sub',actor,'role','authenticated','aal','aal2')::text,true);
   perform set_config('request.jwt.claim.sub',actor::text,true);
   perform set_config('request.jwt.claim.role','authenticated',true);

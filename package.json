@@ -40,7 +40,7 @@
     "fflate": "0.8.3",
     "html-to-image": "^1.11.13",
     "lucide-react": "^1.22.0",
-    "next": "16.4.3",
+    "next": "^16.4.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "sanitize-html": "^2.18.1"
@@ -54,9 +54,9 @@
     "@types/sanitize-html": "^2.16.1",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
+    "minimatch": "file:vendor/minimatch-compat",
     "tailwindcss": "^4.3.2",
-    "typescript": "^5",
-    "minimatch": "file:vendor/minimatch-compat"
+    "typescript": "^5"
   },
   "overrides": {
     "nanoid": "^3.3.18",
