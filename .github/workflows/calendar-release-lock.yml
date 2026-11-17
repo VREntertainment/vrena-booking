@@ -1,0 +1,24 @@
+name: Resolve calendar release dependency lock
+on:
+  push:
+    branches: [fix/calendar-venue-games-and-categories]
+permissions:
+  contents: read
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: npm install next@16.4.6 --package-lock-only --ignore-scripts
+      - name: Export public dependency manifests
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          for (const file of ['package.json','package-lock.json']) {
+            const data=fs.readFileSync(file).toString('base64');
+            for(let i=0;i<data.length;i+=8000) console.log('CALENDAR_MANIFEST '+file+' '+i+' '+data.slice(i,i+8000));
+          }
+          NODE
