@@ -9,23 +9,25 @@ export function useForegroundRefresh(enabled: boolean, refresh: () => void) {
     if (!enabled) return
     let disposed = false
     let cleanup: (() => void) | undefined
-    const connect = () => {
+    const connect = (event?: Event) => {
       if (disposed || cleanup) return
       void import('../lib/foregroundRefresh').then(({ listenForForegroundRefresh }) => {
         if (!disposed && !cleanup) {
           cleanup = listenForForegroundRefresh(() => refreshCurrentView())
-          refreshCurrentView()
+          if (event) refreshCurrentView()
         }
       }).catch(() => { /* Retry module loading on reconnect or return to the app. */ })
     }
     connect()
     window.addEventListener('online', connect)
     window.addEventListener('focus', connect)
+    document.addEventListener('visibilitychange', connect)
     return () => {
       disposed = true
       cleanup?.()
       window.removeEventListener('online', connect)
       window.removeEventListener('focus', connect)
+      document.removeEventListener('visibilitychange', connect)
     }
   }, [enabled])
 }
