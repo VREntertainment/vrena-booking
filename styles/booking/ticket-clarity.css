@@ -149,3 +149,11 @@
 
 .booking-calendar-logo { display: block; width: 176px; margin: 4px auto 12px; }
 .booking-calendar-logo img { display: block; width: 100%; height: auto; }
+
+/* Compact cards retain the existing swipe-to-change-venue interaction. */
+@media (max-width: 720px) {
+  .app .booking-venue-carousel .booking-venue-option { min-height: 112px; padding: 10px; gap: 8px; }
+  .app .booking-venue-carousel .booking-venue-map { left: 10px; min-width: 44px; }
+  .app .booking-venue-carousel .booking-venue-copy { gap: 4px 6px; }
+  .app .booking-venue-carousel .booking-venue-copy small { font-size: 11px; line-height: 1.35; }
+}

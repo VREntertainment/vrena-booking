@@ -204,3 +204,17 @@
     padding: 7px 11px;
   }
 }
+
+@media (max-width: 960px) {
+  .app:not(.staff-only-app) .staff-console-nav {
+    position: sticky;
+    top: calc(var(--mobile-header-height, 108px) + env(safe-area-inset-top, 0px));
+    z-index: 20;
+    background: var(--staff-modern-bg, var(--vrena-bg));
+  }
+}
+@media (max-width: 760px) {
+  .app .staff-tabs-scroll-button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .app .staff-tab-group-buttons button,
+  .app .staff-tab-group-buttons button.active { min-height: 44px; }
+}

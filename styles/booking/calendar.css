@@ -44,3 +44,19 @@
 
 .calendar-booking-title { display: flex; align-items: center; gap: 6px; }
 .calendar-client-confirmed { display: inline-flex; flex: 0 0 auto; color: var(--vrena-status-success-ink); }
+
+/* Phone and fold-cover controls: two predictable rows, without hiding actions. */
+@media (max-width: 600px) {
+  .app .calendar-actions { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 8px; }
+  .app .calendar-actions > label { min-width: 0; gap: 6px; font-size: 12px; }
+  .app .calendar-actions input { width: 100%; min-width: 0; min-height: 44px; font-size: 16px; }
+  .app .calendar-actions > button { min-width: 0; min-height: 44px; padding: 8px 10px; font-size: 12px; line-height: 1.25; white-space: normal; }
+  .app .calendar-booking-controls { grid-column: 1 / -1; width: 100%; margin: 0; justify-content: flex-end; gap: 8px; }
+  .app .calendar-booking-controls > button { min-height: 44px; padding: 8px 14px; font-size: 14px; }
+  .app .calendar-booking-controls .calendar-nav button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .app .calendar-scroll { touch-action: pan-x pan-y pinch-zoom; }
+  .app .calendar-booking-dialog { max-height: calc(100dvh - 24px); padding: 16px; }
+  .app .calendar-edit-fields :is(input:not([type="checkbox"]), select, textarea) { min-height: 44px; font-size: 16px; }
+  .app .calendar-edit-fields .calendar-outside-hours { min-height: 44px; }
+  .app .calendar-dialog-close { width: 44px; min-width: 44px; min-height: 44px; }
+}
