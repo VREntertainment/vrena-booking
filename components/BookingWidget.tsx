@@ -5664,8 +5664,7 @@ function BookingWorkspace({
                   </div>
                 </div>
                 {calendarError && <div className="calendar-refresh-error" role="alert">
-                  <p>{language === 'vi' ? 'Không thể cập nhật lịch. Dữ liệu có thể chưa mới nhất. Vui lòng kiểm tra kết nối và thử lại.' : 'Could not refresh bookings. The calendar may be out of date. Check your connection and retry.'}</p>
-                  <button type="button" className="secondary" disabled={isCalendarLoading} onClick={() => void loadCalendarWeek()}>{language === 'vi' ? 'Thử lại' : 'Retry'}</button>
+                  <p>{language === 'vi' ? 'Không thể cập nhật lịch. Dữ liệu có thể chưa mới nhất. Vui lòng tải lại trang.' : 'Could not refresh bookings. The calendar may be out of date. Please refresh the page.'}</p>
                 </div>}
                 <div className="calendar-scroll" role="region" aria-label={text.calendarAvailabilityTitle}>
                   <div className="calendar-time-column" aria-hidden="true">

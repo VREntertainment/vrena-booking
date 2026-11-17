@@ -49,13 +49,13 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       await expect(card).toBeAttached()
       await expect(card).toHaveAttribute('data-calendar-density', 'time-only')
       const selectedWeek = await page.locator('input[type="date"]').inputValue()
-      // Temporary errors preserve the last complete week and provide an explicit retry.
+      // Temporary errors preserve the last complete week and allow a normal page refresh.
       fail = true
       await page.evaluate(() => window.dispatchEvent(new Event('focus')))
       await expect(panel.getByRole('alert')).toContainText('Could not refresh bookings')
       await expect(card).toBeAttached()
       fail = false
-      await panel.getByRole('button', { name: 'Retry', exact: true }).click()
+      await page.reload()
       await expect(panel.getByRole('alert')).toHaveCount(0)
       await expect(card).toBeAttached()
       // Reconnect does not require closing/reinstalling the PWA or navigating weeks.
