@@ -1,0 +1,15 @@
+begin;
+set local search_path=public,extensions;
+select plan(10);
+select ok(private.reservation_contact_is_official(' Staff@VRE-VIETNAM.COM ',null),'Company domain is case insensitive');
+select ok(private.reservation_contact_is_official(null,'0981 152 315'),'Ha Do local number');
+select ok(private.reservation_contact_is_official(null,'+84 981 157 039'),'Thao Dien international number');
+select ok(private.reservation_contact_is_official(null,'0084 981 152 315'),'International dialing prefix');
+select ok(not private.reservation_contact_is_official('customer@gmail.com','0901234567'),'Personal contacts allowed');
+select ok(not private.reservation_contact_is_official('customer@vre-vietnam.com.example.org',null),'Other domains allowed');
+select ok(not private.reservation_contact_is_official(null,null),'Optional blank contacts preserved');
+select ok(not private.reservation_contact_is_official('customer+vre-vietnam.com@gmail.com',null),'Domain text in local part allowed');
+select throws_like($$insert into public.staff_orders(customer_email) values('test@vre-vietnam.com')$$,'%VRena company emails and official phone numbers cannot be used for reservations.%','Real staff order inserts reject company emails');
+select throws_like($$insert into public.staff_orders(customer_phone) values('+84 981 157 039')$$,'%VRena company emails and official phone numbers cannot be used for reservations.%','Real staff order inserts reject official phones');
+select * from finish();
+rollback;
