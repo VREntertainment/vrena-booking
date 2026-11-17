@@ -166,6 +166,7 @@ select is(
   ),
   array[
     'public.booking_arena_occupancy(p_from date, p_to date)',
+    'public.booking_calendar_list_page(p_start_date date, p_end_date date, p_limit integer, p_offset integer, p_include_blocked_times boolean)',
     'public.clubs_list_page()',
     'public.consume_booking_attempt_rate_limit(p_subject text)',
     'public.create_cafe_ticket_booking_request(p_ticket_type text, p_date date, p_start_time time without time zone, p_duration_minutes integer, p_player_count integer, p_arena_count integer, p_game_options text[], p_guest_phone text, p_guest_name text, p_special_note text)',

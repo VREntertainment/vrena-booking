@@ -1,3 +1,5 @@
+begin;
+select plan(1);
 -- Run after the migration. The exception subtransaction rolls every fixture back,
 -- including queued notifications, orders, reservations and audit entries.
 do $test$
@@ -83,3 +85,7 @@ begin
  exception when sqlstate 'ZX001' then null;
  end;
 end $test$;
+
+select pass('Calendar category, source, optional games and venue restrictions persist without changing payments');
+select * from finish();
+rollback;
