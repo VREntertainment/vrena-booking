@@ -24,18 +24,37 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
     const id = crypto.randomUUID()
     const date = futureDate(247)
     const name = `Responsive calendar ${venue}`
-    const inserted = await admin.from('sessions').insert({
-      id, owner_id: owner.data.id, name, date, start_time: '16:30', duration_minutes: 60,
+    const fixture = {
+      id, owner_id: owner.data.id, name, date, start_time: '16:30', duration_minutes: 30,
       max_players: 4, arena_count: 1, game_options: [], game_votes: {}, visibility: 'private',
       status: 'open', booking_type: 'ticket', ticket_type: 'individual', ticket_player_count: 4,
       ticket_status: 'confirmed', venue_key: venue,
-    })
+    }
+    const inserted = await admin.from('sessions').insert(fixture)
     if (inserted.error) throw inserted.error
+    const cleanupIds = [id]
+    if (venue === 'ha-do-centrosa') {
+      const parallelId = crypto.randomUUID()
+      const parallel = await admin.from('sessions').insert({ ...fixture, id: parallelId, name: 'Parallel readability reservation' })
+      if (parallel.error) throw parallel.error
+      cleanupIds.push(parallelId)
+    }
     try {
       await loginAsAdmin(page)
       await page.goto(`/create-session?mode=calendar&date=${date}&venue=${venue}&lang=en`)
       await expect(page.locator('.calendar-panel')).toHaveAttribute('aria-busy', 'false')
       await fitsPage(page)
+      const card = page.locator('.calendar-session-block').filter({ hasText: name })
+      const readable = await card.locator('.calendar-session-compact').evaluate(el => {
+        const parent = el.closest('button')!.getBoundingClientRect()
+        return [...el.children].every(row => {
+          const box = row.getBoundingClientRect()
+          const font = parseFloat(getComputedStyle(row).fontSize)
+          return box.height >= font && box.bottom <= parent.bottom - 2
+        })
+      })
+      expect(readable).toBe(true)
+      expect(await card.locator('.calendar-session-compact > span').first().evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
       const controls = page.locator('.calendar-booking-controls')
       const arrows = controls.locator('.calendar-nav button')
       const bounds = await controls.locator('button').evaluateAll(els => els.map(el => {
@@ -103,7 +122,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       }
       await page.screenshot({ path: `/tmp/vrena-e2e-results/responsive-${venue}-${info.project.name}.png` })
     } finally {
-      const removed = await admin.from('sessions').delete().eq('id', id)
+      const removed = await admin.from('sessions').delete().in('id', cleanupIds)
       if (removed.error) throw removed.error
     }
   })

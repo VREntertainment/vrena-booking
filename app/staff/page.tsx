@@ -4,6 +4,9 @@ import HomeAppShell from '../../components/HomeAppShell'
 import { publicAppRoutes } from '../../lib/appRoutes'
 
 export const metadata: Metadata = {
+  applicationName: 'VRena Staff',
+  manifest: '/staff.webmanifest',
+  appleWebApp: { capable: true, title: 'VRena Staff', statusBarStyle: 'default' },
   title: 'VRena Staff Console',
   description: 'VRena staff operations console.',
   alternates: {

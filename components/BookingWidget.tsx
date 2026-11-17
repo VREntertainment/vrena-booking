@@ -80,6 +80,7 @@ import {
 } from 'lucide-react'
 import NextImage from 'next/image'
 import {
+  type CSSProperties,
   useCallback,
   useEffect,
   useEffectEvent,
@@ -5623,7 +5624,7 @@ function BookingWorkspace({
             text={text}
           >
             {createSessionMode === 'calendar' ? (
-              <div className={`calendar-panel calendar-venue-${bookingVenue}`} aria-label={text.calendarAvailabilityTitle} aria-busy={isCalendarLoading}>
+              <div className={`calendar-panel calendar-venue-${bookingVenue}`} style={{ '--calendar-slot-height': `${calendarStepMinutes * 3.6}px` } as CSSProperties} aria-label={text.calendarAvailabilityTitle} aria-busy={isCalendarLoading}>
                 <div className="calendar-actions">
                   <label>{text.date}<input type="date" aria-label={text.date} value={calendarWeekStart} disabled={isCalendarLoading} onChange={(event) => { if (event.target.value) openCreateSessionCalendar(event.target.value) }} /></label>
                   <button className="secondary" disabled={isCalendarLoading} type="button" onClick={() => openCreateSessionCalendar(localDateString())}>{text.sessionCtaTodayAction}</button>
@@ -5715,6 +5716,7 @@ function BookingWorkspace({
                                 <button
                                   aria-label={calendarSessionLabel}
                                   className={isTicket ? 'calendar-session-block ticket' : 'calendar-session-block'}
+                                  data-calendar-density={visibleEnd - visibleStart < 20 ? 'minimal' : visibleEnd - visibleStart < 30 ? 'compact' : 'full'}
                                   key={session.id}
                                   style={{ top: `${topPercent}%`, height: `${heightPercent}%`, left: `calc(${lane.lane * 100 / lane.lanes}% + 3px)`, right: 'auto', width: `calc(${100 / lane.lanes}% - 6px)` }}
                                   title={calendarSessionLabel}
@@ -5722,7 +5724,7 @@ function BookingWorkspace({
                                   onClick={() => openSessionFromCalendar(session)}
                                 >
                                   <span className="calendar-session-compact">
-                                    <strong className="calendar-session-title">{staffBookingName(session.name)}{canManageCalendarBookings && session.client_confirmed && <CircleCheck className="calendar-client-confirmed" size={16} strokeWidth={2} role="img" aria-label={language === 'vi' ? 'Đã xác nhận với khách' : 'Confirmed with client'} />}</strong>
+                                    <strong className="calendar-session-title"><span className="calendar-session-name">{staffBookingName(session.name)}</span>{canManageCalendarBookings && session.client_confirmed && <CircleCheck className="calendar-client-confirmed" size={16} strokeWidth={2} role="img" aria-label={language === 'vi' ? 'Đã xác nhận với khách' : 'Confirmed with client'} />}</strong>
                                     <span>{timeRangeLabel}</span>
                                     <span className={`calendar-booking-category ${bookingCategory(session)}`}>{categoryLabel}</span>
                                     <small>{gameTitles || categoryText.noGames}</small>
