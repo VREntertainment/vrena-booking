@@ -52,6 +52,10 @@ reset role;
 select is((select k.operator_profile_id::text from public.audit_logs a join private.staff_kiosk_operator_sessions k on k.id=a.operator_session_id where a.action='payment_converted_to_voucher' and a.entity_id=(select (value->>'id')::uuid from venue_fixture where label='pin-voucher')),'95000000-0000-4000-8000-000000000003','Audit retains named PIN employee');
 set local role authenticated;
 select is((select array_agg(venue_key) from public.staff_access_locations()),array['ha-do-centrosa'],'HaDo staff sees only assigned location');
+
+select is((select count(*)::int from jsonb_array_elements(public.booking_calendar_list_page(current_date+100,current_date+100,250,0,true)->'sessions') s where s->>'id'=(select value->>'session_id' from venue_fixture where label='hd')),1,'PIN calendar includes the assigned venue reservation');
+select is((select count(*)::int from jsonb_array_elements(public.booking_calendar_list_page(current_date+100,current_date+100,250,0,true)->'sessions') s where s->>'id'=(select value->>'session_id' from venue_fixture where label='td')),0,'PIN calendar excludes the other venue reservation');
+
 select is((select count(*)::int from public.sessions where id=(select (value->>'session_id')::uuid from venue_fixture where label='hd')),1,'HaDo session allowed');
 select is((select count(*)::int from public.sessions where id=(select (value->>'session_id')::uuid from venue_fixture where label='td')),0,'HaDo cannot read TD sessions');
 select is((select count(*)::int from public.staff_orders where id=(select (value->>'order_id')::uuid from venue_fixture where label='td')),0,'HaDo cannot read TD orders');
@@ -70,6 +74,8 @@ select throws_ok($q$update public.staff_orders set customer_id='95000000-0000-40
 select throws_ok($q$update public.sessions set ticket_customer_id='95000000-0000-4000-8000-000000000006' where id=(select (value->>'session_id')::uuid from venue_fixture where label='hd')$q$,'P0001','Customer location access denied.','Cannot steal customer access through ticket customer');
 select set_config('request.headers','{"x-vrena-operator-session":"local-td-token"}',true);
 select is(public.current_staff_role_rank(),80,'Real kiosk authentication resolves TD manager');
+select is((select count(*)::int from jsonb_array_elements(public.booking_calendar_list_page(current_date+100,current_date+100,250,0,true)->'sessions') s where s->>'id'=(select value->>'session_id' from venue_fixture where label='td')),1,'TD PIN calendar includes own reservation');
+select is((select count(*)::int from jsonb_array_elements(public.booking_calendar_list_page(current_date+100,current_date+100,250,0,true)->'sessions') s where s->>'id'=(select value->>'session_id' from venue_fixture where label='hd')),0,'TD PIN calendar excludes HaDo reservation');
 select is((select count(*)::int from public.sessions where id=(select (value->>'session_id')::uuid from venue_fixture where label='hd')),0,'TD cannot read HaDo sessions');
 select is((select count(*)::int from public.staff_orders where id=(select (value->>'order_id')::uuid from venue_fixture where label='hd')),0,'TD cannot read HaDo orders');
 select is((select count(*)::int from public.staff_orders where id=(select (value->>'order_id')::uuid from venue_fixture where label='td')),1,'TD own order allowed');
@@ -90,6 +96,7 @@ delete from public.staff_employee_locations where profile_id='95000000-0000-4000
 set local role authenticated;
 select is((select count(*)::int from public.staff_access_locations()),0,'Revocation takes effect without logging out');
 select is((select count(*)::int from public.staff_orders),0,'No assignment fails closed');
+select is(jsonb_array_length(public.booking_calendar_list_page(current_date+100,current_date+100,250,0,true)->'sessions'),0,'Revoked PIN calendar scope fails closed');
 select is((select count(*)::int from public.profiles where id=auth.uid()),1,'Unassigned operator can still load the shared sign-in profile');
 select throws_ok($q$select public.create_staff_order_with_payments(null,null,null,null,(select id from public.staff_games where slug='city-z'),current_date+102,'16:00',1,'arena-1',null,'confirmed')$q$,'P0001','Location access denied.','Unassigned employee cannot create bookings');
 reset role;
