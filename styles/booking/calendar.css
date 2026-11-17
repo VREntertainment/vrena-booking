@@ -97,6 +97,6 @@
   .app .calendar-session-time-row { align-items: flex-start; gap: 2px; }
   .app .calendar-session-time-range { flex-direction: column; align-items: flex-start; font-size: 11px !important; line-height: 12px !important; }
   .app .calendar-session-time-separator { display: none; }
-  .app .calendar-client-confirmed { width: 12px; height: 12px; flex-basis: 12px; }
+  .app .calendar-client-confirmed { position: absolute; right: 0; top: 4px; width: 12px; height: 12px; flex-basis: 12px; }
   .calendar-session-block[data-calendar-short="true"] .calendar-session-time-range > span:last-child { display: none; }
 }
