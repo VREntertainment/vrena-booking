@@ -65,3 +65,10 @@
   .app .calendar-actions > label { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .app .calendar-actions > button { align-self: end; }
 }
+
+@media (max-width: 960px) and (pointer: coarse) {
+  .app .calendar-booking-controls .calendar-nav button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .app .calendar-actions input,
+  .app .calendar-edit-fields :is(input:not([type="checkbox"]), select, textarea) { min-height: 44px; font-size: 16px; }
+  .app .calendar-dialog-close { width: 44px; min-width: 44px; min-height: 44px; }
+}

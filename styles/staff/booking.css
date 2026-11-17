@@ -89,7 +89,7 @@
 .app .staff-saved-share-dialog { width: min(560px, calc(100vw - 24px)); }
 .app .staff-saved-share-dialog > .staff-summary-share { margin-bottom: 16px; }
 
-@media (max-width: 760px) {
+@media (max-width: 760px), (max-width: 960px) and (pointer: coarse) {
   .app .staff-console :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea, .country-button) { min-height: 44px; font-size: 16px; }
   .app .staff-console .staff-phone-control .country-button { height: 44px; min-height: 44px; }
   .app .staff-booking-toggles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; gap: 12px; }

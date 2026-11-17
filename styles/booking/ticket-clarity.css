@@ -158,7 +158,7 @@
   .app .booking-venue-carousel .booking-venue-copy small { font-size: 11px; line-height: 1.35; }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 760px), (max-width: 960px) and (pointer: coarse) {
   .app .ticket-control :is(input, select, .date-input-shell, .date-input-display),
   .app .ticket-discount-code-field input,
   .app .ticket-special-note-field textarea { font-size: 16px; }
