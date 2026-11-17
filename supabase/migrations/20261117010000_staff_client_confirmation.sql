@@ -47,7 +47,7 @@ AS $function$
       and nullif(a.new_value->>'game_slug','') is not null and a.new_value->>'game_slug'=s.confirmed_game_id
     )) is true)
  ) from public.sessions s where s.id=p_id;
-$function$
+$function$;
 
 create or replace function public.staff_update_booking_details(p_session_id uuid,p_booking jsonb)
 returns jsonb language plpgsql security definer set search_path='' as $fn$
