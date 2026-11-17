@@ -47,14 +47,18 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       const card = page.locator('.calendar-session-block').filter({ hasText: name })
       const readable = await card.locator('.calendar-session-compact').evaluate(el => {
         const parent = el.closest('button')!.getBoundingClientRect()
-        return [...el.children].every(row => {
+        return [...el.children].filter(row => getComputedStyle(row).display !== 'none').every(row => {
           const box = row.getBoundingClientRect()
           const font = parseFloat(getComputedStyle(row).fontSize)
           return box.height >= font && box.bottom <= parent.bottom - 2
         })
       })
       expect(readable).toBe(true)
-      expect(await card.locator('.calendar-session-compact > span').first().evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
+      await expect(card).toHaveAttribute('data-calendar-density', 'time-only')
+      await expect(card.locator('.calendar-session-compact > strong')).toBeHidden()
+      await expect(card.locator('.calendar-booking-category')).toBeHidden()
+      await expect(card.locator('.calendar-session-compact > small')).toBeHidden()
+      expect(await card.locator('.calendar-session-time-range').first().evaluate(el => el.scrollWidth <= el.clientWidth + 1)).toBe(true)
       const controls = page.locator('.calendar-booking-controls')
       const arrows = controls.locator('.calendar-nav button')
       const bounds = await controls.locator('button').evaluateAll(els => els.map(el => {

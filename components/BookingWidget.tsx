@@ -80,7 +80,6 @@ import {
 } from 'lucide-react'
 import NextImage from 'next/image'
 import {
-  type CSSProperties,
   useCallback,
   useEffect,
   useEffectEvent,
@@ -5624,7 +5623,7 @@ function BookingWorkspace({
             text={text}
           >
             {createSessionMode === 'calendar' ? (
-              <div className={`calendar-panel calendar-venue-${bookingVenue}`} style={{ '--calendar-slot-height': `${calendarStepMinutes * 3.6}px` } as CSSProperties} aria-label={text.calendarAvailabilityTitle} aria-busy={isCalendarLoading}>
+              <div className={`calendar-panel calendar-venue-${bookingVenue}`} aria-label={text.calendarAvailabilityTitle} aria-busy={isCalendarLoading}>
                 <div className="calendar-actions">
                   <label>{text.date}<input type="date" aria-label={text.date} value={calendarWeekStart} disabled={isCalendarLoading} onChange={(event) => { if (event.target.value) openCreateSessionCalendar(event.target.value) }} /></label>
                   <button className="secondary" disabled={isCalendarLoading} type="button" onClick={() => openCreateSessionCalendar(localDateString())}>{text.sessionCtaTodayAction}</button>
@@ -5709,6 +5708,8 @@ function BookingWorkspace({
                                   ? text.private
                                   : text.public
                               const timeRangeLabel = `${session.start_time.slice(0, 5)}-${minutesToTime(end)}`
+                              const compactBooking = visibleEnd - visibleStart <= 30
+                              const confirmationMarker = canManageCalendarBookings && session.client_confirmed ? <CircleCheck className="calendar-client-confirmed" size={14} strokeWidth={2} role="img" aria-label={language === 'vi' ? 'Đã xác nhận với khách' : 'Confirmed with client'} /> : null
                               const lane = calendarSessionLanes.get(session.id) || { lane: 0, lanes: 1 }
                               const calendarSessionLabel = `${staffBookingName(session.name)} · ${isHaDoBookingVenue ? text.bookingVenueHaDoName : text.bookingVenueCafeName}: ${formatShortDate(session.date, language)} ${timeRangeLabel}`
 
@@ -5716,7 +5717,8 @@ function BookingWorkspace({
                                 <button
                                   aria-label={calendarSessionLabel}
                                   className={isTicket ? 'calendar-session-block ticket' : 'calendar-session-block'}
-                                  data-calendar-density={visibleEnd - visibleStart < 20 ? 'minimal' : visibleEnd - visibleStart < 30 ? 'compact' : 'full'}
+                                  data-calendar-density={compactBooking ? 'time-only' : 'full'}
+                                  data-calendar-short={visibleEnd - visibleStart < 30}
                                   key={session.id}
                                   style={{ top: `${topPercent}%`, height: `${heightPercent}%`, left: `calc(${lane.lane * 100 / lane.lanes}% + 3px)`, right: 'auto', width: `calc(${100 / lane.lanes}% - 6px)` }}
                                   title={calendarSessionLabel}
@@ -5724,8 +5726,8 @@ function BookingWorkspace({
                                   onClick={() => openSessionFromCalendar(session)}
                                 >
                                   <span className="calendar-session-compact">
-                                    <strong className="calendar-session-title"><span className="calendar-session-name">{staffBookingName(session.name)}</span>{canManageCalendarBookings && session.client_confirmed && <CircleCheck className="calendar-client-confirmed" size={16} strokeWidth={2} role="img" aria-label={language === 'vi' ? 'Đã xác nhận với khách' : 'Confirmed with client'} />}</strong>
-                                    <span>{timeRangeLabel}</span>
+                                    <strong className="calendar-session-title"><span className="calendar-session-name">{staffBookingName(session.name)}</span>{!compactBooking && confirmationMarker}</strong>
+                                    <span className="calendar-session-time-row"><span className="calendar-session-time-range"><span>{session.start_time.slice(0, 5)}</span><span className="calendar-session-time-separator">-</span><span>{minutesToTime(end)}</span></span>{compactBooking && confirmationMarker}</span>
                                     <span className={`calendar-booking-category ${bookingCategory(session)}`}>{categoryLabel}</span>
                                     <small>{gameTitles || categoryText.noGames}</small>
                                   </span>

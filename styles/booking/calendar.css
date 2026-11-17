@@ -73,25 +73,30 @@
   .app .calendar-dialog-close { width: 44px; min-width: 44px; min-height: 44px; }
 }
 
-/* Give text real line boxes: flex-shrink used to cut through every row.
-   Scale both venues by minutes so card height still represents actual duration. */
-.app .calendar-panel .calendar-time-label,
-.app .calendar-panel .calendar-slot { height: var(--calendar-slot-height); min-height: var(--calendar-slot-height); }
-.app .calendar-panel .calendar-days { grid-template-columns: repeat(7, minmax(200px, 1fr)); min-width: 1400px; }
-.app .calendar-panel .calendar-session-block { padding: 6px; }
-.app .calendar-panel .calendar-session-compact { flex: 0 0 auto; width: 100%; max-height: none; gap: 2px; }
-.app .calendar-panel .calendar-session-compact > * { flex: 0 0 auto; }
-.app .calendar-panel .calendar-session-compact strong { font-size: 14px; line-height: 18px; }
-.app .calendar-panel .calendar-session-compact > span { font-size: 13px; line-height: 18px; }
-.app .calendar-panel .calendar-session-compact > .calendar-booking-category { font-size: 11px; line-height: 16px; }
-.app .calendar-panel .calendar-session-compact small { font-size: 12px; line-height: 17px; }
-.app .calendar-session-title { min-width: 0; }
-.app .calendar-client-confirmed { flex: 0 0 16px; }
-.app .calendar-session-block[data-calendar-density="compact"] .calendar-session-compact small,
-.app .calendar-session-block[data-calendar-density="minimal"] .calendar-booking-category,
-.app .calendar-session-block[data-calendar-density="minimal"] .calendar-session-compact small { display: none; }
-@media (max-width: 960px) {
-  .app .calendar-panel .calendar-days { grid-template-columns: repeat(7, minmax(216px, 1fr)); min-width: 1512px; }
-}
 
+/* Compact short reservations show time and confirmation; full details open on tap. */
+.app .calendar-panel .calendar-session-compact { flex: 0 0 auto; width: 100%; max-height: none; gap: 1px; }
+.app .calendar-panel .calendar-session-compact > * { flex: 0 0 auto; }
+.app .calendar-panel .calendar-session-compact strong { font-size: 12px; line-height: 15px; }
+.app .calendar-panel .calendar-session-compact > span { font-size: 11px; line-height: 14px; }
+.app .calendar-panel .calendar-session-compact > .calendar-booking-category,
+.app .calendar-panel .calendar-session-compact small { font-size: 10px; line-height: 14px; }
+.app .calendar-panel .calendar-session-block { padding: 3px; }
+.app .calendar-session-title { min-width: 0; }
 .app .calendar-session-title > .calendar-session-name { min-width: 0; flex: 1 1 auto; font: inherit; color: inherit; line-height: inherit; overflow: hidden; text-overflow: ellipsis; }
+.app .calendar-session-time-row { display: flex; align-items: center; gap: 3px; min-width: 0; width: 100%; }
+.app .calendar-session-time-range { display: inline-flex; min-width: 0; flex: 0 1 auto; align-items: center; }
+.app .calendar-session-time-range > span { flex: 0 0 auto; max-width: none; font: inherit; line-height: inherit; overflow: visible; }
+.app .calendar-client-confirmed { flex: 0 0 14px; width: 14px; height: 14px; }
+.app .calendar-session-block[data-calendar-density="time-only"] { container: calendar-card / inline-size; justify-content: center; }
+.app .calendar-session-block[data-calendar-density="time-only"] .calendar-session-compact > strong,
+.app .calendar-session-block[data-calendar-density="time-only"] .calendar-booking-category,
+.app .calendar-session-block[data-calendar-density="time-only"] .calendar-session-compact > small { display: none; }
+.app .calendar-session-block[data-calendar-density="time-only"] .calendar-session-time-range { font-size: 12px; line-height: 14px; font-weight: 900; }
+@container calendar-card (max-width: 100px) {
+  .calendar-session-time-row { align-items: flex-start; gap: 2px; }
+  .calendar-session-time-range { flex-direction: column; align-items: flex-start; font-size: 11px !important; line-height: 12px !important; }
+  .calendar-session-time-separator { display: none; }
+  .calendar-client-confirmed { width: 12px; height: 12px; flex-basis: 12px; }
+  .calendar-session-block[data-calendar-short="true"] .calendar-session-time-range > span:last-child { display: none; }
+}
