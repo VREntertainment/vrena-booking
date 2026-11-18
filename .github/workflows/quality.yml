@@ -31,7 +31,7 @@ jobs:
           version: 2.106.0
       - run: npm ci
       - run: npm run check
-      - run: npm audit --audit-level=moderate
+      - run: node scripts/audit-dependencies.mjs
       - run: npx playwright install --with-deps chromium
       - run: npm run test:services
       - run: npm run measure:build
