@@ -135,9 +135,11 @@ export default function NewSection({
   const hours = staffBookingHours(booking.venueKey, quote.duration)
   const outsideHours = booking.bookingKind === 'event' && booking.allowOutsideHours
   const validTime = validStaffBookingTime(booking.venueKey, quote.duration, booking.time, outsideHours)
+  const selectionKey = JSON.stringify([booking.date, booking.venueKey, selectedBookingArena, quote.duration, booking.arenaCount, selectedGame?.id, outsideHours])
+  const manualTimeSelection = useRef<string | null>(null)
   const availabilityKey = JSON.stringify([booking.date, booking.time, selectedBookingArena, quote.duration, booking.arenaCount, selectedGame?.id])
   const [availability, setAvailability] = useState<{ key: string; state: 'available' | 'unavailable' | 'error' } | null>(null)
-  const [slots, setSlots] = useState<{ key: string; values: Array<{ time: string; available: boolean }> } | null>(null)
+  const [slots, setSlots] = useState<{ key: string; values: Array<{ time: string; available: boolean; past?: boolean }> } | null>(null)
   const [retry, setRetry] = useState(0)
   const availabilityState = availability?.key === availabilityKey ? availability.state : 'checking'
   useEffect(() => {
@@ -150,13 +152,15 @@ export default function NewSection({
         })
         if (cancelled) return
         if (error) { setAvailability({ key: availabilityKey, state: 'error' }); return }
-        const values = (data || []) as Array<{ time: string; available: boolean }>
+        const values = (data || []) as Array<{ time: string; available: boolean; past?: boolean }>
         const valid = values.filter(slot => slot.available && validStaffBookingTime(booking.venueKey, quote.duration, slot.time, outsideHours))
         setSlots({ key: availabilityKey, values })
         const available = valid.some(slot => slot.time === booking.time)
         setAvailability({ key: availabilityKey, state: available ? 'available' : 'unavailable' })
-        if (!available) {
-          const next = valid.find(slot => slot.time >= booking.time) || valid[0]
+        const historicalDate = new Date(`${booking.date}T23:59:59+07:00`).getTime() < Date.now()
+        const defaults = valid.filter(slot => !slot.past || historicalDate)
+        if (manualTimeSelection.current !== selectionKey && !defaults.some(slot => slot.time === booking.time)) {
+          const next = defaults.find(slot => slot.time >= booking.time) || defaults[0]
           if (next && next.time !== booking.time) setBooking(current => ({ ...current, time: next.time }))
           else if (!next && booking.time) setBooking(current => ({ ...current, time: '' }))
         }
@@ -165,8 +169,8 @@ export default function NewSection({
       }
     }, 250)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [locationAllowed, availabilityKey, booking.arenaCount, booking.venueKey, booking.date, booking.time, canCreateOrders, quote.duration, retry, selectedBookingArena, selectedGame, validTime, outsideHours, setBooking])
-  const disabledTimes = slots?.key === availabilityKey ? slots.values.filter(slot => !slot.available).map(slot => slot.time) : []
+  }, [locationAllowed, selectionKey, availabilityKey, booking.arenaCount, booking.venueKey, booking.date, booking.time, canCreateOrders, quote.duration, retry, selectedBookingArena, selectedGame, validTime, outsideHours, setBooking])
+  const mutedTimes = slots?.key === availabilityKey ? slots.values.filter(slot => !slot.available || slot.past).map(slot => slot.time) : []
   const en = resolvedLanguage !== 'vi'
   const reason = !locationAllowed || !canCreateOrders ? (en ? 'You do not have permission to book this venue.' : 'Bạn không có quyền đặt chỗ tại địa điểm này.')
     : saving ? (en ? 'Saving booking…' : 'Đang lưu đặt chỗ…')
@@ -359,7 +363,7 @@ export default function NewSection({
             <div className="staff-booking-pair">
               <label>
                 {bookingText.startTime}
-                <StaffPickerField ariaLabel={text.aria.bookingTime} timeOptions={slots?.key === availabilityKey ? slots.values.map(slot => slot.time) : undefined} disabledTimes={disabledTimes} placeholder={text.chooseTime} minTime={outsideHours ? '00:00' : hours.min} maxTime={outsideHours ? '23:59' : hours.max} type="time" value={booking.time} onChange={(value) => setBooking({ ...booking, time: value })} />
+                <StaffPickerField ariaLabel={text.aria.bookingTime} timeOptions={slots?.key === availabilityKey ? slots.values.map(slot => slot.time) : undefined} mutedTimes={mutedTimes} placeholder={text.chooseTime} minTime={outsideHours ? '00:00' : hours.min} maxTime={outsideHours ? '23:59' : hours.max} type="time" value={booking.time} onChange={(value) => { manualTimeSelection.current = selectionKey; setBooking({ ...booking, time: value }) }} />
               </label>
               <label>
                 {bookingText.endTime}

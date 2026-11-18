@@ -105,7 +105,7 @@
   .app .staff-payment-split-row:has(.staff-payment-remove) { grid-template-columns: minmax(0, 1fr) 44px; }
 }
 
-.app .staff-time-option:disabled { opacity: .4; cursor: not-allowed; }
+.app .staff-console .staff-time-option.muted { color: var(--vrena-neutral-600); opacity: .6; }
 .app .staff-booking-confirm-control { display: block; width: 100%; }
 .app .staff-booking-confirm-control > button { width: 100%; }
 
