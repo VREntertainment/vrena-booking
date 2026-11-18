@@ -1,3 +1,5 @@
+import { getCountries, getExampleNumber, parsePhoneNumberFromString } from 'libphonenumber-js/max'
+import { createRequire } from 'node:module'
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { reservationPhone, officialReservationContact, guestEmailIsValid } from './reservationContact.ts'
@@ -16,4 +18,18 @@ test('validates country-specific lengths and prefixes', () => {
 test('guest email cannot be absent, malformed or synthetic', () => {
   for (const email of [undefined, '', 'abc', 'a@b', 'guest@vrena.guest.invalid']) assert.equal(guestEmailIsValid(email), false)
   assert.equal(guestEmailIsValid(' visitor@gmail.com '), true)
+})
+
+test('compact full-pattern validator agrees with country examples and rejects truncated numbers', () => {
+  const examples = createRequire(import.meta.url)('libphonenumber-js/examples.mobile.json')
+  let checked = 0
+  for (const country of getCountries()) {
+    const phone = getExampleNumber(country, examples)
+    if (!phone?.isValid()) continue
+    checked++
+    assert.equal(reservationPhone(phone.number), phone.number, country)
+    const short = phone.number.slice(0, -1)
+    if (!parsePhoneNumberFromString(short)?.isValid()) assert.equal(reservationPhone(short), null, country + ' missing digit')
+  }
+  assert.ok(checked > 200)
 })
