@@ -28,7 +28,8 @@ function load(file) {
       return { rpc: async (name, args) => { calls.push({ name, args }); return rpcResult } }
     } }
     if (!name.startsWith('.') && !name.startsWith('@/')) return packageRequire(name)
-    return load((name.startsWith('@/') ? resolve(name.slice(2)) : resolve(dirname(file), name)) + '.ts')
+    const target = name.startsWith('@/') ? resolve(name.slice(2)) : resolve(dirname(file), name)
+    return load(target.endsWith('.ts') ? target : target + '.ts')
   }
   const source = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
   vm.runInContext('(function(exports, require) {' + source + '\n})', context)(exports, require)
