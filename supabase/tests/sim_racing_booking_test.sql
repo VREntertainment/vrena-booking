@@ -4,7 +4,7 @@ set local search_path = public, extensions;
 select plan(3);
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 set local role anon;
-select public.create_sim_racing_booking((now() at time zone 'Asia/Ho_Chi_Minh')::date+10,'09:00','0900000099','SIM rollback test');
+select public.create_sim_racing_booking((now() at time zone 'Asia/Ho_Chi_Minh')::date+10,'09:00','0900000099','SIM rollback test', 'guest@example.org');
 reset role;
 do $$
 declare d date := (now() at time zone 'Asia/Ho_Chi_Minh')::date+10; s public.sessions%rowtype;
@@ -17,24 +17,24 @@ begin
   assert exists(select 1 from public.sim_racing_available_times(d) where start_time='21:30');
   assert not exists(select 1 from public.sim_racing_available_times(d) where start_time > '21:30');
   begin
-    perform public.create_sim_racing_booking(d,'21:45','0900000098','After cutoff');
+    perform public.create_sim_racing_booking(d,'21:45','0900000098','After cutoff', 'guest@example.org');
     raise exception 'TEST FAILED: late slot permitted';
   exception when raise_exception then
     if SQLERRM <> 'Choose a 15-minute SIM Racing slot between 09:00 and 21:30.' then raise; end if;
   end;
   begin
-    perform public.create_sim_racing_booking(d,'09:00','0900000098','Second driver');
+    perform public.create_sim_racing_booking(d,'09:00','0900000098','Second driver', 'guest@example.org');
     raise exception 'TEST FAILED: duplicate permitted';
   exception when raise_exception then
     if SQLERRM <> 'This simulator slot was just booked. Please choose another time.' then raise; end if;
   end;
   begin
-    perform public.create_sim_racing_booking(d,'09:05','0900000098','Wrong slot');
+    perform public.create_sim_racing_booking(d,'09:05','0900000098','Wrong slot', 'guest@example.org');
     raise exception 'TEST FAILED: non-grid slot permitted';
   exception when raise_exception then
     if SQLERRM <> 'Choose a 15-minute SIM Racing slot between 09:00 and 21:30.' then raise; end if;
   end;
-  perform public.create_sim_racing_booking(d,'09:15','0900000098','Next driver');
+  perform public.create_sim_racing_booking(d,'09:15','0900000098','Next driver', 'guest@example.org');
   perform set_config('request.jwt.claims','{"role":"service_role"}',true);
   begin
     update public.sessions set venue_key='cafe-des-stagiaires' where id=s.id;

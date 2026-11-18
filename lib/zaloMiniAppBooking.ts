@@ -1,3 +1,4 @@
+import { reservationPhone, officialReservationContact, guestEmailIsValid } from './reservationContact.ts'
 import { birthdayPackageById, birthdayPackageNote } from './birthdayPackages.ts'
 import { vietnamClock } from './booking/arenaAvailability.ts'
 import { buildTicketBookingRequest } from './ticketBookingRequest.ts'
@@ -19,6 +20,7 @@ export type ZaloMiniAppBookingSelection = {
   players: number
   arenaCount: number
   guestName: string
+  guestEmail: string
   guestPhone: string
   birthdayPackageId: string | null
   acceptedTerms: true
@@ -70,7 +72,8 @@ export function normalizeZaloMiniAppBookingSelection(input: unknown, now = new D
   const date = cleanText(value.date, 10)
   const time = cleanText(value.time, 5)
   const guestName = cleanText(value.guestName, 80)
-  const guestPhone = cleanText(value.guestPhone, 24).replace(/[^\d+]/g, '').replace(/(?!^)\+/g, '')
+  const guestPhone = reservationPhone(cleanText(value.guestPhone, 30)) || ''
+  const guestEmail = cleanText(value.guestEmail, 254)
   const birthdayPackageId = cleanText(value.birthdayPackageId, 40) || null
   let durationMinutes = integer(value.durationMinutes)
   let players = integer(value.players)
@@ -103,6 +106,8 @@ export function normalizeZaloMiniAppBookingSelection(input: unknown, now = new D
 
   const phoneDigits = guestPhone.replace(/\D/g, '').length
   if (phoneDigits < 8 || phoneDigits > 15) return { data: null, error: 'Enter a valid phone number.' }
+  if (!guestEmailIsValid(guestEmail)) return { data: null, error: 'A valid email address is required for guest booking.' }
+  if (officialReservationContact(guestEmail, guestPhone)) return { data: null, error: 'Use your personal phone number and email, not VRena company contacts.' }
   if (value.acceptedTerms !== true) return { data: null, error: 'Accept the Privacy Policy and Terms before booking.' }
 
   return {
@@ -115,6 +120,7 @@ export function normalizeZaloMiniAppBookingSelection(input: unknown, now = new D
       players,
       arenaCount,
       guestName,
+      guestEmail,
       guestPhone,
       birthdayPackageId,
       acceptedTerms: true,
@@ -130,7 +136,8 @@ export function normalizeZaloMiniAppQuoteSelection(input: unknown, now = new Dat
   return normalizeZaloMiniAppBookingSelection({
     ...(input as Record<string, unknown>),
     guestName: '',
-    guestPhone: '00000000',
+    guestPhone: '+84901234567',
+    guestEmail: 'quote@example.org',
     acceptedTerms: true,
   }, now)
 }
@@ -194,6 +201,7 @@ export function buildZaloMiniAppBookingRequest(selection: ZaloMiniAppBookingSele
       loyaltyPoints: 0,
       discountCode: null,
       guestName: selection.guestName,
+      guestEmail: selection.guestEmail,
       guestPhone: selection.guestPhone,
     }),
   }

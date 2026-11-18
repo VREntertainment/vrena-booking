@@ -27,22 +27,22 @@ select set_config('request.jwt.claim.sub','',true);
 insert into billing_results select 'guest',id,public.create_guest_ticket_booking('individual',current_date+200+id,'10:00',minutes,guests,arenas,array['laser-tag'],
 public.ticket_tariff_unit_price('ha-do-centrosa','individual',current_date+200+id,'10:00'),
 round(public.ticket_tariff_unit_price('ha-do-centrosa','individual',current_date+200+id,'10:00')*billed*(minutes/30)*(1-rate))::int,
-'+8498800'||lpad(id::text,4,'0'),'Billing fixture') from billing_cases;
+'+8498800'||lpad(id::text,4,'0'),'Billing fixture', null, 'guest@example.org') from billing_cases;
 select is(s.ticket_total_price,round(public.ticket_tariff_unit_price('ha-do-centrosa','individual',s.date,'10:00')*c.billed*(c.minutes/30)*(1-c.rate))::int,
 format('Guest Ha Do: %s guests, %s arenas, %s minutes',c.guests,c.arenas,c.minutes))
 from billing_results r join billing_cases c using(id) join public.sessions s on s.id=(r.result->>'session_id')::uuid where r.kind='guest';
-select throws_ok($q$select public.create_guest_ticket_booking('individual',current_date+240,'10:00',30,9,1,array['laser-tag'],0,0,'+84988009991','Fixture')$q$,'P0001','Ticket duration is below the minimum for the selected players and arenas.','Ha Do requires more time for nine guests in one arena');
-select throws_ok($q$select public.create_guest_ticket_booking('individual',current_date+240,'10:00',30,17,2,array['laser-tag'],0,0,'+84988009992','Fixture')$q$,'P0001','Invalid player count.','Ha Do rejects more than sixteen guests');
-select throws_ok($q$select public.create_cafe_ticket_booking_request('individual',current_date+240,'16:00',30,17,1,array['revolta'],'+84988009993','Fixture')$q$,'P0001','Invalid player count.','Cafe rejects more than sixteen guests');
+select throws_ok($q$select public.create_guest_ticket_booking('individual',current_date+240,'10:00',30,9,1,array['laser-tag'],0,0,'+84988009991','Fixture', null, 'guest@example.org')$q$,'P0001','Ticket duration is below the minimum for the selected players and arenas.','Ha Do requires more time for nine guests in one arena');
+select throws_ok($q$select public.create_guest_ticket_booking('individual',current_date+240,'10:00',30,17,2,array['laser-tag'],0,0,'+84988009992','Fixture', null, 'guest@example.org')$q$,'P0001','Invalid player count.','Ha Do rejects more than sixteen guests');
+select throws_ok($q$select public.create_cafe_ticket_booking_request('individual',current_date+240,'16:00',30,17,1,array['revolta'],'+84988009993','Fixture', null, 'guest@example.org')$q$,'P0001','Invalid player count.','Cafe rejects more than sixteen guests');
 -- Event requests share the same hard sixteen-guest Cafe limit.
-select throws_ok(format($q$select public.create_cafe_ticket_booking_request(%L,current_date+245,'16:00',30,17,1,array['revolta'],'+84988009994','Fixture')$q$,kind),
+select throws_ok(format($q$select public.create_cafe_ticket_booking_request(%L,current_date+245,'16:00',30,17,1,array['revolta'],'+84988009994','Fixture', null, 'guest@example.org')$q$,kind),
 'P0001','Invalid player count.',format('Cafe rejects 17 guests for %s',kind)) from (values ('birthday'),('corporate')) t(kind);
 select is((public.create_cafe_ticket_booking_request(kind,current_date+246+id,'16:00',30,16,1,array['revolta'],
-'+8498811'||lpad(id::text,4,'0'),'Event fixture')->>'ticket_total_price')::int,0,format('Cafe accepts 16 guests for %s as a quote request',kind))
+'+8498811'||lpad(id::text,4,'0'),'Event fixture', null, 'guest@example.org')->>'ticket_total_price')::int,0,format('Cafe accepts 16 guests for %s as a quote request',kind))
 from (values (1,'birthday'),(2,'corporate')) t(id,kind);
 -- Actual Cafe endpoint totals cover every discount boundary and multiple blocks.
 select is((public.create_cafe_ticket_booking_request('individual',current_date+260+id,'16:00',minutes,guests,1,array['revolta'],
-'+8498810'||lpad(id::text,4,'0'),'Cafe fixture')->>'ticket_total_price')::int,expected,
+'+8498810'||lpad(id::text,4,'0'),'Cafe fixture', null, 'guest@example.org')->>'ticket_total_price')::int,expected,
 format('Cafe: %s guests, %s minutes',guests,minutes))
 from (values (1,4,30,960000),(2,5,30,1140000),(3,8,30,1824000),(4,9,30,1824000),(5,16,30,1824000),
 (6,16,60,3648000),(7,16,90,5760000),(8,3,90,2052000)) c(id,guests,minutes,expected);

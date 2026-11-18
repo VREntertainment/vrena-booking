@@ -1,5 +1,6 @@
 'use client'
 
+import { reservationPhone, officialReservationContact, guestEmailIsValid } from '../../lib/reservationContact'
 import { bookingCategoryCopy, type BookingCategory } from '../../lib/bookingMetadata'
 import { useStaffLocations } from '../../hooks/useStaffLocations'
 import { brandedGameName } from '../../lib/anvio'
@@ -136,23 +137,50 @@ export default function NewSection({
   const validTime = validStaffBookingTime(booking.venueKey, quote.duration, booking.time, outsideHours)
   const availabilityKey = JSON.stringify([booking.date, booking.time, selectedBookingArena, quote.duration, booking.arenaCount, selectedGame?.id])
   const [availability, setAvailability] = useState<{ key: string; state: 'available' | 'unavailable' | 'error' } | null>(null)
+  const [slots, setSlots] = useState<{ key: string; values: Array<{ time: string; available: boolean }> } | null>(null)
   const [retry, setRetry] = useState(0)
   const availabilityState = availability?.key === availabilityKey ? availability.state : 'checking'
   useEffect(() => {
-    if (!locationAllowed || !canCreateOrders || !validTime || !booking.date) return
+    if (!locationAllowed || !canCreateOrders || !booking.date || quote.duration < 1) return
     let cancelled = false
     const timer = setTimeout(async () => {
       try {
-        const { data, error } = await supabase.rpc('staff_booking_availability_for_arenas', {
-          p_date: booking.date, p_time: `${booking.time}:00`, p_arena_id: selectedBookingArena, p_duration: quote.duration, p_arena_count: booking.venueKey === 'cafe-des-stagiaires' ? 1 : booking.arenaCount,
+        const { data, error } = await supabase.rpc('staff_available_start_times', {
+          p_date: booking.date, p_time: booking.time ? `${booking.time}:00` : null, p_arena_id: selectedBookingArena, p_duration: quote.duration, p_arena_count: booking.venueKey === 'cafe-des-stagiaires' ? 1 : booking.arenaCount,
         })
-        if (!cancelled) setAvailability({ key: availabilityKey, state: error ? 'error' : data === true ? 'available' : 'unavailable' })
+        if (cancelled) return
+        if (error) { setAvailability({ key: availabilityKey, state: 'error' }); return }
+        const values = (data || []) as Array<{ time: string; available: boolean }>
+        const valid = values.filter(slot => slot.available && validStaffBookingTime(booking.venueKey, quote.duration, slot.time, outsideHours))
+        setSlots({ key: availabilityKey, values })
+        const available = valid.some(slot => slot.time === booking.time)
+        setAvailability({ key: availabilityKey, state: available ? 'available' : 'unavailable' })
+        if (!available) {
+          const next = valid.find(slot => slot.time >= booking.time) || valid[0]
+          if (next && next.time !== booking.time) setBooking(current => ({ ...current, time: next.time }))
+          else if (!next && booking.time) setBooking(current => ({ ...current, time: '' }))
+        }
       } catch {
         if (!cancelled) setAvailability({ key: availabilityKey, state: 'error' })
       }
     }, 250)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [locationAllowed, availabilityKey, booking.arenaCount, booking.venueKey, booking.date, booking.time, canCreateOrders, quote.duration, retry, selectedBookingArena, selectedGame, validTime])
+  }, [locationAllowed, availabilityKey, booking.arenaCount, booking.venueKey, booking.date, booking.time, canCreateOrders, quote.duration, retry, selectedBookingArena, selectedGame, validTime, outsideHours, setBooking])
+  const disabledTimes = slots?.key === availabilityKey ? slots.values.filter(slot => !slot.available).map(slot => slot.time) : []
+  const en = resolvedLanguage !== 'vi'
+  const reason = !locationAllowed || !canCreateOrders ? (en ? 'You do not have permission to book this venue.' : 'Bạn không có quyền đặt chỗ tại địa điểm này.')
+    : saving ? (en ? 'Saving booking…' : 'Đang lưu đặt chỗ…')
+    : !booking.guestBooking && !booking.customerName.trim() ? (en ? 'Enter the customer name or select Guest booking.' : 'Nhập tên khách hoặc chọn Đặt chỗ cho khách.')
+    : officialReservationContact(booking.customerEmail, booking.customerPhone) ? (en ? 'Use the customer’s personal phone and email.' : 'Dùng số điện thoại và email cá nhân của khách.')
+    : booking.customerPhone.trim() && !reservationPhone(booking.customerPhone) ? (en ? 'Enter a valid phone number for the selected country.' : 'Nhập số điện thoại hợp lệ cho quốc gia đã chọn.')
+    : booking.customerEmail.trim() && !guestEmailIsValid(booking.customerEmail) ? (en ? 'Enter a valid email address.' : 'Nhập địa chỉ email hợp lệ.')
+    : !validTime ? (en ? 'Choose a valid starting time and duration.' : 'Chọn giờ bắt đầu và thời lượng hợp lệ.')
+    : !validStaffSessionCount(booking.sessionCount) ? (en ? 'Enter a valid number of sessions.' : 'Nhập số lượt chơi hợp lệ.')
+    : !Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 ? (en ? 'Choose between 1 and 16 players.' : 'Chọn từ 1 đến 16 người chơi.')
+    : !validBookingTotalOverride(booking) ? (en ? 'Enter a valid total and a reason for the price override.' : 'Nhập tổng tiền hợp lệ và lý do thay đổi giá.')
+    : availabilityState === 'error' ? bookingText.availabilityError
+    : availabilityState === 'checking' ? bookingText.checkingAvailability
+    : availabilityState !== 'available' ? bookingText.unavailable : ''
   return (
     <div className="staff-grid">
       <div className="staff-card staff-card-wide">
@@ -331,7 +359,7 @@ export default function NewSection({
             <div className="staff-booking-pair">
               <label>
                 {bookingText.startTime}
-                <StaffPickerField ariaLabel={text.aria.bookingTime} placeholder={text.chooseTime} minTime={outsideHours ? '00:00' : hours.min} maxTime={outsideHours ? '23:59' : hours.max} type="time" value={booking.time} onChange={(value) => setBooking({ ...booking, time: value })} />
+                <StaffPickerField ariaLabel={text.aria.bookingTime} timeOptions={slots?.key === availabilityKey ? slots.values.map(slot => slot.time) : undefined} disabledTimes={disabledTimes} placeholder={text.chooseTime} minTime={outsideHours ? '00:00' : hours.min} maxTime={outsideHours ? '23:59' : hours.max} type="time" value={booking.time} onChange={(value) => setBooking({ ...booking, time: value })} />
               </label>
               <label>
                 {bookingText.endTime}
@@ -475,9 +503,9 @@ export default function NewSection({
       <div className="staff-card staff-summary-card">
         <div className="staff-card-heading">
           <h3>{text.labels.summary}</h3>
-          <StaffBookingShareButton contentRef={summaryRef} snapshotKey={JSON.stringify([booking, quote, selectedGame?.name, bookingVenueName, resolvedLanguage])} date={booking.date} language={resolvedLanguage} />
+          {availabilityState === 'available' && validTime && <StaffBookingShareButton contentRef={summaryRef} snapshotKey={JSON.stringify([booking, quote, selectedGame?.name, bookingVenueName, resolvedLanguage])} date={booking.date} language={resolvedLanguage} />}
         </div>
-        <StaffBookingSummary contentRef={summaryRef} booking={booking} venueName={bookingVenueName} language={resolvedLanguage} text={text} quote={quote} />
+        {availabilityState === 'available' && validTime ? <StaffBookingSummary contentRef={summaryRef} booking={booking} venueName={bookingVenueName} language={resolvedLanguage} text={text} quote={quote} /> : <p className="field-help" role="status">{availabilityState === 'checking' ? bookingText.checkingAvailability : en ? 'Choose an available date, arena and starting time to preview this booking.' : 'Chọn ngày, arena và giờ bắt đầu còn trống để xem trước đặt chỗ.'}</p>}
         <p className="field-help">{bookingText.durationHelp}</p>
         <p className="field-help">{text.labels.rule}: {quote.ruleName} · {text.labels.discountType}: {quote.discountLabel}</p>
         <fieldset className="staff-total-override" disabled={!canCreateOrders || saving}>
@@ -493,9 +521,12 @@ export default function NewSection({
           {(availabilityState === 'error' || availabilityState === 'unavailable') && <button type="button" className="secondary" onClick={() => { setAvailability(null); setRetry((value) => value + 1) }}>{bookingText.retry}</button>}
         </p>}
         {status && <p className="notice compact-notice" role="status">{status}</p>}
-        <button className={saving ? 'primary create-button loading' : 'primary create-button'} disabled={!locationAllowed || !canCreateOrders || saving || availabilityState !== 'available' || !validTime || !validStaffSessionCount(booking.sessionCount) || !Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 || !validBookingTotalOverride(booking) || (!booking.guestBooking && !booking.customerName.trim())} type="button" onClick={createOrder}>
+        {reason && <p id="staff-booking-disabled-reason" className="field-help" role="status">{reason}</p>}
+        <span className="staff-booking-confirm-control" title={reason || undefined} tabIndex={reason ? 0 : undefined} aria-describedby={reason ? 'staff-booking-disabled-reason' : undefined}>
+        <button className={saving ? 'primary create-button loading' : 'primary create-button'} title={reason || undefined} disabled={Boolean(reason)} aria-describedby={reason ? 'staff-booking-disabled-reason' : undefined} type="button" onClick={createOrder}>
           {text.actions.confirmBooking}
         </button>
+        </span>
       </div>
     </div>
   )

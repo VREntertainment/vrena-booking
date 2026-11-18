@@ -135,7 +135,7 @@ export function PhoneNumberInput({
   disabled = false,
   inputLabel,
   onChange,
-  placeholder = '0981152315',
+  placeholder = '0901234567',
   searchPlaceholder,
   value,
 }: PhoneNumberInputProps) {

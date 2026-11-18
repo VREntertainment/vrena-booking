@@ -49,7 +49,7 @@ select throws_ok($q$select public.staff_redeem_payment_voucher('86000000-0000-40
 update public.payment_vouchers set valid_venue_keys=array['cafe-des-stagiaires','ha-do-centrosa'] where id='86000000-0000-4000-8000-000000000021';
 select set_config('request.jwt.claims','{"role":"anon"}',true);
 set local role anon;
-select lives_ok($q$select public.book_ticket_with_payment_voucher('create_cafe_ticket_booking_request',jsonb_build_object('p_ticket_type','individual','p_date',current_date+146,'p_start_time','16:00','p_duration_minutes',30,'p_player_count',1,'p_arena_count',1,'p_game_options',jsonb_build_array('city-z'),'p_guest_phone','0987654096','p_guest_name','Multi venue guest'),current_setting('test.multi_venue_code'),'86000000-0000-4000-8000-000000000023')$q$,'Online checkout can use Ha Do-issued credit at selected Thao Dien');
+select lives_ok($q$select public.book_ticket_with_payment_voucher('create_cafe_ticket_booking_request',jsonb_build_object('p_ticket_type','individual','p_date',current_date+146,'p_start_time','16:00','p_duration_minutes',30,'p_player_count',1,'p_arena_count',1,'p_game_options',jsonb_build_array('city-z'),'p_guest_email','guest@example.org','p_guest_phone','0987654096','p_guest_name','Multi venue guest'),current_setting('test.multi_venue_code'),'86000000-0000-4000-8000-000000000023')$q$,'Online checkout can use Ha Do-issued credit at selected Thao Dien');
 reset role;
 select is((select balance from public.payment_vouchers where id='86000000-0000-4000-8000-000000000021'),0,'Online redemption spends shared remaining balance once');
 select * from finish();

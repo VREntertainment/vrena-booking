@@ -33,14 +33,14 @@ select ok(
 
 select ok(
   position('ticket_tariff_unit_price' in pg_get_functiondef(
-    'public.create_guest_ticket_booking(text,date,time without time zone,integer,integer,integer,text[],integer,integer,text,text,text)'::regprocedure
+    'public.create_guest_ticket_booking(text,date,time without time zone,integer,integer,integer,text[],integer,integer,text,text,text,text)'::regprocedure
   )) > 0,
   'guest booking enforces the server tariff helper'
 );
 
 select ok(
   position('v_end_minutes > 23 * 60' in pg_get_functiondef(
-    'public.create_cafe_ticket_booking_request(text,date,time without time zone,integer,integer,integer,text[],text,text,text)'::regprocedure
+    'public.create_cafe_ticket_booking_request(text,date,time without time zone,integer,integer,integer,text[],text,text,text,text)'::regprocedure
   )) > 0,
   'CS booking requests close at 23:00'
 );

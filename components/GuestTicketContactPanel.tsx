@@ -39,11 +39,16 @@ export default function GuestTicketContactPanel({
           disabled={disabled}
           inputLabel={`${text.phoneNumber} *`}
           onChange={(phone) => onChange({ ...contact, phone })}
-          placeholder="0981152315"
+          placeholder="0901234567"
           searchPlaceholder={text.searchCountry}
           value={contact.phone}
         />
       </div>
+      <label>
+        <span>{text.email} <span aria-hidden="true">*</span></span>
+        <input id="guest-booking-email" type="email" required autoComplete="email" maxLength={254}
+          disabled={disabled} value={contact.email || ''} onChange={event => onChange({ ...contact, email: event.target.value })} />
+      </label>
       <label>
         <span>{text.name} <small>{text.optional}</small></span>
         <input

@@ -221,13 +221,13 @@ export default function TicketBookingView({
     ? text.ticketTodayDateLabel.replace('{date}', formatTicketDateDisplay(ticketDate, language))
     : formatTicketDateDisplay(ticketDate, language, true)
 
+  const endMinutes = Number(ticketTime.slice(0, 2)) * 60 + Number(ticketTime.slice(3, 5)) + activeTicketDuration
+  const endTime = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`
+  const reservationSummary = <div className="ticket-confirmation-grid" aria-label={text.bookingSummary || 'Booking summary'}><span>{formatShortDate(ticketDate, language)}</span><span>{ticketTime}–{endTime}</span><span>{ticketPlayers} {text.players}</span><strong>{ticketTotalDisplay}</strong></div>
+
   function handleBookTicketsClick() {
-    if (!isLoggedIn || needsAccountPhone || needsAccountEmail) {
-      if (!onValidateTicketSelection()) return
-      setGuestTicketContactOpen(true)
-      return
-    }
-    void onBookTickets()
+    if (!onValidateTicketSelection()) return
+    setGuestTicketContactOpen(true)
   }
 
   function handleCloseGuestTicketContact() {
@@ -239,13 +239,14 @@ export default function TicketBookingView({
     guestTicketActionInFlightRef.current = true
     setGuestTicketAction(action)
     try {
+      if (action === 'create-account') { setGuestTicketContactOpen(false); onPromptCreateAccount(); return }
       if (await onPrepareGuestTicketAction() !== 'ready') return
 
       const booked = await onBookTickets()
       if (!booked) return
 
       setGuestTicketContactOpen(false)
-      if (action === 'create-account') onPromptCreateAccount()
+
     } finally {
       guestTicketActionInFlightRef.current = false
       setGuestTicketAction(null)
@@ -423,7 +424,7 @@ export default function TicketBookingView({
                   <small>{isSpecialTicket ? clarity.confirm : clarity.pay}</small>
                 </div>
                 <button
-                  className={isBookingTickets ? 'primary create-button loading' : 'primary create-button'}
+                  className={isBookingTickets ? 'secondary create-button loading' : 'secondary create-button'}
                   disabled={isAuthLoading || isBookingTickets || guestTicketAction !== null}
                   type="button"
                   onClick={handleBookTicketsClick}
@@ -465,19 +466,21 @@ export default function TicketBookingView({
             </div>
           </div>
 
-          {isLoggedIn && guestTicketContactOpen && <BookingPhoneDialog
-            language={language} text={text} phone={guestTicketContact.phone}
+          {isLoggedIn && (needsAccountPhone || needsAccountEmail) && guestTicketContactOpen && <BookingPhoneDialog
+            summary={reservationSummary} language={language} text={text} phone={guestTicketContact.phone}
             needsPhone={needsAccountPhone} needsEmail={needsAccountEmail} email={guestTicketContact.email || ''}
             onEmailChange={email => onGuestTicketContactChange({ ...guestTicketContact, email })}
             onPhoneChange={phone => onGuestTicketContactChange({ ...guestTicketContact, phone })}
             onConfirm={onBookTickets} onClose={handleCloseGuestTicketContact}
             busy={isBookingTickets} error={ticketStatusVariant === 'error' ? ticketStatus : ''} />}
-          {!isLoggedIn && guestTicketContactOpen && (
-            <BookingGuestDialog title={text.guestTicketTitle} busy={isBookingTickets || guestTicketAction !== null} onClose={handleCloseGuestTicketContact}>
+          {(!isLoggedIn || (!needsAccountPhone && !needsAccountEmail)) && guestTicketContactOpen && (
+            <BookingGuestDialog title={text.confirmReservation} busy={isBookingTickets || guestTicketAction !== null} onClose={handleCloseGuestTicketContact}>
                 <button aria-label={text.close} className="modal-close" type="button" disabled={isBookingTickets || guestTicketAction !== null} onClick={handleCloseGuestTicketContact}>
                   <X aria-hidden="true" size={18} />
                 </button>
-                    <GuestTicketContactPanel
+                    <h2>{text.confirmReservation}</h2>
+                    {reservationSummary}
+                    {!isLoggedIn && <GuestTicketContactPanel
                       contact={guestTicketContact}
                       disabled={isAuthLoading || isBookingTickets || guestTicketAction !== null}
                       estimatedLoyaltyPointsEarned={estimatedLoyaltyPointsEarned}
@@ -487,25 +490,28 @@ export default function TicketBookingView({
                         onPromptLogin()
                       }}
                       text={text}
-                    />
+                    />}
                     {ticketStatus && <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>}
                     <div className="guest-ticket-actions">
+                      {isLoggedIn && <button type="button" className="primary create-button" disabled={isBookingTickets} onClick={async () => { if (await onBookTickets()) setGuestTicketContactOpen(false) }}>{text.confirmReservation}</button>}
+                      {!isLoggedIn && <>
                       <button
                         className={isBookingTickets && guestTicketAction === 'create-account' ? 'primary create-button loading' : 'primary create-button'}
                         disabled={isAuthLoading || isBookingTickets || guestTicketAction !== null}
                         type="button"
                         onClick={() => void handleGuestTicketAction('create-account')}
                       >
-                        {isBookingTickets && guestTicketAction === 'create-account' ? text.bookingTickets : text.guestTicketCreateAccountCta}
+                        {isBookingTickets && guestTicketAction === 'create-account' ? text.bookingTickets : text.createAccount}
                       </button>
                       <button
-                        className={isBookingTickets && guestTicketAction === 'guest' ? 'secondary create-button loading' : 'secondary create-button'}
+                        className={isBookingTickets && guestTicketAction === 'guest' ? 'primary create-button loading' : 'primary create-button'}
                         disabled={isAuthLoading || isBookingTickets || guestTicketAction !== null}
                         type="button"
                         onClick={() => void handleGuestTicketAction('guest')}
                       >
-                        {isBookingTickets && guestTicketAction === 'guest' ? text.bookingTickets : text.guestTicketBookWithoutAccountCta}
+                        {isBookingTickets && guestTicketAction === 'guest' ? text.bookingTickets : text.confirmReservation}
                       </button>
+                      </>}
                     </div>
             </BookingGuestDialog>
           )}
@@ -553,7 +559,7 @@ export default function TicketBookingView({
                   <strong>{text.guestTicketSavedTitle}</strong>
                   <span>{text.guestTicketSavedBody}</span>
                   <button className="secondary small-button" type="button" onClick={onPromptCreateAccount}>
-                    {text.guestTicketCreateAccountCta}
+                    {text.createAccount}
                   </button>
                 </div>
               )}

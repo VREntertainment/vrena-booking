@@ -15,7 +15,7 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   if (process.env.SUPABASE_URL !== 'http://127.0.0.1:56431') throw new Error('Local services required')
   const admin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
   const id = randomUUID(), receiptId = randomUUID()
-  const guestPhone = `09${Date.now().toString().slice(-8)}`
+  const guestPhone = `090${Date.now().toString().slice(-7)}`
   const date = futureDate(10)
   const orderNumber = `VOUCHER-E2E-${Date.now()}`
   const cancelledNumber = `CANCELLED-${Date.now()}`
@@ -166,6 +166,7 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   await simulator.locator('input[type=date]').fill(futureDate(24))
   await expect(simulator.locator('select')).toBeEnabled()
   await simulator.locator('input[type=tel]').fill(guestPhone)
+  await simulator.locator('input[type=email]').fill('guest@example.org')
   await simulator.getByText('Payment voucher (8 characters)', { exact: true }).click()
   await simulator.getByRole('textbox', { name: '8-character voucher code' }).fill(code)
   await expect(simulator).toContainText('Voucher will pay: 150,000')
@@ -188,7 +189,7 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   }))
   const contenders = await Promise.all(raceDays.map((day, index) => guest.rpc('book_ticket_with_payment_voucher', {
     p_name: 'create_sim_racing_booking', p_code: code, p_request_id: randomUUID(),
-    p_args: { p_date: futureDate(day), p_start_time: raceTimes[index], p_guest_phone: guestPhone, p_guest_name: 'Concurrent voucher check' },
+    p_args: { p_date: futureDate(day), p_start_time: raceTimes[index], p_guest_email: 'guest@example.org', p_guest_phone: guestPhone, p_guest_name: 'Concurrent voucher check' },
   })))
   expect(contenders.filter(result => !result.error), JSON.stringify(contenders.map(result => result.error))).toHaveLength(1)
   expect(contenders.filter(result => result.error)).toHaveLength(1)

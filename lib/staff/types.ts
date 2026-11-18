@@ -834,6 +834,8 @@ export type StaffConsoleProps = {
 export type StaffConsoleLanguage = 'en' | 'vi'
 
 export type StaffPickerFieldProps = {
+  disabledTimes?: string[]
+  timeOptions?: string[]
   ariaLabel: string
   type: 'date' | 'time'
   value: string

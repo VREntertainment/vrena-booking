@@ -1,3 +1,4 @@
+import { reservationPhone, officialReservationContact } from './reservationContact.ts'
 export type GuestTicketContact = {
   email?: string
   name: string
@@ -20,10 +21,10 @@ export function validateGuestTicketContact(
   contact: GuestTicketContact,
   text: Record<string, string>,
 ): GuestTicketContactValidation {
-  const normalizedPhone = normalizeGuestTicketPhone(contact.phone)
+  const normalizedPhone = reservationPhone(contact.phone) || ''
 
   if (!normalizedPhone) {
-    return { normalizedPhone, error: text.phoneRequired }
+    return { normalizedPhone, error: contact.phone.trim() ? text.guestTicketPhoneInvalid : text.phoneRequired }
   }
 
   const digitCount = normalizedPhone.replace(/\D/g, '').length
@@ -31,5 +32,6 @@ export function validateGuestTicketContact(
     return { normalizedPhone, error: text.guestTicketPhoneInvalid }
   }
 
+  if (officialReservationContact(contact.email, normalizedPhone)) return { normalizedPhone, error: text.reservationContactPersonal || 'Use your personal phone number and email, not VRena company contacts.' }
   return { normalizedPhone, error: '' }
 }

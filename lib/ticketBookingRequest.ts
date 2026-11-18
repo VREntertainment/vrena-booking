@@ -15,6 +15,7 @@ export type TicketBookingSelection = {
   loyaltyPoints: number
   discountCode: string | null
   guestName: string
+  guestEmail?: string
   guestPhone: string
 }
 
@@ -41,6 +42,7 @@ export function buildTicketBookingRequest(selection: TicketBookingSelection) {
         ...common,
         p_guest_name: selection.authenticated ? null : guestName,
         p_guest_phone: selection.authenticated ? null : selection.guestPhone,
+        p_guest_email: selection.authenticated ? null : selection.guestEmail?.trim(),
         p_special_note: requestNote,
       },
     }
@@ -67,7 +69,8 @@ export function buildTicketBookingRequest(selection: TicketBookingSelection) {
       ...priced,
       p_guest_name: guestName,
       p_guest_phone: selection.guestPhone,
-      ...(selection.special ? { p_guest_note: note } : {}),
+      p_guest_email: selection.guestEmail?.trim(),
+      p_guest_note: selection.special ? note : null,
     },
   }
 }

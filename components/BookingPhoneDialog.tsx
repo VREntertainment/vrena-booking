@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Phone, X } from 'lucide-react'
 import { PhoneNumberInput } from './CountryCodePicker'
 import { validateGuestTicketContact } from '../lib/guestTicketBooking'
@@ -29,7 +29,8 @@ const contactCopy = {
   zh: ['完善联系信息', '请补充缺失的信息以确认预约。信息将保存至您的账户，已选择的预约内容将保留。'],
 }
 
-export default function BookingPhoneDialog({ language, text, phone, onPhoneChange, email, onEmailChange, needsPhone: phoneRequired, needsEmail: emailRequired, onConfirm, onClose, busy, error }: {
+export default function BookingPhoneDialog({ summary, language, text, phone, onPhoneChange, email, onEmailChange, needsPhone: phoneRequired, needsEmail: emailRequired, onConfirm, onClose, busy, error }: {
+  summary?: ReactNode
   language: LanguageCode
   text: Record<string, string>
   needsPhone: boolean
@@ -72,6 +73,7 @@ export default function BookingPhoneDialog({ language, text, phone, onPhoneChang
       <span className="booking-phone-icon"><Phone size={24} aria-hidden="true" /></span>
       <h2 id="booking-phone-title">{needsEmail ? contactCopy[language][0] : labels.title}</h2>
       <p id="booking-phone-body">{needsEmail ? contactCopy[language][1] : labels.body}</p>
+      {summary}
       {needsPhone && <><label className="booking-phone-label" htmlFor="booking-account-phone">{text.phoneNumber} <span aria-hidden="true">*</span></label>
       <PhoneNumberInput inputId="booking-account-phone" required invalid={Boolean(message)} describedBy={message ? 'booking-phone-error' : undefined}
         autoComplete="tel-national" buttonLabel={text.countryCode} inputLabel={text.phoneNumber} searchPlaceholder={text.searchCountry}

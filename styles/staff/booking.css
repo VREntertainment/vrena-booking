@@ -104,3 +104,11 @@
 @media (max-width: 600px) {
   .app .staff-payment-split-row:has(.staff-payment-remove) { grid-template-columns: minmax(0, 1fr) 44px; }
 }
+
+.app .staff-time-option:disabled { opacity: .4; cursor: not-allowed; }
+.app .staff-booking-confirm-control { display: block; width: 100%; }
+.app .staff-booking-confirm-control > button { width: 100%; }
+
+.app .staff-order-just-created > td { background: var(--vrena-orange-100); }
+.app .staff-order-just-created { outline: 2px solid var(--vrena-orange-500); outline-offset: -2px; }
+.app .staff-booking-success { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }

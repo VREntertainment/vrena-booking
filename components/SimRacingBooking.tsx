@@ -1,6 +1,9 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import BookingGuestDialog from './BookingGuestDialog'
+import { PhoneNumberInput } from './CountryCodePicker'
+import { guestEmailIsValid } from '../lib/reservationContact'
 import BookingPhoneDialog from './BookingPhoneDialog'
 import { needsBookingEmail } from '../lib/bookingAccountContact'
 import PaymentVoucherCheckout from './PaymentVoucherCheckout'
@@ -38,6 +41,7 @@ export default function SimRacingBooking({ language, text, profile, onBooked, on
   const [time, setTime] = useState('')
   const [times, setTimes] = useState<string[]>([])
   const [name, setName] = useState('')
+  const [reviewOpen, setReviewOpen] = useState(false)
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
   const [contactOpen, setContactOpen] = useState(false)
@@ -79,7 +83,7 @@ export default function SimRacingBooking({ language, text, profile, onBooked, on
     if (profile && (needsPhone || needsEmail) && !contactOpen) { setError(''); setContactOpen(true); return false }
     const contact = validateGuestTicketContact({ name, phone: profile && !needsPhone ? profile.phone || '' : phone }, text)
     if (contact.error) { setError(contact.error); return false }
-    if (needsEmail && needsBookingEmail(email)) { setError(text.emailRequired); return false }
+    if ((!profile && !guestEmailIsValid(email)) || (needsEmail && needsBookingEmail(email))) { setError(text.emailRequired); return false }
     inFlight.current = true
     setBusy(true)
     setError('')
@@ -96,7 +100,7 @@ export default function SimRacingBooking({ language, text, profile, onBooked, on
         if (!response.ok || !saved.data) throw new Error(saved.error?.message || text.ticketBookingError)
         onProfileChange({ ...profile, ...saved.data })
       }
-      const args = { p_date: date, p_start_time: time, p_guest_phone: profile ? null : phone, p_guest_name: profile ? null : name.trim() || null }
+      const args = { p_guest_email: profile ? null : email.trim(), p_date: date, p_start_time: time, p_guest_phone: profile ? null : contact.normalizedPhone, p_guest_name: profile ? null : name.trim() || null }
       const signature = JSON.stringify({ args, paymentVoucherCode })
       if (voucherRequest.current?.signature !== signature) voucherRequest.current = { signature, id: crypto.randomUUID() }
       const result = paymentVoucherCode
@@ -120,14 +124,14 @@ export default function SimRacingBooking({ language, text, profile, onBooked, on
       <p>VRena Hà Đô Centrosa</p><p>{new Date(`${confirmation.date}T12:00:00`).toLocaleDateString(language)} · {confirmation.time} (GMT+7)</p>
       <p>{text.bookingReference}: <strong>{confirmation.reference}</strong></p><p>{t.package}</p><p>{confirmation.credit ? `${language === 'vi' ? 'Voucher đã sử dụng' : 'Voucher applied'}: ${formatVnd(confirmation.credit)} · ${language === 'vi' ? 'Còn phải trả' : 'Remaining to pay'}: ${formatVnd(confirmation.due || 0)}` : t.pay}</p>
       <button type="button" className="secondary" onClick={() => { setConfirmation(null); setRevision((value) => value + 1) }}>{t.again}</button>
-    </div> : <form onSubmit={book}>
+    </div> : <form onSubmit={event => { event.preventDefault(); if (profile && (needsPhone || needsEmail)) setContactOpen(true); else setReviewOpen(true) }}>
       <fieldset disabled={busy} className="form-grid sim-racing-fields">
         <label>{text.date}<input required type="date" min={venueDate()} max={venueDate(90)} value={date} onChange={(event) => { setDate(event.target.value); setTime(''); setError('') }} /></label>
         <label>{text.availableTime} (GMT+7)<select required disabled={loading || !times.length} value={time} onChange={(event) => setTime(event.target.value)}>
           {!times.length && <option value="">—</option>}{times.map((slot) => <option key={slot} value={slot}>{slot}</option>)}
         </select></label>
         {!profile && <><label>{text.name} ({text.optional})<input autoComplete="name" maxLength={120} value={name} onChange={(event) => setName(event.target.value)} /></label>
-          <label>{text.phoneNumber} *<input required type="tel" autoComplete="tel" maxLength={25} value={phone} onChange={(event) => setPhone(event.target.value)} /></label></>}
+          <label>{text.phoneNumber} *<PhoneNumberInput required autoComplete="tel-national" buttonLabel={text.countryCode} inputLabel={text.phoneNumber} searchPlaceholder={text.searchCountry} value={phone} onChange={setPhone} /></label><label>{text.email} *<input required type="email" autoComplete="email" maxLength={254} value={email} onChange={event => setEmail(event.target.value)} /></label></>}
       </fieldset>
       <PaymentVoucherCheckout code={paymentVoucherCode} onChange={setPaymentVoucherCode} venue="ha-do-centrosa" total={150000} language={language} />
       {loading && <p role="status">{t.loading}</p>}
@@ -136,9 +140,15 @@ export default function SimRacingBooking({ language, text, profile, onBooked, on
       {error && <p role="alert" className="notice">{error}</p>}
       <button className="primary" type="submit" disabled={busy || loading || !time || loadError}>{busy ? t.busy : t.book}</button>
     </form>}
-    {contactOpen && profile && <BookingPhoneDialog language={language} text={text} phone={phone} email={email}
+    {reviewOpen && <BookingGuestDialog title={text.confirmReservation} busy={busy} onClose={() => setReviewOpen(false)}>
+      <h3>{text.confirmReservation}</h3><p>{date} · {time} · 15 min · 1 {text.players} · {formatVnd(150000)}</p>
+      {!profile && <><label>{text.phoneNumber} *<PhoneNumberInput required autoComplete="tel-national" buttonLabel={text.countryCode} inputLabel={text.phoneNumber} searchPlaceholder={text.searchCountry} value={phone} onChange={setPhone} /></label><label>{text.email} *<input required type="email" value={email} onChange={event => setEmail(event.target.value)} /></label></>}
+      {error && <p role="alert">{error}</p>}<button type="button" disabled={busy} onClick={async () => { if (await book()) setReviewOpen(false) }}>{text.confirmReservation}</button>
+      <button type="button" disabled={busy} onClick={() => setReviewOpen(false)}>{text.close}</button>
+    </BookingGuestDialog>}
+    {contactOpen && profile && <BookingPhoneDialog summary={<p>{date} · {time} · 15 min · 1 {text.players} · {formatVnd(150000)}</p>} language={language} text={text} phone={phone} email={email}
       needsPhone={needsPhone} needsEmail={needsEmail} onPhoneChange={setPhone} onEmailChange={setEmail}
-      onConfirm={() => book()} onClose={() => setContactOpen(false)} busy={busy} error={error} />}
+      onConfirm={async () => { const booked = await book(); if (booked) setReviewOpen(false); return booked }} onClose={() => setContactOpen(false)} busy={busy} error={error} />}
 
   </section>
 }

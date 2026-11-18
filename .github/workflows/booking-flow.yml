@@ -46,7 +46,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
       - name: Guest and account bookings across desktop, tablet and phone layouts
-        run: npm run test:services -- e2e/account-booking.spec.ts e2e/booking-duplicate-submission.spec.ts e2e/booking-contact-api.spec.ts e2e/booking-real-checkout.spec.ts e2e/responsive-device-contract.spec.ts e2e/pwa-installation.spec.ts e2e/calendar-freshness.spec.ts --project=${{ matrix.device }} --max-failures=3
+        run: npm run test:services -- e2e/account-booking.spec.ts e2e/booking-duplicate-submission.spec.ts e2e/booking-contact-api.spec.ts e2e/booking-real-checkout.spec.ts e2e/guest-reservation-confirmation.spec.ts e2e/staff-reservation-flow.spec.ts e2e/responsive-device-contract.spec.ts e2e/pwa-installation.spec.ts e2e/calendar-freshness.spec.ts --project=${{ matrix.device }} --max-failures=3
       - name: Save booking evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
