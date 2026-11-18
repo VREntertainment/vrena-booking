@@ -31,8 +31,9 @@ test('staff and HR initial downloads stay within production budgets', async ({ p
     expect(totals.js).toBeGreaterThan(100_000)
     expect(totals.css).toBeGreaterThan(0)
     if (process.env.E2E_PRODUCTION_BUILD === '1') {
-      // Gzip-equivalent JS budgets stay below the pre-refactor 588/622 KB measurements.
-      expect(totals.gzipJs).toBeLessThan(route === '/staff' ? 570_000 : 595_000)
+      // Full country phone validation adds ~21 KB gzip with compact generated patterns.
+      // Keep initial JS bounded below the documented pre-refactor 588/622 KB sizes.
+      expect(totals.gzipJs).toBeLessThan(route === '/staff' ? 588_000 : 622_000)
     }
   }
 })
