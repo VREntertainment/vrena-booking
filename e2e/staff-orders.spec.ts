@@ -34,6 +34,7 @@ test('staff orders: split receipts, shop transfer, price reason and no-show stay
     await page.getByRole('tab', { name: 'Orders', exact: true }).click()
     await page.getByRole('textbox', { name: 'Start date', exact: true }).fill(date)
     await page.getByRole('textbox', { name: 'End date', exact: true }).fill(date)
+    await page.getByRole('combobox', { name: 'Shop', exact: true }).selectOption('all')
     await page.getByRole('button', { name: 'Show orders', exact: true }).click()
     const row = page.getByRole('row').filter({ has: page.getByText(orderNumber, { exact: true }) }).first()
     await expect(row).toContainText('Vrena Thao Dien')
