@@ -174,6 +174,7 @@ test('phone: completed receipt becomes a ready short-code JPEG voucher and redee
   await page.setViewportSize({ width: 393, height: 852 })
   await page.screenshot({ path: '/tmp/vrena-voucher-checkout-phone.png' })
   await simulator.getByRole('button', { name: 'Book SIM Racing', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Confirm reservation', exact: true }).getByRole('button', { name: 'Confirm reservation', exact: true }).click()
   await expect(simulator).toContainText('SIM Racing booking confirmed')
   await expect(simulator).toContainText('Voucher applied: 150,000')
   const balance = await admin.from('payment_vouchers').select('balance').eq('code', code).single()

@@ -202,6 +202,7 @@ export default function TicketBookingView({
   onGuestTicketContactChange,
 }: TicketBookingViewProps) {
   const [guestTicketContactOpen, setGuestTicketContactOpen] = useState(false)
+  const [accountContactNeeds, setAccountContactNeeds] = useState<{ phone: boolean; email: boolean } | null>(null)
   const [guestTicketAction, setGuestTicketAction] = useState<GuestTicketAction | null>(null)
   const guestTicketActionInFlightRef = useRef(false)
   const clarity = ticketClarityCopy[language]
@@ -227,6 +228,7 @@ export default function TicketBookingView({
 
   function handleBookTicketsClick() {
     if (!onValidateTicketSelection()) return
+    setAccountContactNeeds(isLoggedIn && (needsAccountPhone || needsAccountEmail) ? { phone: needsAccountPhone, email: needsAccountEmail } : null)
     setGuestTicketContactOpen(true)
   }
 
@@ -466,14 +468,14 @@ export default function TicketBookingView({
             </div>
           </div>
 
-          {isLoggedIn && (needsAccountPhone || needsAccountEmail) && guestTicketContactOpen && <BookingPhoneDialog
+          {isLoggedIn && accountContactNeeds && guestTicketContactOpen && <BookingPhoneDialog
             summary={reservationSummary} language={language} text={text} phone={guestTicketContact.phone}
-            needsPhone={needsAccountPhone} needsEmail={needsAccountEmail} email={guestTicketContact.email || ''}
+            needsPhone={accountContactNeeds.phone} needsEmail={accountContactNeeds.email} email={guestTicketContact.email || ''}
             onEmailChange={email => onGuestTicketContactChange({ ...guestTicketContact, email })}
             onPhoneChange={phone => onGuestTicketContactChange({ ...guestTicketContact, phone })}
             onConfirm={onBookTickets} onClose={handleCloseGuestTicketContact}
             busy={isBookingTickets} error={ticketStatusVariant === 'error' ? ticketStatus : ''} />}
-          {(!isLoggedIn || (!needsAccountPhone && !needsAccountEmail)) && guestTicketContactOpen && (
+          {(!isLoggedIn || !accountContactNeeds) && guestTicketContactOpen && (
             <BookingGuestDialog title={text.confirmReservation} busy={isBookingTickets || guestTicketAction !== null} onClose={handleCloseGuestTicketContact}>
                 <button aria-label={text.close} className="modal-close" type="button" disabled={isBookingTickets || guestTicketAction !== null} onClick={handleCloseGuestTicketContact}>
                   <X aria-hidden="true" size={18} />

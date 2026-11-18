@@ -288,3 +288,34 @@ for (const colorScheme of ['light', 'dark'] as const) {
     }
   })
 }
+
+
+test('saving account contacts keeps the same confirmation dialog until the reservation finishes', async ({ page }) => {
+  const requests = await accountFixture(page, '')
+  let entered = false
+  let release!: () => void
+  const pending = new Promise<void>(resolve => { release = resolve })
+  await page.route('**/api/bookings/tickets', async route => {
+    entered = true
+    await pending
+    await route.fallback()
+  })
+  try {
+    await page.goto('/tickets?venue=ha-do-centrosa')
+    await expect(page.locator('.profile-chip')).toContainText('Tester')
+    await page.locator('.ticket-control-date input').fill(futureDate(40))
+    await page.locator('#ticket-available-time').selectOption('12:00')
+    await page.getByRole('button', { name: 'Reserve your slot', exact: true }).click()
+    const contact = page.getByRole('dialog', { name: 'Add your phone number', exact: true })
+    await contact.locator('#booking-account-phone').fill('900000991')
+    await contact.getByRole('button', { name: 'Save & confirm booking', exact: true }).click()
+    await expect.poll(() => entered).toBe(true)
+    await expect(contact).toBeVisible()
+    await expect(contact.getByRole('button', { name: 'Save & confirm booking', exact: true })).toBeDisabled()
+    await expect(page.getByRole('dialog', { name: 'Confirm reservation', exact: true })).toHaveCount(0)
+    release()
+    await expect(page.locator('.ticket-confirmation')).toContainText('QA-ACCOUNT-991')
+    await expect(contact).toHaveCount(0)
+    expect(requests).toHaveLength(1)
+  } finally { release() }
+})

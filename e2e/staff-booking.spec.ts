@@ -221,7 +221,8 @@ test('staff booking: inline client, shop games, discounts and responsive summary
   await page.getByRole('button', { name: 'Confirm booking', exact: true }).click()
   const created = await (await createdResponse).json() as { session_id: string; customer_id: string }
   testInfo.annotations.push({ type: 'local-fixture', description: created.session_id || 'creation failed' })
-  await expect(page.locator('.staff-summary-card .notice')).toContainText(/confirmed/i)
+  await expect(page.locator('.staff-booking-success')).toContainText(/confirmed/i)
+  await page.locator('.staff-booking-success').getByRole('button', { name: 'New booking', exact: true }).click()
   expect(writes).toBe(1)
   await name.fill(client)
   await expect(page.getByRole('option').filter({ hasText: client }).first()).toBeVisible()
@@ -270,7 +271,7 @@ test('staff booking: repeated confirmation clicks recover after a failed check',
   expect(rateChecks).toBe(1)
   expect(writes).toBe(0)
   await confirm.dblclick()
-  await expect(page.locator('.staff-summary-card .notice')).toContainText('QA-SINGLE-BOOKING')
+  await expect(page.locator('.staff-booking-success')).toContainText('QA-SINGLE-BOOKING')
   expect(rateChecks).toBe(2)
   expect(writes).toBe(1)
 })
