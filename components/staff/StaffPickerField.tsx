@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { normalizeTime, normalizeTypedStaffDuration, normalizeTypedStaffTime, staffDateLabel, staffTimeOptions } from '../../lib/staff/dates.ts'
 import type { StaffPickerFieldProps } from '../../lib/staff/types.ts'
 
-export function StaffPickerField({ timeOptions, disabledTimes = [], ariaLabel, type, value, mode = 'clock', minTime, maxTime, placeholder, inputRef, onChange }: StaffPickerFieldProps) {
+export function StaffPickerField({ timeOptions, mutedTimes = [], ariaLabel, type, value, mode = 'clock', minTime, maxTime, placeholder, inputRef, onChange }: StaffPickerFieldProps) {
   const displayValue = type === 'date' ? staffDateLabel(value) : normalizeTime(value)
   const fallback = placeholder || (type === 'date' ? 'Choose date' : 'Choose time')
   const [timeOpen, setTimeOpen] = useState(false)
@@ -47,7 +47,7 @@ export function StaffPickerField({ timeOptions, disabledTimes = [], ariaLabel, t
       const normalizedDraft = mode === 'duration'
         ? normalizeTypedStaffDuration(timeDraft)
         : normalizeTypedStaffTime(timeDraft)
-      if (normalizedDraft && withinHours(normalizedDraft) && !disabledTimes.includes(normalizedDraft)) onChange(normalizedDraft)
+      if (normalizedDraft && withinHours(normalizedDraft)) onChange(normalizedDraft)
       setTimeDraft(null)
       setTimeOpen(false)
     }
@@ -87,10 +87,8 @@ export function StaffPickerField({ timeOptions, disabledTimes = [], ariaLabel, t
             <span aria-label={ariaLabel} className="staff-time-option-list" role="listbox">
               {options.map((option) => (
                 <button
-                  disabled={disabledTimes.includes(option)}
-                  aria-disabled={disabledTimes.includes(option)}
                   aria-selected={normalizedTime === option}
-                  className={normalizedTime === option ? 'staff-time-option active' : 'staff-time-option'}
+                  className={['staff-time-option', normalizedTime === option ? 'active' : '', mutedTimes.includes(option) ? 'muted' : ''].filter(Boolean).join(' ')}
                   key={option}
                   role="option"
                   type="button"
