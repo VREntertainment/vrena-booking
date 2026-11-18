@@ -59,7 +59,7 @@ begin
 
   v_user_id := coalesce(v_user_id, gen_random_uuid());
   v_nickname := 'E2E ' || substring(v_user_id::text from 1 for 8);
-  v_profile_phone := '+84000' || substring(regexp_replace(v_user_id::text, '[^0-9]', '', 'g') || '0000000000' from 1 for 8);
+  v_profile_phone := '+8490' || substring(regexp_replace(v_user_id::text, '[^0-9]', '', 'g') || '0000000' from 1 for 7);
 
   insert into auth.users (
     instance_id,
