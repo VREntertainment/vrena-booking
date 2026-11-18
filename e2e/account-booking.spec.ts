@@ -311,7 +311,7 @@ test('saving account contacts keeps the same confirmation dialog until the reser
     await contact.getByRole('button', { name: 'Save & confirm booking', exact: true }).click()
     await expect.poll(() => entered).toBe(true)
     await expect(contact).toBeVisible()
-    await expect(contact.getByRole('button', { name: 'Save & confirm booking', exact: true })).toBeDisabled()
+    await expect(contact.locator('button[type="submit"]')).toBeDisabled()
     await expect(page.getByRole('dialog', { name: 'Confirm reservation', exact: true })).toHaveCount(0)
     release()
     await expect(page.locator('.ticket-confirmation')).toContainText('QA-ACCOUNT-991')
