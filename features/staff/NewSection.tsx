@@ -157,10 +157,9 @@ export default function NewSection({
         setSlots({ key: availabilityKey, values })
         const available = valid.some(slot => slot.time === booking.time)
         setAvailability({ key: availabilityKey, state: available ? 'available' : 'unavailable' })
-        const future = valid.filter(slot => !slot.past)
-        const currentIsPast = valid.some(slot => slot.time === booking.time && slot.past)
-        if (manualTimeSelection.current !== selectionKey && (!available || (currentIsPast && future.length > 0))) {
-          const defaults = future.length ? future : valid
+        const historicalDate = new Date(`${booking.date}T23:59:59+07:00`).getTime() < Date.now()
+        const defaults = valid.filter(slot => !slot.past || historicalDate)
+        if (manualTimeSelection.current !== selectionKey && !defaults.some(slot => slot.time === booking.time)) {
           const next = defaults.find(slot => slot.time >= booking.time) || defaults[0]
           if (next && next.time !== booking.time) setBooking(current => ({ ...current, time: next.time }))
           else if (!next && booking.time) setBooking(current => ({ ...current, time: '' }))
