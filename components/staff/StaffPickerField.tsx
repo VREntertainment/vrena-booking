@@ -59,7 +59,8 @@ export function StaffPickerField({ timeOptions, mutedTimes = [], ariaLabel, type
           aria-label={ariaLabel}
           className="staff-time-trigger"
           type="button"
-          onClick={() => {
+          onClick={(event) => {
+            event.preventDefault()
             setTimeOpen((open) => !open)
             setTimeDraft(null)
           }}
@@ -92,7 +93,9 @@ export function StaffPickerField({ timeOptions, mutedTimes = [], ariaLabel, type
                   key={option}
                   role="option"
                   type="button"
-                  onClick={() => {
+                  onClick={(event) => {
+                    // Safari can forward a nested label click back to the trigger.
+                    event.preventDefault()
                     onChange(option)
                     setTimeDraft(null)
                     setTimeOpen(false)
