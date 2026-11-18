@@ -324,7 +324,7 @@ declare
   v_order_id uuid;
   v_order_number text;
 begin
-  if true then
+  if not (coalesce(auth.role(),'')='service_role' and p_guest_email is null) then
     p_guest_phone:=private.validate_guest_reservation_contact(p_guest_phone,p_guest_email);
     v_guest_phone:=p_guest_phone;
   end if;
@@ -434,7 +434,7 @@ begin
   into v_customer
   from public.ensure_guest_ticket_profile(v_guest_phone, v_guest_name);
 
-  if true then v_customer.email:=lower(btrim(p_guest_email)); end if;
+  if p_guest_email is not null then v_customer.email:=lower(btrim(p_guest_email)); end if;
   v_customer_id := v_customer.id;
 
   v_default_game := coalesce(v_game_options[1], 'laser-tag');
@@ -596,7 +596,7 @@ begin
   )
   returning id, order_number into v_order_id, v_order_number;
 
-  if true then
+  if p_guest_email is not null then
     insert into private.guest_reservation_contacts(session_id,email,phone) values(v_session_id,lower(btrim(p_guest_email)),p_guest_phone);
   end if;
   return jsonb_build_object(
@@ -641,7 +641,7 @@ declare
   v_expected_total integer;
   v_game_options text[] := coalesce(nullif(p_game_options, array[]::text[]), array['laser-tag']);
 begin
-  if auth.uid() is null then
+  if auth.uid() is null and not (coalesce(auth.role(),'')='service_role' and p_guest_email is null) then
     p_guest_phone:=private.validate_guest_reservation_contact(p_guest_phone,p_guest_email);
     v_guest_phone:=p_guest_phone;
   end if;
@@ -739,7 +739,7 @@ begin
     raise exception 'Add a valid phone number to your profile before booking.';
   end if;
 
-  if auth.uid() is null then v_customer.email:=lower(btrim(p_guest_email)); end if;
+  if auth.uid() is null and p_guest_email is not null then v_customer.email:=lower(btrim(p_guest_email)); end if;
   v_customer_id := v_customer.id;
   v_expected_unit_price := public.ticket_tariff_unit_price(
     'cafe-des-stagiaires',
@@ -870,7 +870,7 @@ begin
     v_expected_total
   );
 
-  if auth.uid() is null then
+  if auth.uid() is null and p_guest_email is not null then
     insert into private.guest_reservation_contacts(session_id,email,phone) values(v_session_id,lower(btrim(p_guest_email)),p_guest_phone);
   end if;
   return jsonb_build_object(
@@ -930,15 +930,19 @@ $function$
 
 ;
 
--- Older guest clients cannot bypass mandatory email. Authenticated Cafe clients
+-- Browser guest callers cannot bypass mandatory email. Trusted service-role
+-- integrations keep their existing contract (including the unchanged Zalo Mini App).
+-- Authenticated Cafe clients
 -- keep their existing signature; they use their saved profile contacts.
 create function public.create_guest_ticket_booking(p_ticket_type text,p_date date,p_start_time time,p_duration_minutes integer,p_player_count integer,p_arena_count integer,p_game_options text[],p_unit_price integer,p_total_price integer,p_guest_phone text,p_guest_name text default null,p_guest_note text default null)
-returns jsonb language plpgsql security definer set search_path='' as $$ begin raise exception 'A valid email address is required for guest booking. Refresh the page and try again.'; end $$;
+returns jsonb language plpgsql security definer set search_path='' as $$ begin
+ if coalesce(auth.role(),'')='service_role' then return public.create_guest_ticket_booking(p_ticket_type,p_date,p_start_time,p_duration_minutes,p_player_count,p_arena_count,p_game_options,p_unit_price,p_total_price,p_guest_phone,p_guest_name,p_guest_note,null); end if;
+ raise exception 'A valid email address is required for guest booking. Refresh the page and try again.'; end $$;
 revoke all on function public.create_guest_ticket_booking(text,date,time,integer,integer,integer,text[],integer,integer,text,text,text) from public;
 grant execute on function public.create_guest_ticket_booking(text,date,time,integer,integer,integer,text[],integer,integer,text,text,text) to anon,authenticated,service_role;
 create function public.create_cafe_ticket_booking_request(p_ticket_type text,p_date date,p_start_time time,p_duration_minutes integer,p_player_count integer,p_arena_count integer,p_game_options text[],p_guest_phone text default null,p_guest_name text default null,p_special_note text default null)
 returns jsonb language plpgsql security definer set search_path='' as $$ begin
- if auth.uid() is null then raise exception 'A valid email address is required for guest booking. Refresh the page and try again.'; end if;
+ if auth.uid() is null and coalesce(auth.role(),'')<>'service_role' then raise exception 'A valid email address is required for guest booking. Refresh the page and try again.'; end if;
  return public.create_cafe_ticket_booking_request(p_ticket_type,p_date,p_start_time,p_duration_minutes,p_player_count,p_arena_count,p_game_options,p_guest_phone,p_guest_name,p_special_note,null);
 end $$;
 revoke all on function public.create_cafe_ticket_booking_request(text,date,time,integer,integer,integer,text[],text,text,text) from public;
@@ -1004,9 +1008,9 @@ create function public.create_sim_racing_booking(p_date date,p_start_time time,p
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare result jsonb;
 begin
- if auth.uid() is null then p_guest_phone:=private.validate_guest_reservation_contact(p_guest_phone,p_guest_email); end if;
+ if auth.uid() is null and not (coalesce(auth.role(),'')='service_role' and p_guest_email is null) then p_guest_phone:=private.validate_guest_reservation_contact(p_guest_phone,p_guest_email); end if;
  result:=private.create_sim_racing_booking(p_date,p_start_time,p_guest_phone,p_guest_name);
- if auth.uid() is null then
+ if auth.uid() is null and p_guest_email is not null then
   insert into private.guest_reservation_contacts(session_id,email,phone) values((result->>'session_id')::uuid,lower(btrim(p_guest_email)),p_guest_phone);
   update public.staff_orders set customer_email=lower(btrim(p_guest_email)) where session_id=(result->>'session_id')::uuid;
  end if;
@@ -1016,7 +1020,7 @@ revoke all on function public.create_sim_racing_booking(date,time,text,text,text
 grant execute on function public.create_sim_racing_booking(date,time,text,text,text) to anon,authenticated,service_role;
 create function public.create_sim_racing_booking(p_date date,p_start_time time,p_guest_phone text default null,p_guest_name text default null)
 returns jsonb language plpgsql security definer set search_path='' as $$ begin
- if auth.uid() is null then raise exception 'A valid email address is required for guest booking. Refresh the page and try again.'; end if;
+ if auth.uid() is null and coalesce(auth.role(),'')<>'service_role' then raise exception 'A valid email address is required for guest booking. Refresh the page and try again.'; end if;
  return public.create_sim_racing_booking(p_date,p_start_time,p_guest_phone,p_guest_name,null);
 end $$;
 revoke all on function public.create_sim_racing_booking(date,time,text,text) from public;
@@ -1029,7 +1033,7 @@ begin
  definition:=pg_get_functiondef('private.reject_official_reservation_contacts()'::regprocedure);
  if position(' if private.reservation_contact_is_official(contact_email,contact_phone) then' in definition)=0 then raise exception 'Reservation contact guard changed; review before updating.'; end if;
  definition:=replace(definition,' if private.reservation_contact_is_official(contact_email,contact_phone) then',
- ' if nullif(btrim(contact_phone),'''') is not null and private.canonical_reservation_phone(contact_phone) is null then raise exception ''Enter a valid phone number for the selected country code.''; end if;
+ ' if coalesce(auth.role(),'''')<>''service_role'' and nullif(btrim(contact_phone),'''') is not null and private.canonical_reservation_phone(contact_phone) is null then raise exception ''Enter a valid phone number for the selected country code.''; end if;
  if private.reservation_contact_is_official(contact_email,contact_phone) then');
  execute definition;
 end $$;

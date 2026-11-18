@@ -17,7 +17,6 @@ const base = {
   players: 2,
   arenaCount: 1,
   guestName: 'Zalo reviewer',
-  guestEmail: 'reviewer@example.org',
   guestPhone: '0707472499',
   birthdayPackageId: null,
   acceptedTerms: true,
@@ -27,7 +26,7 @@ const now = new Date('2026-11-09T04:00:00.000Z')
 test('normalizes a current Hà Đô Mini App guest booking', () => {
   const result = normalizeZaloMiniAppBookingSelection(base, now)
   assert.equal(result.error, '')
-  assert.equal(result.data?.guestPhone, '+84707472499')
+  assert.equal(result.data?.guestPhone, '0707472499')
   assert.equal(result.data?.durationMinutes, 30)
 })
 
@@ -37,7 +36,7 @@ test('uses the current November tariff and guest RPC for Mini App tickets', () =
   assert.equal(quote.unitPrice, 260_000)
   assert.equal(quote.bookingTotal, 520_000)
   assert.equal(request.name, 'create_guest_ticket_booking')
-  assert.equal(request.args.p_guest_phone, '+84707472499')
+  assert.equal(request.args.p_guest_phone, '0707472499')
 })
 
 test('keeps birthday packages and sends them through staff-confirmed special booking fields', () => {
