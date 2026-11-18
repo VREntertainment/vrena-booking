@@ -185,6 +185,7 @@ import {
   upcomingBatchEndForDate,
   weekDaysFromStart
 } from '../lib/bookingWidgetDomain'
+import { guestEmailIsValid } from '../lib/reservationContact'
 import { validateGuestTicketContact } from '../lib/guestTicketBooking'
 import { HCAPTCHA_SITE_KEY, ensureHCaptcha, removeHCaptchaWidget } from '../lib/hcaptcha'
 import { getInitialLanguage, storeLanguage } from '../lib/i18n/detectLanguage'
@@ -3257,6 +3258,7 @@ function BookingWorkspace({
       return 'blocked'
     }
 
+    if (!guestEmailIsValid(guestTicketContact.email)) { showTicketStatus(text.emailRequired, 'error'); return 'blocked' }
     clearTicketStatus()
 
     return 'ready'
@@ -5574,7 +5576,7 @@ function BookingWorkspace({
             maxLoyaltyPointsToRedeem={maxTicketLoyaltyPoints}
             language={language}
             onBookTickets={bookTickets}
-            onGuestTicketContactChange={setGuestTicketContact}
+            onGuestTicketContactChange={contact => { setGuestTicketContact(contact); clearTicketStatus() }}
             onPrepareGuestTicketAction={prepareGuestTicketAction}
             onPromptCreateAccount={promptTicketCreateAccount}
             onPromptLogin={promptTicketLogin}

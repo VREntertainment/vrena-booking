@@ -3,6 +3,8 @@ import { en, type TranslationMap } from '../base.ts'
 // Booking/account support. Paused community and staff-only tools retain the English fallback.
 export const zh: TranslationMap = {
   ...en,
+  confirmReservation: "确认预约",
+  reservationContactPersonal: "请使用个人电话号码和邮箱，不要使用VRena的公司联系方式。",
   onboardingPrevious: '返回', creating: '正在创建…', sessionCancelled: '预约已取消。',
   sessionTariffTitle: '价格与付款', sessionTariffHaDoTitle: 'VRena Hà Đô Centrosa 价格与付款', sessionTariffCafeTitle: 'VRena Thảo Điền 价格与付款',
   sessionTariffRateDay: '周一至周五 09:00–20:00：260,000 VND / 人 / 30 分钟', sessionTariffRateEvening: '周一至周五 16:00–20:00：260,000 VND / 人 / 30 分钟', sessionTariffRateWeekend: '周一至周五 20:00–22:00：290,000 VND / 人 / 30 分钟', sessionTariffRateWeekendDay: '周末 09:00–20:00：330,000 VND / 人 / 30 分钟', sessionTariffRateWeekendEvening: '周末 20:00–22:00：390,000 VND / 人 / 30 分钟', sessionTariffRateCafeHappy: '每日 16:00–20:00：240,000 VND / 人 / 30 分钟', sessionTariffRateCafeEvening: '每日 20:00–23:00：290,000 VND / 人 / 30 分钟', sessionTariffArena: '每个场地每 30 分钟最多 4 人同时体验', sessionTariffHaDoArena: '2 个场地，每个场地每 30 分钟最多 4 人同时体验',
@@ -33,7 +35,7 @@ export const zh: TranslationMap = {
   reservedPlayerSpots: '已预约名额', discount: '折扣', birthdayDiscount: '生日优惠：减免 5%', totalPrice: '总价', ticketPriceToConfirm: '根据活动需求确认价格',
   bookTickets: '确认预约', bookingTickets: '正在预约…', submitBookingRequest: '确认预约', submittingBookingRequest: '正在预约…', bookingRequestSubmitted: '状态：已确认', bookingRequestPendingZalo: '状态：已确认', bookingConfirmed: '预约已确认', bookingReference: '预约编号', privateTicketSession: '专属预约',
   ticketLoginRequiredTitle: '登录以预约', ticketLoginRequiredBody: '预约会关联到您的 VRena 账户，方便保存和管理。',
-  guestTicketTitle: '游客预约', guestTicketBody: '无需账户。我们仅需您的电话号码，以便联系您确认预约事宜。', guestTicketPhonePlaceholder: '+84…', guestTicketPhoneInvalid: '请输入有效的电话号码。', guestTicketNamePlaceholder: '预约姓名', guestTicketAccountHint: '仅需邮箱即可创建免费账户，保存预约并在付款确认后获得 {points} 积分。', guestTicketLoginLink: '我已有账户',
+  guestTicketTitle: '游客预约', guestTicketBody: "无需账户。请输入电话号码和邮箱以确认预约。", guestTicketPhonePlaceholder: '+84…', guestTicketPhoneInvalid: '请输入有效的电话号码。', guestTicketNamePlaceholder: '预约姓名', guestTicketAccountHint: '仅需邮箱即可创建免费账户，保存预约并在付款确认后获得 {points} 积分。', guestTicketLoginLink: '我已有账户',
   guestTicketSavedTitle: '保存此预约', guestTicketSavedBody: '预约已通过您的电话号码和编号保存。创建免费账户即可管理预约并在付款后获得积分。', guestTicketSavedToAccount: '预约已确认并保存至您的账户。', ticketAccountBookingConfirmed: '您已预约 {date} {time}，共 {players} 人，并已保存至您的账户。', guestTicketCreateAccountCta: '创建免费账户', guestTicketBookWithoutAccountCta: '无需账户直接预约',
   guestTicketExistingAccountCreateMessage: '此电话号码已关联 VRena 账户，请登录后预约。', guestTicketExistingAccountGuestMessage: '此电话号码已关联 VRena 账户。登录可将预约保存到您的账户；如果您替他人预约，也可继续以游客身份预约。', guestTicketRegisteredConfirmTitle: '使用此电话号码继续？', guestTicketRegisteredConfirmBody: '如果您已有 VRena 账户，请登录以保存预约。您也可以继续以游客身份预约。', guestTicketRegisteredConfirmPhone: '电话号码', guestTicketRegisteredConfirmHoldNote: '尚未为您保留名额。返回后，所选日期、时间及联系方式会保留在当前页面。', guestTicketRegisteredConfirmLoginCta: '登录', guestTicketRegisteredConfirmContinueCta: '以游客身份继续', guestTicketResumeHint: '如需管理此预约，请提供电话号码 {phone} 和预约编号 {reference} 联系 VRena。',
   ticketRequired: '请选择日期和可预约时间。', ticketPlayersInvalid: '请选择有效的玩家人数。', ticketBookingCreated: '预约已创建。', ticketBookingError: '未能创建预约，请重试。', ticketDurationMinimum40: '5–8 人：40 分钟，1 个场地，8 个名额，优惠 5%。', ticketDurationMinimum60: '9–12 人：60 分钟，1 个场地，12 个名额，优惠 5%。', ticketDurationMinimum80: '建议至少 60 分钟；选择更长时间可让每位玩家获得相同的体验时长。', ticketDurationBelowRecommended: '所选时间低于建议时长，玩家的体验时间可能不相同。',

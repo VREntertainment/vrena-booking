@@ -39,6 +39,7 @@
     "driver.js": "^1.6.0",
     "fflate": "0.8.3",
     "html-to-image": "^1.11.13",
+    "libphonenumber-js": "1.13.16",
     "lucide-react": "^1.22.0",
     "next": "^16.4.6",
     "react": "19.2.4",

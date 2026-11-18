@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { futureDate, stubHCaptcha } from './support/admin'
+import { futureDate, stubHCaptcha, isDevelopmentStackFrameError } from './support/admin'
 
 import { accountFixture } from './support/accountFixture'
 
@@ -7,7 +7,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
   for (const phone of ['', '+84900000991']) {
     test(`${venue}: signed-in ${phone ? 'complete' : 'phone-optional'} account books and finds reservation`, async ({ page }) => {
       const errors: string[] = []
-      page.on('pageerror', error => errors.push(error.message))
+      page.on('pageerror', error => { if (!isDevelopmentStackFrameError(error)) errors.push(error.message) })
       const requests = await accountFixture(page, phone)
       await page.goto(`/tickets?venue=${venue}`)
       await expect(page.locator('.profile-chip')).toContainText('Tester')
@@ -23,6 +23,8 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
         await page.locator('#booking-account-phone').fill('900000991')
         await page.screenshot({ path: `/tmp/booking-phone-dialog-${venue}-${test.info().project.name}.png` })
         await page.getByRole('button', { name: 'Save & confirm booking', exact: true }).click()
+      } else {
+        await page.getByRole('dialog', { name: 'Confirm reservation', exact: true }).getByRole('button', { name: 'Confirm reservation', exact: true }).click()
       }
       await expect(page.locator('.ticket-confirmation')).toContainText('QA-ACCOUNT-991')
       expect(requests).toHaveLength(1)
@@ -68,6 +70,7 @@ for (const passwordLogin of [false, true]) {
     await expect(page.locator('#ticket-player-count')).toHaveValue('3')
     expect(requests).toHaveLength(0)
     await page.getByRole('button', { name: 'Reserve your slot', exact: true }).click()
+    await page.getByRole('dialog', { name: 'Confirm reservation', exact: true }).getByRole('button', { name: 'Confirm reservation', exact: true }).click()
     await expect(page.locator('.ticket-confirmation')).toContainText('QA-ACCOUNT-991')
     expect(requests).toHaveLength(1)
     expect(await page.evaluate(() => sessionStorage.getItem('vrena.ticket.pending-account-booking.v1'))).toBeNull()
@@ -124,12 +127,15 @@ test('a server-rejected reservation retains the selection and can be retried exp
   await page.locator('.ticket-control-date input').fill(futureDate(40))
   await page.locator('#ticket-available-time').selectOption('17:10')
   await page.getByRole('button', { name: 'Reserve your slot', exact: true }).click()
-  await expect(page.locator('.ticket-status-error')).toContainText('no longer available')
+  await page.getByRole('dialog', { name: 'Confirm reservation', exact: true }).getByRole('button', { name: 'Confirm reservation', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Confirm reservation', exact: true }).locator('.ticket-status-error')).toContainText('no longer available')
   await expect(page.locator('.ticket-confirmation')).toHaveCount(0)
   await expect(page.locator('#ticket-available-time')).toHaveValue('17:10')
   expect(requests).toHaveLength(0)
+  await page.getByRole('dialog', { name: 'Confirm reservation', exact: true }).getByRole('button', { name: 'Close', exact: true }).click()
   await page.locator('#ticket-available-time').selectOption('17:20')
   await page.getByRole('button', { name: 'Reserve your slot', exact: true }).click()
+  await page.getByRole('dialog', { name: 'Confirm reservation', exact: true }).getByRole('button', { name: 'Confirm reservation', exact: true }).click()
   await expect(page.locator('.ticket-confirmation')).toContainText('QA-ACCOUNT-991')
   expect(requests).toHaveLength(1)
 })
@@ -154,7 +160,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
   for (const missingPhone of [false, true]) {
     test(`${venue}: missing email${missingPhone ? ' and phone' : ''} is saved without losing checkout`, async ({ page }) => {
       const errors: string[] = []
-      page.on('pageerror', error => errors.push(error.message))
+      page.on('pageerror', error => { if (!isDevelopmentStackFrameError(error)) errors.push(error.message) })
       const requests = await accountFixture(page, missingPhone ? '' : '+84900000991', true, false, '')
       const updates: Record<string, string>[] = []
       page.on('request', request => {
@@ -198,6 +204,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       await page.locator('.ticket-control-date input').fill(date)
       await page.locator('#ticket-available-time').selectOption(time)
       await page.getByRole('button', { name: 'Reserve your slot', exact: true }).click()
+      await page.getByRole('dialog', { name: 'Confirm reservation', exact: true }).getByRole('button', { name: 'Confirm reservation', exact: true }).click()
       await expect(page.locator('.ticket-confirmation')).toContainText('QA-ACCOUNT-991')
       expect(updates).toHaveLength(1)
       expect(errors).toEqual([])
@@ -281,3 +288,34 @@ for (const colorScheme of ['light', 'dark'] as const) {
     }
   })
 }
+
+
+test('saving account contacts keeps the same confirmation dialog until the reservation finishes', async ({ page }) => {
+  const requests = await accountFixture(page, '')
+  let entered = false
+  let release!: () => void
+  const pending = new Promise<void>(resolve => { release = resolve })
+  await page.route('**/api/bookings/tickets', async route => {
+    entered = true
+    await pending
+    await route.fallback()
+  })
+  try {
+    await page.goto('/tickets?venue=ha-do-centrosa')
+    await expect(page.locator('.profile-chip')).toContainText('Tester')
+    await page.locator('.ticket-control-date input').fill(futureDate(40))
+    await page.locator('#ticket-available-time').selectOption('12:00')
+    await page.getByRole('button', { name: 'Reserve your slot', exact: true }).click()
+    const contact = page.getByRole('dialog', { name: 'Add your phone number', exact: true })
+    await contact.locator('#booking-account-phone').fill('900000991')
+    await contact.getByRole('button', { name: 'Save & confirm booking', exact: true }).click()
+    await expect.poll(() => entered).toBe(true)
+    await expect(contact).toBeVisible()
+    await expect(contact.locator('button[type="submit"]')).toBeDisabled()
+    await expect(page.getByRole('dialog', { name: 'Confirm reservation', exact: true })).toHaveCount(0)
+    release()
+    await expect(page.locator('.ticket-confirmation')).toContainText('QA-ACCOUNT-991')
+    await expect(contact).toHaveCount(0)
+    expect(requests).toHaveLength(1)
+  } finally { release() }
+})

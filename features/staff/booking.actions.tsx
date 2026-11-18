@@ -1,5 +1,6 @@
 'use client'
 
+import { reservationPhone, officialReservationContact } from '../../lib/reservationContact'
 import { confirmedBookingSummary, type ConfirmedBookingSummary } from '../../lib/staff/bookingSummary'
 import { validStaffBookingTime, validStaffSessionCount } from '../../lib/staff/bookingHours'
 import type { staffBookingCopy } from '../../lib/staff/bookingCopy'
@@ -139,7 +140,10 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
       setStatus(bookingText.outsideHours)
       return
     }
-    if (booking.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.customerEmail)) {
+    const normalizedCustomerPhone = booking.customerPhone.trim() ? reservationPhone(booking.customerPhone) : null
+    if (!booking.guestBooking && booking.customerPhone.trim() && !normalizedCustomerPhone) { setStatus('Enter a valid phone number for the selected country code.'); return }
+    if (!booking.guestBooking && officialReservationContact(booking.customerEmail, booking.customerPhone)) { setStatus('Use the customer’s personal phone number and email, not VRena company contacts.'); return }
+    if (booking.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(booking.customerEmail.trim())) {
       setStatus(bookingText.invalidEmail)
       return
     }
@@ -174,8 +178,8 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
           p_override_reason: booking.overrideTotalEnabled ? booking.overrideReason.trim() : null,
           p_customer_id: guestCustomer ? null : booking.customerId || null,
           p_customer_name: guestCustomer ? null : booking.customerName || null,
-          p_customer_phone: guestCustomer ? null : booking.customerPhone || null,
-          p_customer_email: guestCustomer ? null : booking.customerEmail || null,
+          p_customer_phone: guestCustomer ? null : normalizedCustomerPhone,
+          p_customer_email: guestCustomer ? null : booking.customerEmail.trim().toLowerCase() || null,
           p_game_id: selectedGame?.id || null,
           p_arena_count: booking.venueKey === 'cafe-des-stagiaires' ? 1 : booking.arenaCount,
           p_booking_date: booking.date,

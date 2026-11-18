@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import vm from 'node:vm'
+import { createRequire } from 'node:module'
+const packageRequire = createRequire(import.meta.url)
 import ts from 'typescript'
 
 const calls = [], tasks = [], logs = []
@@ -25,7 +27,9 @@ function load(file) {
       assert.equal(key, 'test'); clientOptions = options
       return { rpc: async (name, args) => { calls.push({ name, args }); return rpcResult } }
     } }
-    return load((name.startsWith('@/') ? resolve(name.slice(2)) : resolve(dirname(file), name)) + '.ts')
+    if (!name.startsWith('.') && !name.startsWith('@/')) return packageRequire(name)
+    const target = name.startsWith('@/') ? resolve(name.slice(2)) : resolve(dirname(file), name)
+    return load(target.endsWith('.ts') ? target : target + '.ts')
   }
   const source = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText
   vm.runInContext('(function(exports, require) {' + source + '\n})', context)(exports, require)
@@ -36,7 +40,7 @@ const { sendOpenAiBooking } = load('lib/server/openAiConversions.ts')
 const booking = { session_id: '00000000-0000-4000-8000-000000000993', ticket_reference: 'QA-UNIT', ticket_status: 'confirmed' }
 function request(name, consent = 'all', extras = {}) {
   const headers = new Headers({ origin: 'https://booking.vre-vietnam.com', cookie: `vrena-cookie-consent=${consent}; __oppref=opaque%2Fvalue; __obref=browser-ref`, 'user-agent': 'QA', authorization: 'Bearer user-jwt', 'x-vercel-forwarded-for': '203.0.113.1', ...extras })
-  return { headers, nextUrl: new URL('https://booking.vre-vietnam.com/api/bookings/tickets'), text: async () => JSON.stringify({ name, args: { p_player_count: 2 }, sourceUrl: 'https://booking.vre-vietnam.com/tickets?phone=secret#private' }) }
+  return { headers, nextUrl: new URL('https://booking.vre-vietnam.com/api/bookings/tickets'), text: async () => JSON.stringify({ name, args: { p_player_count: 2, p_guest_phone: '+84901234567', p_guest_email: 'customer@example.com' }, sourceUrl: 'https://booking.vre-vietnam.com/tickets?phone=secret#private' }) }
 }
 for (const [rpc, venue] of [['create_guest_ticket_booking','ha_do_centrosa'], ['create_ticket_booking','ha_do_centrosa'], ['create_cafe_ticket_booking_request','thao_dien']]) {
   for (const result of [{data:null,error:{message:'capacity unavailable'}}, {data:{...booking,ticket_status:'pending'},error:null}, {data:{...booking,session_id:''},error:null}, {data:{...booking,ticket_reference:''},error:null}]) {

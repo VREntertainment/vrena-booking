@@ -9,7 +9,7 @@ test('contact API fills only the caller’s missing fields without changing cred
   const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
   const client = createClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
   const password = randomUUID()
-  const phone = `+84${Date.now().toString().slice(-9)}`
+  const phone = `+8490${Date.now().toString().slice(-7)}`
   const loginEmail = `contact-${randomUUID()}@example.invalid`
   const created = await admin.auth.admin.createUser({ email: loginEmail, password, email_confirm: true })
   expect(created.error).toBeNull()

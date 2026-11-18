@@ -1,3 +1,4 @@
+import { reservationPhone, officialReservationContact, guestEmailIsValid } from '@/lib/reservationContact'
 import { createClient } from '@supabase/supabase-js'
 import { after, NextRequest, NextResponse } from 'next/server'
 import { confirmedTicketBooking } from '@/lib/openAiAdsEvent'
@@ -31,6 +32,17 @@ export async function POST(request: NextRequest) {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: authorization ? { Authorization: authorization } : {} },
   })
+  const args = body.args as Record<string, unknown>
+  const guest = body.name === 'create_guest_ticket_booking' || (body.name === 'create_cafe_ticket_booking_request' && !authorization)
+  if (guest) {
+    const phone = typeof args.p_guest_phone === 'string' ? reservationPhone(args.p_guest_phone) : null
+    const email = typeof args.p_guest_email === 'string' ? args.p_guest_email.trim() : ''
+    if (!phone) return reply({ error: { message: 'Enter a valid phone number for the selected country code.' } }, 400)
+    if (!guestEmailIsValid(email)) return reply({ error: { message: 'A valid email address is required for guest booking.' } }, 400)
+    if (officialReservationContact(email, phone)) return reply({ error: { message: 'Use your personal phone number and email, not VRena company contacts.' } }, 400)
+    args.p_guest_phone = phone
+    args.p_guest_email = email
+  }
   const hasVoucher = typeof body.paymentVoucherCode === 'string' && body.paymentVoucherCode.length > 0
   if (hasVoucher && (!/^[A-Z2-9]{8}$/.test(body.paymentVoucherCode as string) || typeof body.paymentVoucherRequestId !== 'string')) return reply({ error: { message: 'Enter the 8-character voucher code.' } }, 400)
   const { data, error } = hasVoucher

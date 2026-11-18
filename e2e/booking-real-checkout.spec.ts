@@ -12,7 +12,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
       const client = createClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, { auth: { persistSession: false } })
       const suffix = randomUUID()
-      const phone = `+84${Date.now().toString().slice(-9)}`
+      const phone = `+8490${Date.now().toString().slice(-7)}`
       const email = `checkout-${suffix}@example.com`
       const ids = new Set<string>()
       let reservationId = ''
@@ -50,10 +50,11 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
           await dialog.locator('#booking-account-email').fill(email)
         } else {
           await dialog.locator('#guest-booking-phone').fill(phone.slice(3))
-          await expect(dialog.locator('input[type=email], input[type=password]')).toHaveCount(0)
+          await expect(dialog.locator('input[type=password]')).toHaveCount(0)
+          await dialog.locator('#guest-booking-email').fill(email)
         }
         const responsePromise = page.waitForResponse(response => response.url().endsWith('/api/bookings/tickets') && response.request().method() === 'POST')
-        await dialog.getByRole('button', { name: signedIn ? 'Save & confirm booking' : 'Book without an account', exact: true }).click()
+        await dialog.getByRole('button', { name: signedIn ? 'Save & confirm booking' : 'Confirm reservation', exact: true }).click()
         const response = await responsePromise
         const result = await response.json()
         reservationId = result.data?.session_id || ''

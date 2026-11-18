@@ -24,7 +24,7 @@ select is(public.ticket_minimum_duration_minutes('ha-do-centrosa', date '2026-09
 -- duration validation and price calculation, for each relevant capacity boundary.
 select is(
   (public.create_cafe_ticket_booking_request('individual', current_date + 40 + players, time '16:00', duration, players, 1,
-    array['revolta'], '+8499900' || lpad(players::text, 4, '0'), 'Local booking regression')->>'ticket_total_price')::integer,
+    array['revolta'], '+8499900' || lpad(players::text, 4, '0'), 'Local booking regression', null, 'guest@example.org')->>'ticket_total_price')::integer,
   expected_total, format('Cafe endpoint accepts %s players / %s minutes with the correct price', players, duration)
 )
 from (values
@@ -33,10 +33,10 @@ from (values
 ) cases(players,duration,expected_total);
 
 select throws_ok($q$select public.create_cafe_ticket_booking_request('individual', current_date + 80, time '16:00', 30, 17, 1,
-  array['revolta'], '+84999000999', 'Local regression')$q$, 'P0001',
+  array['revolta'], '+84999000999', 'Local regression', null, 'guest@example.org')$q$, 'P0001',
   'Invalid player count.', 'Cafe rejects more than sixteen guests');
 select throws_ok($q$select public.create_cafe_ticket_booking_request('individual', current_date + 80, time '16:00', 30, 8, 2,
-  array['revolta'], '+84999000998', 'Local regression')$q$, 'P0001',
+  array['revolta'], '+84999000998', 'Local regression', null, 'guest@example.org')$q$, 'P0001',
   'VRena Thao Dien bookings use one arena.', 'Cafe rejects a second arena');
 
 set local timezone = 'UTC';
@@ -48,9 +48,9 @@ select is(public.ticket_booking_start_is_past(date '2026-09-05', time '00:15', t
 set local timezone = 'UTC';
 
 select throws_ok($q$select public.create_guest_ticket_booking('individual', current_date - 1, time '16:00', 30, 1, 1,
-  array['revolta'], 0, 0, '+84999000997', 'Local regression')$q$, 'P0001', 'Selected time is already past.', 'Guest Ha Do endpoint rejects a past slot');
+  array['revolta'], 0, 0, '+84999000997', 'Local regression', null, 'guest@example.org')$q$, 'P0001', 'Selected time is already past.', 'Guest Ha Do endpoint rejects a past slot');
 select throws_ok($q$select public.create_cafe_ticket_booking_request('individual', current_date - 1, time '16:00', 30, 1, 1,
-  array['revolta'], '+84999000996', 'Local regression')$q$, 'P0001', 'Selected time is already past.', 'Cafe endpoint rejects a past slot');
+  array['revolta'], '+84999000996', 'Local regression', null, 'guest@example.org')$q$, 'P0001', 'Selected time is already past.', 'Cafe endpoint rejects a past slot');
 select set_config('request.jwt.claims', jsonb_build_object('role','authenticated','sub',gen_random_uuid())::text, true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 select throws_ok($q$select public.create_ticket_booking('individual', current_date - 1, time '16:00', 30, 1, 1,

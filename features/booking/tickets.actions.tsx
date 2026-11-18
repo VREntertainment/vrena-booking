@@ -1,5 +1,7 @@
 'use client'
 
+import { guestEmailIsValid } from '../../lib/reservationContact'
+
 import { needsBookingEmail } from '../../lib/bookingAccountContact'
 import { ageBandFromBirthday } from '../../lib/agePolicy'
 import { getSupabase } from '../../lib/booking/client'
@@ -271,6 +273,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
 
     if (!validateTicketSelection(activeProfile) || !selectedTimeOption) return false
 
+    if (!activeProfile && !guestEmailIsValid(guestTicketContact.email)) { showTicketStatus(text.emailRequired, 'error'); return false }
     const needsAccountPhone = Boolean(activeProfile && validateGuestTicketContact({ name: '', phone: activeProfile.phone || '' }, looseText).error)
     const needsAccountEmail = Boolean(activeProfile && needsBookingEmail(activeProfile.email))
     if (needsAccountEmail && needsBookingEmail(guestTicketContact.email)) {
@@ -349,6 +352,7 @@ export function createBookingTicketsActions(getContext: () => TicketsActionConte
         loyaltyPoints: appliedTicketLoyaltyPoints,
         discountCode: !isSpecialTicketType && (!isHaDoBookingVenue || ticketDiscountQuote) ? normalizedTicketDiscountCode : null,
         guestName: guestTicketContact.name,
+        guestEmail: guestTicketContact.email,
         guestPhone: guestContactValidation.normalizedPhone,
       })
       if (paymentVoucherCode && !/^[A-Z2-9]{8}$/.test(paymentVoucherCode)) { showTicketStatus('Enter the 8-character voucher code.', 'error'); return false }

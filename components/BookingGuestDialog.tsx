@@ -12,7 +12,7 @@ export default function BookingGuestDialog({ title, busy, onClose, children }: {
   useEffect(() => {
     const dialog = ref.current!
     dialog.showModal()
-    dialog.querySelector<HTMLInputElement>('input[type="tel"]')?.focus()
+    dialog.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true })
     return () => dialog.close()
   }, [])
 

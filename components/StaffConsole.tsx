@@ -12,7 +12,6 @@ import type { ConfirmedBookingSummary } from '../lib/staff/bookingSummary'
 import dynamic from 'next/dynamic'
 
 const StaffOrderStatusConfirmation = dynamic(() => import('./staff/StaffOrderStatusConfirmation'), { ssr: false })
-const StaffConfirmedBookingShare = dynamic(() => import('./staff/StaffConfirmedBookingShare').then(module => module.StaffConfirmedBookingShare), { ssr: false })
 const StaffSavedBookingShare = dynamic(() => import('./staff/StaffSavedBookingShare').then(module => module.StaffSavedBookingShare), { ssr: false })
 const StaffPaymentVouchers = dynamic(() => import('./StaffPaymentVouchers'), { ssr: false })
 import type { OrderStatusChange } from './staff/StaffOrderStatusConfirmation'
@@ -227,6 +226,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const canOpenRoleProfiles = rank >= 20 && Boolean(onOpenPlayerProfile)
   const currentProfileId = profile?.id || ''
   const [activeTab, setActiveTab] = useState<StaffTab>(isHrConsole ? 'hr' : (rank >= 50 ? 'new' : 'report'))
+  const lastFocusedOrder = useRef('')
+  const confirmedOrderRef = useRef<HTMLTableRowElement>(null)
   const [confirmedSummary, setConfirmedSummary] = useState<ConfirmedBookingSummary | null>(null)
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null)
   const [orderStatusConfirm, setOrderStatusConfirm] = useState<{ orderId: string; status: OrderStatusChange } | null>(null)
@@ -613,6 +614,11 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const bookingPaidTotal = useMemo(() => paymentSplitTotal(bookingPaymentSplits), [bookingPaymentSplits])
   const bookingRemainingTotal = Math.max(0, quote.total - bookingPaidTotal)
 
+  useEffect(() => {
+    if (currentTab !== 'orders' || !confirmedSummary || lastFocusedOrder.current === confirmedSummary.orderNumber || !browsedOrders?.rows.some(order => order.order_number === confirmedSummary.orderNumber)) return
+    const frame = requestAnimationFrame(() => { lastFocusedOrder.current = confirmedSummary.orderNumber; confirmedOrderRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }); confirmedOrderRef.current?.focus({ preventScroll: true }) })
+    return () => cancelAnimationFrame(frame)
+  }, [currentTab, confirmedSummary, browsedOrders])
   const voucherOrderIds = useMemo(() => [...new Set((currentTab === 'orders' ? browsedOrders?.rows ?? [] : currentTab === 'report' ? reportSnapshot?.orders ?? [] : currentTab === 'today' ? orders : []).map(order => order.id))].sort(), [currentTab, orders, browsedOrders, reportSnapshot])
   const voucherSummaries = useStaffVoucherSummaries(voucherOrderIds, canCreateOrders)
   const orderPaymentsByOrderId = useMemo(() => paymentMapFromRows(orderPayments), [orderPayments])
@@ -1135,7 +1141,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           const paymentSummary = <span className="staff-order-payment-values"><span>{paymentStatusLabel(order.payment_status, text)}</span><span>{resolvedLanguage === 'vi' ? 'Đã trả' : 'Paid'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(paid)}</span><span>{resolvedLanguage === 'vi' ? 'Còn lại' : 'Balance'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(balance)}</span></span>
           const venue = order.arena_id?.startsWith('cafe:') ? 'cafe-des-stagiaires' : order.arena_id ? 'ha-do-centrosa' : null
           return <Fragment key={order.id}>
-            <tr className={`staff-order-row ${order.order_status === 'cancelled' ? 'staff-order-cancelled' : ''}`} data-collapsed={order.order_status === 'cancelled' && !expandedCancelledOrders.has(order.id)}>
+            <tr ref={order.order_number === confirmedSummary?.orderNumber ? confirmedOrderRef : undefined} tabIndex={order.order_number === confirmedSummary?.orderNumber ? -1 : undefined} className={`staff-order-row ${order.order_number === confirmedSummary?.orderNumber ? 'staff-order-just-created' : ''} ${order.order_status === 'cancelled' ? 'staff-order-cancelled' : ''}`} data-collapsed={order.order_status === 'cancelled' && !expandedCancelledOrders.has(order.id)}>
               <td className="staff-order-identity" colSpan={order.order_status === 'cancelled' && !expandedCancelledOrders.has(order.id) ? (canCreateOrders ? 6 : 5) : undefined} data-label={text.labels.order}>
                 <div className="staff-order-heading">
                   {order.order_status === 'cancelled' ? <button className="staff-order-number staff-order-cancelled-number" type="button" aria-expanded={expandedCancelledOrders.has(order.id)} onClick={() => { setExpandedCancelledOrders(current => { const next = new Set(current); if (next.has(order.id)) next.delete(order.id); else next.add(order.id); return next }); setPaymentOrderId(null); setOrderEditDraft(null); setOrderStatusConfirm(null) }}><strong>{order.order_number}</strong><span aria-hidden="true">{expandedCancelledOrders.has(order.id) ? '⌃' : '⌄'}</span></button> : <strong>{order.order_number}</strong>}
@@ -1228,7 +1234,13 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     selectedBookingArena,
     markStaffDataStale,
     onBookingCreated,
-    onBookingConfirmed: setConfirmedSummary,
+    onBookingConfirmed: snapshot => {
+      setConfirmedSummary(snapshot)
+      setOrdersRange({ start: snapshot.booking.date, end: snapshot.booking.date })
+      setOrdersShop(snapshot.booking.venueKey)
+      setOrdersQuery({ start: snapshot.booking.date, end: snapshot.booking.date, page: 0, shop: snapshot.booking.venueKey, focus: snapshot.orderNumber })
+      setActiveTab('orders')
+    },
     loadProfiles,
   }))
   const {
@@ -1674,7 +1686,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       {currentTabLoading && <AppLoadingState compact label={text.loading} />}
       {currentTabError && <div className="notice" role="alert"><p>{resolvedLanguage === 'vi' ? 'Không thể tải dữ liệu. Vui lòng thử lại.' : 'Couldn’t load this data. Please try again.'}</p><button type="button" disabled={currentTabLoading} onClick={retryCurrentData}>{resolvedLanguage === 'vi' ? 'Thử lại' : 'Try again'}</button></div>}
 
-      {currentTab === 'new' && confirmedSummary && <StaffConfirmedBookingShare snapshot={confirmedSummary} language={resolvedLanguage} text={text} onClose={() => setConfirmedSummary(null)} />}
+      {currentTab === 'orders' && confirmedSummary && <div className="notice staff-booking-success" role="status"><strong>{resolvedLanguage === 'vi' ? 'Đặt chỗ đã xác nhận' : 'Booking confirmed'} · {confirmedSummary.orderNumber}</strong><button type="button" className="secondary" onClick={() => { setConfirmedSummary(null); setOrdersQuery(query => ({ ...query, focus: undefined, page: 0 })) }}>{resolvedLanguage === 'vi' ? 'Tất cả đơn hàng' : 'All orders'}</button><button type="button" className="secondary" onClick={() => { setConfirmedSummary(null); setOrdersQuery(query => ({ ...query, focus: undefined, page: 0 })); setActiveTab('new') }}>{text.labels.newBooking}</button></div>}
 
       {currentTabReady && currentTab === 'new' && (<NewSection
         sessionLengthError={sessionLength.error}
