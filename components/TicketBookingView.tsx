@@ -210,6 +210,7 @@ export default function TicketBookingView({
   const birthdayPackage = birthdayPackageById(birthdayPackageId)
   const isSpecialTicket = ticketType !== 'individual'
   const ticketTotalDisplay = birthdayPackage ? formatVnd(birthdayPackage.price) : isSpecialTicket ? clarity.quote : formatVnd(currentTicketTotalPrice)
+  const confirmationPending = isLoggedIn && !manualDiscountReview && !isSpecialTicket && useLoyaltyPoints && isLoadingTicketLoyalty
   const showLoyaltyTools = isLoggedIn && !isSpecialTicket && !manualDiscountReview && loyaltyPointsBalance > 0
   const specialTicketServices = ticketServices.filter((service) => service.id !== 'individual')
   const showDiscountedTotal = !isSpecialTicket && currentTicketPricing.grossPrice > currentTicketTotalPrice
@@ -474,7 +475,7 @@ export default function TicketBookingView({
             onEmailChange={email => onGuestTicketContactChange({ ...guestTicketContact, email })}
             onPhoneChange={phone => onGuestTicketContactChange({ ...guestTicketContact, phone })}
             onConfirm={onBookTickets} onClose={handleCloseGuestTicketContact}
-            busy={isBookingTickets} error={ticketStatusVariant === 'error' ? ticketStatus : ''} />}
+            busy={isBookingTickets} confirmationPending={confirmationPending} error={ticketStatusVariant === 'error' ? ticketStatus : ''} />}
           {(!isLoggedIn || !accountContactNeeds) && guestTicketContactOpen && (
             <BookingGuestDialog title={text.confirmReservation} busy={isBookingTickets || guestTicketAction !== null} onClose={handleCloseGuestTicketContact}>
                 <button aria-label={text.close} className="modal-close" type="button" disabled={isBookingTickets || guestTicketAction !== null} onClick={handleCloseGuestTicketContact}>
@@ -493,9 +494,10 @@ export default function TicketBookingView({
                       }}
                       text={text}
                     />}
+                    {confirmationPending && <p className="notice ticket-status-message" role="status">{text.ticketLoyaltyLoading}</p>}
                     {ticketStatus && <p className={ticketStatusVariant === 'error' ? 'notice ticket-status-message ticket-status-error' : 'notice ticket-status-message'}>{ticketStatus}</p>}
                     <div className="guest-ticket-actions">
-                      {isLoggedIn && <button type="button" className="primary create-button" disabled={isBookingTickets} onClick={async () => { if (await onBookTickets()) setGuestTicketContactOpen(false) }}>{text.confirmReservation}</button>}
+                      {isLoggedIn && <button type="button" className="primary create-button" disabled={isBookingTickets || confirmationPending} aria-busy={isBookingTickets || confirmationPending} onClick={async () => { if (await onBookTickets()) setGuestTicketContactOpen(false) }}>{text.confirmReservation}</button>}
                       {!isLoggedIn && <>
                       <button
                         className={isBookingTickets && guestTicketAction === 'create-account' ? 'primary create-button loading' : 'primary create-button'}

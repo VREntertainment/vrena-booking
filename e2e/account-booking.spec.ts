@@ -319,3 +319,40 @@ test('saving account contacts keeps the same confirmation dialog until the reser
     expect(requests).toHaveLength(1)
   } finally { release() }
 })
+
+
+for (const missingPhone of [false, true]) {
+  test(`delayed loyalty check keeps ${missingPhone ? 'account contact' : 'account reservation'} confirmation pending until ready`, async ({ page }) => {
+    const requests = await accountFixture(page, missingPhone ? '' : '+84900000991')
+    let entered = false
+    let release!: () => void
+    const pending = new Promise<void>(resolve => { release = resolve })
+    await page.route('**/rest/v1/rpc/ticket_loyalty_redemption_settings', async route => {
+      entered = true
+      await pending
+      await route.fallback()
+    })
+    try {
+      await page.goto('/tickets?venue=ha-do-centrosa')
+      await expect(page.locator('.profile-chip')).toContainText('Tester')
+      await page.locator('.ticket-control-date input').fill(futureDate(40))
+      await page.locator('#ticket-available-time').selectOption('12:00')
+      await expect.poll(() => entered).toBe(true)
+      await page.getByRole('button', { name: 'Reserve your slot', exact: true }).click()
+      const dialog = page.getByRole('dialog')
+      await expect(dialog).toBeVisible()
+      if (missingPhone) await dialog.locator('#booking-account-phone').fill('900000991')
+      const confirm = dialog.getByRole('button', { name: missingPhone ? 'Save & confirm booking' : 'Confirm reservation', exact: true })
+      await expect(confirm).toBeDisabled()
+      await expect(dialog).toContainText('Checking loyalty points...')
+      expect(requests).toHaveLength(0)
+      release()
+      await expect(confirm).toBeEnabled()
+      await confirm.click()
+      await expect(page.locator('.ticket-confirmation')).toContainText('QA-ACCOUNT-991')
+      expect(requests).toHaveLength(1)
+    } finally {
+      release()
+    }
+  })
+}

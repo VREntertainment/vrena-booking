@@ -29,7 +29,7 @@ const contactCopy = {
   zh: ['完善联系信息', '请补充缺失的信息以确认预约。信息将保存至您的账户，已选择的预约内容将保留。'],
 }
 
-export default function BookingPhoneDialog({ summary, language, text, phone, onPhoneChange, email, onEmailChange, needsPhone: phoneRequired, needsEmail: emailRequired, onConfirm, onClose, busy, error }: {
+export default function BookingPhoneDialog({ summary, language, text, phone, onPhoneChange, email, onEmailChange, needsPhone: phoneRequired, needsEmail: emailRequired, onConfirm, onClose, busy, confirmationPending = false, error }: {
   summary?: ReactNode
   language: LanguageCode
   text: Record<string, string>
@@ -42,6 +42,7 @@ export default function BookingPhoneDialog({ summary, language, text, phone, onP
   onConfirm: () => Promise<boolean>
   onClose: () => void
   busy: boolean
+  confirmationPending?: boolean
   error: string
 }) {
   const [needsPhone] = useState(phoneRequired)
@@ -62,7 +63,7 @@ export default function BookingPhoneDialog({ summary, language, text, phone, onP
     <button type="button" className="modal-close" aria-label={text.close} disabled={busy} onClick={onClose}><X size={18} aria-hidden="true" /></button>
     <form noValidate onSubmit={async event => {
       event.preventDefault()
-      if (busy || inFlight.current) return
+      if (busy || confirmationPending || inFlight.current) return
       const validation = needsPhone ? validateGuestTicketContact({ name: '', phone }, text) : { error: '' }
       if (!validation.error && needsEmail && needsBookingEmail(email)) validation.error = text.emailRequired
       setValidationError(validation.error)
@@ -85,7 +86,8 @@ export default function BookingPhoneDialog({ summary, language, text, phone, onP
           onChange={event => { setValidationError(''); onEmailChange(event.target.value) }} />
       </>}
       {message && <p id="booking-phone-error" className="notice ticket-status-error" role="alert">{message}</p>}
-      <button className="primary create-button" type="submit" disabled={busy}>{busy ? text.bookingTickets : labels.confirm}</button>
+      {confirmationPending && <p className="notice" role="status">{text.ticketLoyaltyLoading}</p>}
+      <button className="primary create-button" type="submit" disabled={busy || confirmationPending} aria-busy={busy || confirmationPending}>{busy ? text.bookingTickets : labels.confirm}</button>
     </form>
   </dialog>
 }

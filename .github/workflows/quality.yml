@@ -15,7 +15,7 @@ concurrency:
 jobs:
   quality:
     name: Code, database, and browser checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       NEXT_TELEMETRY_DISABLED: '1'
@@ -32,6 +32,12 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: node scripts/audit-dependencies.mjs
+      - name: Use Ubuntu main archive for browser dependencies
+        run: |
+          for apt_source_file in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources /etc/apt/sources.list.d/*.list; do
+            [ -f "$apt_source_file" ] || continue
+            sudo sed -i -E 's#https?://[[:alnum:].-]+\.ec2\.archive\.ubuntu\.com/ubuntu#https://archive.ubuntu.com/ubuntu#g' "$apt_source_file"
+          done
       - run: npx playwright install --with-deps chromium
       - run: npm run test:services
       - run: npm run measure:build
