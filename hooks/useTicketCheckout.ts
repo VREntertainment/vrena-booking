@@ -1,5 +1,6 @@
 'use client'
 
+import { createDeferredLoading } from '../lib/booking/deferredLoading'
 import { calculateTicketCheckout } from '../lib/booking/checkout'
 
 import { useEffect, useState } from 'react'
@@ -207,7 +208,7 @@ useEffect(() => {
       })
     }
 
-    schedulePostEffectStateUpdate(() => setIsLoadingTicketLoyalty(true))
+    const loading = createDeferredLoading(setIsLoadingTicketLoyalty, schedulePostEffectStateUpdate)
     void getSupabase()
       .then((client) => client.rpc('ticket_loyalty_redemption_settings', {
         p_booking_date: ticketDate,
@@ -235,11 +236,12 @@ useEffect(() => {
         setTicketLoyaltyPointsToRedeem('')
       })
       .finally(() => {
-        if (active) setIsLoadingTicketLoyalty(false)
+        loading.finish()
       })
 
     return () => {
       active = false
+      loading.cancel()
     }
   }, [activeTicketService.defaultGame, activeView, isSpecialTicketType, profile, ticketDate])
 
