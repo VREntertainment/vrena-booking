@@ -27,7 +27,8 @@ jobs:
       fail-fast: false
       matrix:
         device: [windows-chrome, macos-safari, ipados-safari, ios-safari, android-chrome, samsung-a26, samsung-a26-compact, samsung-a26-landscape, galaxy-fold-cover, galaxy-fold-open]
-    runs-on: ubuntu-latest
+    # Pin the Playwright-supported image during the ubuntu-latest 26.04 rollout.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       NEXT_TELEMETRY_DISABLED: '1'
