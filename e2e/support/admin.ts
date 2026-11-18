@@ -100,3 +100,9 @@ export async function chooseCafeVenue(page: Page) {
   if (await change.isVisible()) await change.click()
   await selector.getByRole('radio').filter({ hasText: 'Vrena Thao Dien' }).click()
 }
+
+/** Safari can abort Next dev's optional source-map lookup during navigation. */
+export function isDevelopmentStackFrameError(error: Error) {
+  return process.env.E2E_PRODUCTION_BUILD === '0'
+    && error.message.endsWith('/__nextjs_original-stack-frames due to access control checks.')
+}

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { futureDate, stubHCaptcha } from './support/admin'
+import { futureDate, stubHCaptcha, isDevelopmentStackFrameError } from './support/admin'
 
 import { accountFixture } from './support/accountFixture'
 
@@ -7,7 +7,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
   for (const phone of ['', '+84900000991']) {
     test(`${venue}: signed-in ${phone ? 'complete' : 'phone-optional'} account books and finds reservation`, async ({ page }) => {
       const errors: string[] = []
-      page.on('pageerror', error => errors.push(error.message))
+      page.on('pageerror', error => { if (!isDevelopmentStackFrameError(error)) errors.push(error.message) })
       const requests = await accountFixture(page, phone)
       await page.goto(`/tickets?venue=${venue}`)
       await expect(page.locator('.profile-chip')).toContainText('Tester')
@@ -160,7 +160,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
   for (const missingPhone of [false, true]) {
     test(`${venue}: missing email${missingPhone ? ' and phone' : ''} is saved without losing checkout`, async ({ page }) => {
       const errors: string[] = []
-      page.on('pageerror', error => errors.push(error.message))
+      page.on('pageerror', error => { if (!isDevelopmentStackFrameError(error)) errors.push(error.message) })
       const requests = await accountFixture(page, missingPhone ? '' : '+84900000991', true, false, '')
       const updates: Record<string, string>[] = []
       page.on('request', request => {
