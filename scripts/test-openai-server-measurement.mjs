@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
@@ -9,6 +10,7 @@ import ts from 'typescript'
 const calls = [], tasks = [], logs = []
 let rpcResult = { data: null, error: null }
 let clientOptions
+let authLookups = 0
 const env = { NEXT_PUBLIC_SUPABASE_URL: 'https://test.invalid', NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test', OPENAI_ADS_CAPI_KEY: 'test-only', NEXT_PUBLIC_SITE_URL: 'https://booking.vre-vietnam.com', TRUSTED_CLIENT_IP_HEADER: 'x-vercel-forwarded-for' }
 const context = vm.createContext({ URL, Headers, Response, AbortSignal, Date, Set, Promise,
   setTimeout: fn => setTimeout(fn, 0), fetch: async (...args) => { calls.push(args); return new Response('{}') },
@@ -25,7 +27,14 @@ function load(file) {
     if (name === 'next/server') return { after: task => tasks.push(task), NextResponse: { json: (body, options) => Response.json(body, options) } }
     if (name === '@supabase/supabase-js') return { createClient: (_url, key, options) => {
       assert.equal(key, 'test'); clientOptions = options
-      return { rpc: async (name, args) => { calls.push({ name, args }); return rpcResult } }
+      return {
+        rpc: async (name, args) => { calls.push({ name, args }); return rpcResult },
+        auth: { getUser: async jwt => {
+          assert.equal(jwt, 'user-jwt')
+          authLookups += 1
+          return { data: { user: { email: ' Account@Example.com ', id: 'Account-123' } }, error: null }
+        } },
+      }
     } }
     if (!name.startsWith('.') && !name.startsWith('@/')) return packageRequire(name)
     const target = name.startsWith('@/') ? resolve(name.slice(2)) : resolve(dirname(file), name)
@@ -54,7 +63,9 @@ for (const [rpc, venue] of [['create_guest_ticket_booking','ha_do_centrosa'], ['
     assert.deepEqual((await result.json()).data, booking)
     assert.equal(calls.length,1,'booking response does not wait for conversion HTTP')
     assert.equal(clientOptions.global.headers.Authorization,'Bearer user-jwt')
+    authLookups = 0
     await tasks[0]()
+    assert.equal(authLookups, consent === 'all' && rpc !== 'create_guest_ticket_booking' ? 1 : 0)
     assert.equal(calls.length,consent === 'all' ? 2 : 1)
     if (consent === 'all') {
       const payload = JSON.parse(calls[1][1].body)
@@ -65,6 +76,12 @@ for (const [rpc, venue] of [['create_guest_ticket_booking','ha_do_centrosa'], ['
       assert.equal(event.user.obref,'browser-ref')
       assert.equal(event.type,'appointment_scheduled')
       assert.equal(event.user.ip_address,'203.0.113.1')
+      const guest = rpc === 'create_guest_ticket_booking'
+      const digest = value => createHash('sha256').update(value).digest('hex')
+      assert.equal(event.user.emails_sha256[0], digest(guest ? 'customer@example.com' : 'account@example.com'))
+      assert.equal(event.user.external_ids_sha256?.[0], guest ? undefined : digest('Account-123'))
+      assert.equal(calls[1][1].body.includes('@example.com'), false)
+      assert.equal(calls[1][1].body.includes('Account-123'), false)
       assert.equal(payload.validate_only,undefined)
     }
   }
