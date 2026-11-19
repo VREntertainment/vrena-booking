@@ -1,6 +1,11 @@
 import 'server-only'
+import { createHash } from 'node:crypto'
 import { OPENAI_ADS_PIXEL_ID, openAiBookingEventId, type BookingVenue } from '../openAiAdsEvent'
 import { trustedClientIp, UNKNOWN_CLIENT_IP } from '../security/requestIp'
+
+function hashIdentifier(value: string) {
+  return createHash('sha256').update(value, 'utf8').digest('hex')
+}
 
 // Only called with the result of a committed booking RPC, never a browser claim.
 export async function sendOpenAiBooking(input: {
@@ -10,6 +15,7 @@ export async function sendOpenAiBooking(input: {
   headers: Headers
   requestOrigin: string
   sourceUrl: unknown
+  getCustomer?: () => Promise<{ email?: string; id?: string } | undefined>
 }, fetcher: typeof fetch = fetch) {
   try {
     const cookie = (name: string) => input.headers.get('cookie')?.split(';').map(v => v.trimStart()).find(v => v.startsWith(name + '='))?.slice(name.length + 1)
@@ -31,6 +37,9 @@ export async function sendOpenAiBooking(input: {
     const obref = cookie('__obref')
     const ip = trustedClientIp(input.headers)
     const userAgent = input.headers.get('user-agent')
+    const customer = await input.getCustomer?.().catch(() => undefined)
+    const email = customer?.email?.trim().toLowerCase()
+    const customerId = customer?.id?.trim()
     const event = {
       id: openAiBookingEventId(input.bookingId, input.venue),
       type: 'appointment_scheduled',
@@ -39,6 +48,8 @@ export async function sendOpenAiBooking(input: {
       source_url: sourceUrl.origin + sourceUrl.pathname,
       ...(oppref ? { oppref } : {}),
       user: {
+        ...(email ? { emails_sha256: [hashIdentifier(email)] } : {}),
+        ...(customerId ? { external_ids_sha256: [hashIdentifier(customerId)] } : {}),
         ...(obref ? { obref } : {}),
         ...(userAgent ? { user_agent: userAgent } : {}),
         ...(ip !== UNKNOWN_CLIENT_IP ? { ip_address: ip } : {}),
