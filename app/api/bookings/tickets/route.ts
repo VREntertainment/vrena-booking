@@ -58,6 +58,13 @@ export async function POST(request: NextRequest) {
         headers: new Headers(request.headers),
         requestOrigin: request.nextUrl.origin,
         sourceUrl: body.sourceUrl,
+        getCustomer: async () => {
+          if (guest && typeof args.p_guest_email === 'string') return { email: args.p_guest_email }
+          const jwt = authorization?.match(/^Bearer\s+(\S+)$/i)?.[1]
+          if (!jwt) return
+          const { data: { user }, error: authError } = await client.auth.getUser(jwt)
+          if (!authError && user) return { email: user.email, id: user.id }
+        },
       }
       after(() => sendOpenAiBooking(input))
     } catch { console.warn('OpenAI booking conversion scheduling unavailable') }
