@@ -17,9 +17,12 @@ begin
  values(actor,'Creator fixture','2099-11-17','16:30',60,4,1,'{}','{}','private','cancelled','ticket','individual','cancelled','cafe-des-stagiaires') returning id into fixture;
  detail:=public.staff_get_booking_details(fixture);
  if detail->>'booking_creator_name' is not null then raise exception 'Invented an unrecorded creator'; end if;
- insert into public.audit_logs(actor_user_id,operator_session_id,action,entity_type,entity_id) values(actor,gen_random_uuid(),'kiosk_insert','sessions',fixture),(other_actor,gen_random_uuid(),'kiosk_update','sessions',fixture);
+ -- Simulate an expired PIN session while preserving its original HR operator.
+ insert into public.audit_logs(actor_user_id,operator_session_id,action,entity_type,entity_id,new_value)
+ values(other_actor,gen_random_uuid(),'kiosk_insert','sessions',fixture,jsonb_build_object('booking_operator_profile_id',actor)),
+       (other_actor,gen_random_uuid(),'kiosk_update','sessions',fixture,'{}');
  detail:=public.staff_get_booking_details(fixture);
- if detail->>'booking_creator_name'<>'Original PIN operator' or not (detail->>'booking_creator_via_pin')::boolean then raise exception 'Wrong PIN creator: %',detail; end if;
+ if detail->>'booking_creator_name' is distinct from 'Original PIN operator' or (detail->>'booking_creator_via_pin')::boolean is distinct from true then raise exception 'Wrong PIN creator: %',detail; end if;
  perform set_config('request.jwt.claims','{"role":"anon"}',true);
  perform set_config('request.jwt.claim.sub','',true);
  begin
