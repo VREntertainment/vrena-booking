@@ -47,6 +47,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
   const [draft, setDraft] = useState<Draft | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [creator, setCreator] = useState<string | null>(null)
+  const [createdAt, setCreatedAt] = useState<string | null>(null)
   const [client, setClient] = useState<BookingClient | null>(null)
   const [editingPrice, setEditingPrice] = useState<string | null>(null)
   const [version, setVersion] = useState('')
@@ -79,6 +80,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         setPrices(Object.fromEntries(linkedOrders.map((item) => [item.id, { total: String(item.total), reason: '', paid: (payments.data || []).filter((payment) => payment.order_id === item.id).reduce((sum, payment) => sum + payment.amount, 0) }])))
         const record = booking.data!
         setCreator(record.booking_creator_name || null)
+        setCreatedAt(record.created_at ?? null)
         setClient(record.booking_client ?? null)
         setSession(record as Session)
         const order = linked.data?.[0]
@@ -113,8 +115,10 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
   const game = availableGames.find((item) => item.slug === draft?.game)
   const isSimRacing = session?.confirmed_game_id === 'sim-racing'
   const arenas = venueArenas(draft?.venue || 'ha-do-centrosa')
-  const primaryArena = draft?.arenaIds.find((id) => !game?.available_arena_ids?.length || game.available_arena_ids.includes(id))
-    || draft?.arenaIds[0]
+  const selectedCompatibleArenas = draft?.arenaIds.filter((id) => !game?.available_arena_ids?.length || game.available_arena_ids.includes(id)) || []
+  const originalPrimaryArena = orders[0]?.arena_id
+  const primaryArena = originalPrimaryArena && selectedCompatibleArenas.includes(originalPrimaryArena)
+    ? originalPrimaryArena : selectedCompatibleArenas[0] || draft?.arenaIds[0]
   const patch = (value: Partial<Draft>) => setDraft((current) => current ? { ...current, ...value } : current)
 
   async function mutate(deleted: boolean) {
@@ -166,7 +170,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
       <p>{text.deleteHelp}</p><div className="action-row"><button className="danger" disabled={saving} onClick={() => void mutate(true)} type="button">{text.confirm}</button><button className="secondary" disabled={saving} onClick={() => setConfirmDelete(false)} type="button">{text.keep}</button></div>
     </div> : <form onSubmit={submit}>
       <fieldset disabled={saving} className="calendar-edit-fields">
-        <p className="full calendar-booking-creator">{text.reservedBy}: <strong>{creator || text.notRecorded}</strong>{session?.created_at && <> · <time dateTime={session.created_at}>{bookingTime.format(new Date(session.created_at))}</time></>}</p>
+        <p className="full calendar-booking-creator">{text.reservedBy}: <strong>{creator || text.notRecorded}</strong>{createdAt && <> · <time dateTime={createdAt}>{bookingTime.format(new Date(createdAt))}</time></>}</p>
         <section className="full calendar-client-details" aria-labelledby="calendar-client-title">
           <h3 id="calendar-client-title">{text.client}</h3>
           <dl>
