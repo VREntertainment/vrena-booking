@@ -60,31 +60,7 @@ begin
  left join lateral (
    select case when a.operator_session_id is null then a.actor_user_id
      else coalesce(k.operator_profile_id,
-       case when a.new_value->>'booking_operator_profile_id' ~ '^[0-9a-fA-F-]{36}
- order by (a.operator_session_id is not null) desc, a.created_at, case when a.entity_type='sessions' then 0 else 1 end, a.id
- limit 1;
-
- return (select to_jsonb(s)||private.calendar_booking_metadata(s.id)||jsonb_build_object(
-   'booking_creator_name', creator_name,
-   'booking_creator_via_pin', coalesce(creator_via_pin,false),
-   'booking_arena_ids', coalesce((
-     select jsonb_agg(case when s.venue_key='cafe-des-stagiaires' then 'cafe:arena-1' else 'arena-'||a.arena_number end order by a.arena_number)
-     from private.arena_reservations a where a.session_id=s.id
-   ), '[]'::jsonb),
-   'booking_client', jsonb_build_object(
-     'name', coalesce(nullif(o.customer_name,''), nullif(p.full_name,''), nullif(p.nickname,'')),
-     'email', coalesce(nullif(g.email,''), nullif(o.customer_email,''), nullif(p.email,'')),
-     'phone', coalesce(nullif(g.phone,''), nullif(o.customer_phone,''), nullif(p.phone,'')),
-     'loyalty_points', case when g.session_id is null and p.id is not null and not coalesce(p.is_hr_record_only,false)
-       and not coalesce(o.customer_name='Guest',false) then p.loyalty_points_total end
-   )
- ) from public.sessions s
- left join lateral (select o.* from public.staff_orders o where o.session_id=s.id order by o.created_at,o.id limit 1) o on true
- left join private.guest_reservation_contacts g on g.session_id=s.id
- left join public.profiles p on p.id=coalesce(o.customer_id,s.ticket_customer_id,case when s.booking_source='website' then s.owner_id end)
- where s.id=p_session_id);
-end $function$;
-
+       case when pg_input_is_valid(a.new_value->>'booking_operator_profile_id', 'uuid')
          then (a.new_value->>'booking_operator_profile_id')::uuid end,
        case when a.actor_user_id is distinct from a.auth_user_id then a.actor_user_id end)
    end as profile_id
