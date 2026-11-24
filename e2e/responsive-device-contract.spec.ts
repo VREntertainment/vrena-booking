@@ -37,7 +37,9 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
     }
     const inserted = await admin.from('sessions').insert(fixture)
     if (inserted.error) throw inserted.error
-    const creatorText = venue === 'ha-do-centrosa' ? `Reserved by: ${owner.data.full_name}` : 'Reserved by: Not recorded'
+    const employee = await admin.from('staff_employee_profiles').select('legal_name').eq('profile_id', owner.data.id).maybeSingle()
+    if (employee.error) throw employee.error
+    const creatorText = venue === 'ha-do-centrosa' ? employee.data?.legal_name || owner.data.full_name : 'Not recorded'
     const cleanupIds = [id]
     if (venue === 'ha-do-centrosa') {
       const parallelId = crypto.randomUUID()
@@ -47,7 +49,7 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
     }
     try {
       if (venue === 'ha-do-centrosa') {
-        const audit = await admin.from('audit_logs').insert({ actor_user_id: owner.data.id, operator_session_id: crypto.randomUUID(), action: 'kiosk_insert', entity_type: 'sessions', entity_id: id })
+        const audit = await admin.from('audit_logs').insert({ actor_user_id: owner.data.id, operator_session_id: crypto.randomUUID(), action: 'kiosk_insert', entity_type: 'sessions', entity_id: id, new_value: { booking_operator_profile_id: owner.data.id } })
         if (audit.error) throw audit.error
       }
       await loginAsAdmin(page)
@@ -93,7 +95,8 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       expect(Math.abs(fixedTime!.x - gridBounds!.x)).toBeLessThan(3)
       await grid.evaluate(el => { el.scrollLeft = 0; el.scrollTop = 0 })
       await page.locator('.calendar-session-block').filter({ hasText: name }).click()
-      await expect(page.locator('.calendar-booking-creator')).toHaveText(creatorText)
+      await expect(page.locator('.calendar-booking-creator strong')).toHaveText(creatorText)
+      await expect(page.locator('.calendar-booking-creator time')).toHaveAttribute('datetime', /T/)
       const dialog = page.getByRole('dialog', { name: 'Edit booking', exact: true })
       await expect(dialog.getByRole('checkbox', { name: 'Confirmed with client', exact: true })).toBeVisible()
       const box = await dialog.boundingBox()
@@ -104,7 +107,8 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       await dialog.getByRole('button', { name: 'Close', exact: true }).last().click()
       // Unsaved dialog edits must not silently persist.
       await page.locator('.calendar-session-block').filter({ hasText: name }).click()
-      await expect(page.locator('.calendar-booking-creator')).toHaveText(creatorText)
+      await expect(page.locator('.calendar-booking-creator strong')).toHaveText(creatorText)
+      await expect(page.locator('.calendar-booking-creator time')).toHaveAttribute('datetime', /T/)
       await expect(dialog.getByRole('checkbox', { name: 'Confirmed with client', exact: true })).not.toBeChecked()
       await dialog.getByRole('button', { name: 'Close', exact: true }).last().click()
       await card.click()

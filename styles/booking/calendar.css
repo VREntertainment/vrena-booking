@@ -102,3 +102,47 @@
 }
 
 .app .calendar-booking-creator { margin: 0; overflow-wrap: anywhere; }
+
+.app .calendar-client-details {
+  padding: 12px;
+  border: 1px solid var(--player-border, var(--vrena-neutral-200));
+  border-radius: 12px;
+}
+.app .calendar-client-details h3 { margin: 0 0 8px; font-size: 1rem; }
+.app .calendar-client-details dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; margin: 0; }
+.app .calendar-client-details dt { font-size: .8125rem; color: var(--player-text-muted, var(--vrena-neutral-600)); }
+.app .calendar-client-details dd { margin: 0; overflow-wrap: anywhere; }
+.app .calendar-arena-options { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; padding: 0; margin: 0; border: 0; }
+.app .calendar-arena-options legend { margin-bottom: 4px; }
+.app .calendar-edit-fields .calendar-arena-options label {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--player-border, var(--vrena-neutral-200));
+  border-radius: 10px;
+}
+.app .calendar-edit-fields .calendar-arena-options input { width: 18px; height: 18px; min-height: 18px; }
+.app .calendar-games-details summary { cursor: pointer; padding-block: 12px; min-height: 44px; font-weight: 700; }
+@media (max-width: 600px) {
+  .app .calendar-booking-dialog {
+    max-height: calc(100dvh - 16px);
+    scroll-padding-block-end: 120px;
+  }
+  .app .calendar-edit-fields input:not([type="checkbox"]),
+  .app .calendar-edit-fields select,
+  .app .calendar-edit-fields textarea { min-height: 44px; font-size: 16px; }
+  .app .calendar-edit-fields .calendar-outside-hours,
+  .app .calendar-dialog-close,
+  .app .calendar-dialog-actions button { min-height: 44px; }
+  .app .calendar-dialog-actions {
+    position: sticky;
+    bottom: -16px;
+    z-index: 2;
+    padding-block: 8px max(8px, env(safe-area-inset-bottom));
+    background: var(--player-surface-raised, var(--vrena-white));
+    border-top: 1px solid var(--player-border, var(--vrena-neutral-200));
+    justify-content: flex-end;
+  }
+}
