@@ -295,13 +295,19 @@ export default function StaffKioskGate({ authEmail, language, onLogout, onLockCh
       setOperator(nextOperator)
       onOperatorChange?.(nextOperator)
       setPin('')
+      const currentUrl = new URL(window.location.href)
+      if (currentUrl.pathname !== '/create-session' || currentUrl.searchParams.get('mode') !== 'calendar') {
+        const params = new URLSearchParams({ mode: 'calendar' })
+        if (language) params.set('lang', language)
+        window.location.replace(`/create-session?${params}`)
+      }
     } catch (unlockError) {
       setPin('')
       setError(unlockError instanceof Error ? unlockError.message : text.incorrect)
     } finally {
       setSubmitting(false)
     }
-  }, [onOperatorChange, submitting, text.incorrect])
+  }, [language, onOperatorChange, submitting, text.incorrect])
 
   const updatePin = (value: string) => {
     const nextPin = normalizedStaffKioskPin(value)
