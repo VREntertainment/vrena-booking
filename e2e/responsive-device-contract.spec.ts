@@ -37,7 +37,9 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
     }
     const inserted = await admin.from('sessions').insert(fixture)
     if (inserted.error) throw inserted.error
-    const creatorText = venue === 'ha-do-centrosa' ? owner.data.full_name : 'Not recorded'
+    const employee = await admin.from('staff_employee_profiles').select('legal_name').eq('profile_id', owner.data.id).maybeSingle()
+    if (employee.error) throw employee.error
+    const creatorText = venue === 'ha-do-centrosa' ? employee.data?.legal_name || owner.data.full_name : 'Not recorded'
     const cleanupIds = [id]
     if (venue === 'ha-do-centrosa') {
       const parallelId = crypto.randomUUID()
