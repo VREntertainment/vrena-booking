@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { ArrowLeftRight, Delete, LockKeyhole, LogOut, ShieldCheck } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { isLanguageCode, type LanguageCode } from '@/lib/i18n/languages'
@@ -127,6 +128,7 @@ async function revokeOperatorToken(activeToken: string, reason: string) {
 }
 
 export default function StaffKioskGate({ authEmail, language, onLogout, onLockChange, onOperatorChange, children }: StaffKioskGateProps) {
+  const router = useRouter()
   const requiresPin = requiresStaffKioskPin(authEmail)
   const resolvedLanguage: Exclude<LanguageCode, 'zh'> = isLanguageCode(language) && language !== 'zh' ? language : 'en'
   const text = copy[resolvedLanguage]
@@ -299,7 +301,7 @@ export default function StaffKioskGate({ authEmail, language, onLogout, onLockCh
       if (currentUrl.pathname !== '/create-session' || currentUrl.searchParams.get('mode') !== 'calendar') {
         const params = new URLSearchParams({ mode: 'calendar' })
         if (language) params.set('lang', language)
-        window.location.replace(`/create-session?${params}`)
+        router.replace(`/create-session?${params}`)
       }
     } catch (unlockError) {
       setPin('')
@@ -307,7 +309,7 @@ export default function StaffKioskGate({ authEmail, language, onLogout, onLockCh
     } finally {
       setSubmitting(false)
     }
-  }, [language, onOperatorChange, submitting, text.incorrect])
+  }, [language, onOperatorChange, router, submitting, text.incorrect])
 
   const updatePin = (value: string) => {
     const nextPin = normalizedStaffKioskPin(value)
