@@ -22,6 +22,9 @@ type Draft = {
 }
 type BookingClient = { name: string | null; email: string | null; phone: string | null; loyalty_points: number | null }
 
+const contactFields = ['name', 'email', 'phone'] as const
+type ContactDetails = Pick<BookingClient, typeof contactFields[number]>
+
 const bookingTime = new Intl.DateTimeFormat('en-GB', {
   day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   timeZone: 'Asia/Ho_Chi_Minh', hourCycle: 'h23',
@@ -32,8 +35,8 @@ function venueArenas(venue: Draft['venue']) {
 }
 
 const copy = {
-  en: { client: 'Client details', clientName: 'Name', email: 'Email', phone: 'Phone', points: 'Loyalty points', gamesPlayed: 'Record games played', invalidPrice: 'Enter a whole VND amount at least equal to recorded payments.', reservedBy: 'Reserved by', notRecorded: 'Not recorded', clientConfirmed: 'Confirmed with client', title: 'Edit booking', shop: 'Shop', name: 'Booking name', date: 'Date', time: 'Time', game: 'Game', players: 'Players', duration: 'Duration (minutes)', arenas: 'Arenas', arena: 'Arena', status: 'Status', notes: 'Internal note', save: 'Save changes', close: 'Close', remove: 'Delete booking', confirm: 'Confirm deletion', keep: 'Keep booking', loading: 'Loading booking…', outsideHours: 'Reserve outside opening hours', reason: 'Reason for price change', paid: 'Recorded payments', due: 'Remaining to pay', invalidTime: 'Choose a time that ends on the same day and is within opening hours, or allow an outside-hours reservation.', savedPrice: 'Recorded payments stay unchanged. Enter a reason when changing the agreed total.', deleteHelp: 'This removes only this booking from the calendar and cancels its linked order. Recorded payments are retained; refunds are handled separately.', unspecified: 'Unspecified', open: 'Confirmed / open', completed: 'Completed', cancelled: 'Cancelled', total: 'Agreed total', conflict: 'This booking has changed. Close and reopen it before saving.' },
-  vi: { client: 'Thông tin khách hàng', clientName: 'Tên', email: 'Email', phone: 'Điện thoại', points: 'Điểm thưởng', gamesPlayed: 'Ghi nhận trò chơi đã chơi', invalidPrice: 'Nhập số tiền VND nguyên không thấp hơn số tiền đã thanh toán.', reservedBy: 'Người tạo đặt chỗ', notRecorded: 'Chưa ghi nhận', clientConfirmed: 'Đã xác nhận với khách', title: 'Sửa đặt chỗ', shop: 'Cửa hàng', name: 'Tên đặt chỗ', date: 'Ngày', time: 'Giờ', game: 'Trò chơi', players: 'Số người', duration: 'Thời lượng (phút)', arenas: 'Số arena', arena: 'Arena', status: 'Trạng thái', notes: 'Ghi chú nội bộ', save: 'Lưu thay đổi', close: 'Đóng', remove: 'Xóa đặt chỗ', confirm: 'Xác nhận xóa', keep: 'Giữ đặt chỗ', loading: 'Đang tải đặt chỗ…', outsideHours: 'Đặt chỗ ngoài giờ mở cửa', reason: 'Lý do thay đổi giá', paid: 'Đã thanh toán', due: 'Còn phải thanh toán', invalidTime: 'Chọn giờ kết thúc trong cùng ngày và trong giờ mở cửa, hoặc cho phép đặt ngoài giờ.', savedPrice: 'Giữ nguyên các khoản đã thanh toán. Nhập lý do khi thay đổi tổng tiền đã thỏa thuận.', deleteHelp: 'Chỉ xóa lượt đặt chỗ này khỏi lịch và hủy đơn liên kết. Các khoản đã thanh toán vẫn được giữ; hoàn tiền được xử lý riêng.', unspecified: 'Chưa xác định', open: 'Đã xác nhận / mở', completed: 'Hoàn tất', cancelled: 'Đã hủy', total: 'Tổng tiền đã thỏa thuận', conflict: 'Đặt chỗ đã thay đổi. Đóng và mở lại trước khi lưu.' },
+  en: { client: 'Client details', editClient: 'Edit client details', clientName: 'Name', email: 'Email', phone: 'Phone', points: 'Loyalty points', gamesPlayed: 'Record games played', invalidPrice: 'Enter a whole VND amount at least equal to recorded payments.', reservedBy: 'Reserved by', notRecorded: 'Not recorded', clientConfirmed: 'Confirmed with client', title: 'Edit booking', shop: 'Shop', name: 'Booking name', date: 'Date', time: 'Time', game: 'Game', players: 'Players', duration: 'Duration (minutes)', arenas: 'Arenas', arena: 'Arena', status: 'Status', notes: 'Internal note', save: 'Save changes', close: 'Close', remove: 'Delete booking', confirm: 'Confirm deletion', keep: 'Keep booking', loading: 'Loading booking…', outsideHours: 'Reserve outside opening hours', reason: 'Reason for price change', paid: 'Recorded payments', due: 'Remaining to pay', invalidTime: 'Choose a time that ends on the same day and is within opening hours, or allow an outside-hours reservation.', savedPrice: 'Recorded payments stay unchanged. Enter a reason when changing the agreed total.', deleteHelp: 'This removes only this booking from the calendar and cancels its linked order. Recorded payments are retained; refunds are handled separately.', unspecified: 'Unspecified', open: 'Confirmed / open', completed: 'Completed', cancelled: 'Cancelled', total: 'Agreed total', conflict: 'This booking has changed. Close and reopen it before saving.' },
+  vi: { client: 'Thông tin khách hàng', editClient: 'Sửa thông tin khách hàng', clientName: 'Tên', email: 'Email', phone: 'Điện thoại', points: 'Điểm thưởng', gamesPlayed: 'Ghi nhận trò chơi đã chơi', invalidPrice: 'Nhập số tiền VND nguyên không thấp hơn số tiền đã thanh toán.', reservedBy: 'Người tạo đặt chỗ', notRecorded: 'Chưa ghi nhận', clientConfirmed: 'Đã xác nhận với khách', title: 'Sửa đặt chỗ', shop: 'Cửa hàng', name: 'Tên đặt chỗ', date: 'Ngày', time: 'Giờ', game: 'Trò chơi', players: 'Số người', duration: 'Thời lượng (phút)', arenas: 'Số arena', arena: 'Arena', status: 'Trạng thái', notes: 'Ghi chú nội bộ', save: 'Lưu thay đổi', close: 'Đóng', remove: 'Xóa đặt chỗ', confirm: 'Xác nhận xóa', keep: 'Giữ đặt chỗ', loading: 'Đang tải đặt chỗ…', outsideHours: 'Đặt chỗ ngoài giờ mở cửa', reason: 'Lý do thay đổi giá', paid: 'Đã thanh toán', due: 'Còn phải thanh toán', invalidTime: 'Chọn giờ kết thúc trong cùng ngày và trong giờ mở cửa, hoặc cho phép đặt ngoài giờ.', savedPrice: 'Giữ nguyên các khoản đã thanh toán. Nhập lý do khi thay đổi tổng tiền đã thỏa thuận.', deleteHelp: 'Chỉ xóa lượt đặt chỗ này khỏi lịch và hủy đơn liên kết. Các khoản đã thanh toán vẫn được giữ; hoàn tiền được xử lý riêng.', unspecified: 'Chưa xác định', open: 'Đã xác nhận / mở', completed: 'Hoàn tất', cancelled: 'Đã hủy', total: 'Tổng tiền đã thỏa thuận', conflict: 'Đặt chỗ đã thay đổi. Đóng và mở lại trước khi lưu.' },
 }
 
 export default function StaffCalendarBookingDialog({ sessionId, language, onClose, onSaved }: {
@@ -49,6 +52,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
   const [creator, setCreator] = useState<string | null>(null)
   const [createdAt, setCreatedAt] = useState<string | null>(null)
   const [client, setClient] = useState<BookingClient | null>(null)
+  const [contactDraft, setContactDraft] = useState<ContactDetails | null>(null)
   const [editingPrice, setEditingPrice] = useState<string | null>(null)
   const [version, setVersion] = useState('')
   const [persisted, setPersisted] = useState<{ name: string; venue: string; date: string; time: string } | null>(null)
@@ -82,6 +86,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         setCreator(record.booking_creator_name || null)
         setCreatedAt(record.created_at ?? null)
         setClient(record.booking_client ?? null)
+        setContactDraft(null)
         setSession(record as Session)
         const order = linked.data?.[0]
         const venue = record.venue_key || 'ha-do-centrosa'
@@ -131,6 +136,10 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
       setError(text.invalidPrice)
       return
     }
+    const changedContact = contactDraft ? Object.fromEntries(contactFields.flatMap((field) => {
+      const value = contactDraft[field]?.trim() || null
+      return value === (client?.[field] ?? null) ? [] : [[field, value]]
+    })) : {}
     busy.current = true
     setSaving(true)
     setError('')
@@ -138,6 +147,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
       const result = deleted
         ? await supabase.rpc('staff_delete_session_operation', { p_session_id: session.id, p_delete_reason: 'Deleted from shared booking calendar' })
         : await supabase.rpc(isSimRacing ? 'staff_update_sim_racing_booking' : 'staff_update_booking_details', { p_session_id: session.id, p_booking: {
+          ...(Object.keys(changedContact).length ? { booking_client_contact: changedContact } : {}),
           expected_updated_at: version, name: draft.name.trim(), date: draft.date, start_time: draft.time,
           venue_key: draft.venue, game_slug: draft.game, players: draft.players, duration_minutes: draft.duration,
           arena_count: draft.arenaIds.length, arena_id: isSimRacing ? 'sim-racing-1' : primaryArena, status: session.status, notes: draft.notes,
@@ -173,12 +183,22 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         <p className="full calendar-booking-creator">{text.reservedBy}: <strong>{creator || text.notRecorded}</strong>{createdAt && <> · <time dateTime={createdAt}>{bookingTime.format(new Date(createdAt))}</time></>}</p>
         <section className="full calendar-client-details" aria-labelledby="calendar-client-title">
           <h3 id="calendar-client-title">{text.client}</h3>
-          <dl>
-            <div><dt>{text.clientName}</dt><dd>{client?.name || text.notRecorded}</dd></div>
-            <div><dt>{text.points}</dt><dd>{client?.loyalty_points ?? text.notRecorded}</dd></div>
-            <div><dt>{text.email}</dt><dd>{client?.email || text.notRecorded}</dd></div>
-            <div><dt>{text.phone}</dt><dd>{client?.phone || text.notRecorded}</dd></div>
-          </dl>
+          {contactDraft ? <div className="calendar-client-contact-fields">
+            <label>{text.clientName}<input autoComplete="off" maxLength={120} value={contactDraft.name ?? ''} onChange={(event) => setContactDraft({ ...contactDraft, name: event.target.value })} /></label>
+            <label>{text.email}<input type="email" autoComplete="off" maxLength={254} value={contactDraft.email ?? ''} onChange={(event) => setContactDraft({ ...contactDraft, email: event.target.value })} /></label>
+            <label>{text.phone}<input type="tel" autoComplete="off" maxLength={32} value={contactDraft.phone ?? ''} onChange={(event) => setContactDraft({ ...contactDraft, phone: event.target.value })} /></label>
+            <dl><div><dt>{text.points}</dt><dd>{client?.loyalty_points ?? text.notRecorded}</dd></div></dl>
+          </div> : <>
+            <dl>
+              <div><dt>{text.clientName}</dt><dd>{client?.name || text.notRecorded}</dd></div>
+              <div><dt>{text.points}</dt><dd>{client?.loyalty_points ?? text.notRecorded}</dd></div>
+              <div><dt>{text.email}</dt><dd>{client?.email || text.notRecorded}</dd></div>
+              <div><dt>{text.phone}</dt><dd>{client?.phone || text.notRecorded}</dd></div>
+            </dl>
+            <button type="button" className="secondary calendar-client-edit" onClick={() => setContactDraft({
+              name: client?.name ?? null, email: client?.email ?? null, phone: client?.phone ?? null,
+            })}>{text.editClient}</button>
+          </>}
         </section>
         <label className="full calendar-outside-hours"><input type="checkbox" checked={draft.clientConfirmed} onChange={(event) => patch({ clientConfirmed: event.target.checked })} /><span>{text.clientConfirmed}</span></label>
         <label className="full">{text.name}<input disabled={isSimRacing} required maxLength={120} value={draft.name} onChange={(event) => patch({ name: event.target.value })} /></label>
