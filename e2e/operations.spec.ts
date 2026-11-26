@@ -157,11 +157,11 @@ test('order history browses beyond 250 rows and retries a failed range request',
     await expect(page.getByText(/Showing \d/)).toHaveCount(0)
     await page.getByRole('button', { name: 'Try again', exact: true }).click()
     await expect(page.getByText('Showing 1–50 / 251', { exact: true })).toBeVisible()
-    const seen = new Set(await page.locator('.staff-order-row td:first-child strong').allTextContents())
+    const seen = new Set(await page.locator('[data-order-number]').allTextContents())
     for (let n = 1; n <= 5; n++) {
       await page.getByRole('button', { name: 'Next page', exact: true }).click()
       await expect(page.getByText(`Showing ${n * 50 + 1}–${Math.min((n + 1) * 50, 251)} / 251`, { exact: true })).toBeVisible()
-      for (const number of await page.locator('.staff-order-row td:first-child strong').allTextContents()) {
+      for (const number of await page.locator('[data-order-number]').allTextContents()) {
         expect(seen.has(number)).toBe(false)
         seen.add(number)
       }

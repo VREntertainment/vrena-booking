@@ -1,0 +1,134 @@
+.frame {
+  --orders-ink: var(--foreground);
+  --orders-muted: var(--player-text-muted);
+  --orders-surface: var(--vrena-surface, var(--vrena-white));
+  --orders-line: color-mix(in srgb, var(--orders-ink) 13%, transparent);
+  --orders-wash: color-mix(in srgb, var(--orders-ink) 4%, var(--orders-surface));
+  --orders-accent: var(--vrena-mode-accent-ink);
+  --orders-due: var(--vrena-orange-700);
+  --orders-cafe: var(--vrena-orange-700);
+  --orders-hado: var(--vrena-blue-700);
+  --orders-positive: var(--vrena-green-700);
+  --orders-negative: var(--vrena-red-700);
+  border: 1px solid var(--orders-line);
+  border-radius: 10px;
+  color: var(--orders-ink);
+  background: var(--orders-surface);
+  min-width: 0;
+}
+@media (prefers-color-scheme: dark) {
+  .frame {
+    --orders-due: var(--vrena-orange-300);
+    --orders-cafe: var(--vrena-orange-300);
+    --orders-hado: var(--vrena-blue-300);
+    --orders-positive: var(--vrena-green-300);
+    --orders-negative: var(--vrena-red-300);
+  }
+}
+.frame .table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .82rem; text-align: start; }
+.frame th, .frame td { text-align: start; padding: 8px clamp(4px, .65vw, 12px); }
+.frame .number { text-align: end; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.frame thead th { background: var(--orders-wash); font-size: .69rem; font-weight: 700; color: var(--orders-muted); min-height: 36px; }
+.frame thead th:first-child { border-start-start-radius: 9px; }
+.frame thead th:last-child { border-start-end-radius: 9px; }
+.row > td { border-block-start: 1px solid var(--orders-line); vertical-align: middle; }
+.row:hover > td { background: var(--orders-wash); }
+.row:focus-visible { outline: 2px solid var(--orders-accent); outline-offset: -2px; }
+.row[data-order-status='no_show'] > td:first-child { box-shadow: inset 3px 0 var(--orders-negative); }
+.identity strong, .identity small, .when strong, .when small { display: block; line-height: 1.3; }
+.identity strong { overflow-wrap: anywhere; }
+.identity small, .when small { color: var(--orders-muted); font-size: .71rem; margin-top: 2px; }
+.identity { max-width: 18ch; }
+.when time { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.venue span { font-size: .73rem; font-weight: 600; }
+.venue span[data-venue='hado'] { color: var(--orders-hado); }
+.venue span[data-venue='cafe'] { color: var(--orders-cafe); }
+.balance[data-due] strong { color: var(--orders-due); }
+.badge { --badge: var(--orders-muted); display: inline-block; color: var(--badge); background: color-mix(in srgb, var(--badge) 10%, var(--orders-surface)); padding: 3px 6px; border-radius: 4px; font-size: .69rem; font-weight: 650; white-space: nowrap; }
+.badge[data-state='paid'], .badge[data-state='completed'] { --badge: var(--orders-positive); }
+.badge[data-state='unpaid'], .badge[data-state='partially_paid'] { --badge: var(--orders-due); }
+.badge[data-state='confirmed'] { --badge: var(--orders-hado); }
+.badge[data-state='no_show'], .badge[data-state='cancelled'] { --badge: var(--orders-negative); }
+.actionBar { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 3px; }
+.frame button.record, .frame button.disclosure, .frame summary.more {
+  appearance: none; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  border: 1px solid var(--orders-line); background: var(--orders-surface); color: var(--orders-ink); box-shadow: none;
+  font: inherit; font-size: .74rem; font-weight: 650; border-radius: 6px; padding: 5px 7px;
+  min-height: 32px; margin: 0; white-space: nowrap; cursor: pointer;
+}
+.frame button.record { color: var(--orders-accent); border-color: color-mix(in srgb, var(--orders-accent) 45%, var(--orders-surface)); }
+.frame button.disclosure, .frame summary.more { min-width: 32px; }
+.disclosure[aria-expanded='true'] svg { transform: rotate(180deg); }
+.frame :is(button.record, button.disclosure, summary.more):focus-visible { outline: 2px solid var(--orders-accent); outline-offset: 1px; }
+.frame button.record:disabled { opacity: .5; cursor: default; }
+.mobileOnly, .mobileLabel { display: none; }
+.menu { position: relative; margin: 0; }
+.menu > summary::-webkit-details-marker { display: none; }
+.menu[open] { z-index: 5; }
+.menuPanel {
+  position: absolute; inset-inline-end: 0; inset-block-start: calc(100% + 5px); min-width: min(236px, calc(100vw - 32px));
+  border: 1px solid var(--orders-line); border-radius: 8px; background: var(--orders-surface); padding: 4px;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--vrena-neutral-950) 19%, transparent);
+}
+.menu[data-above] .menuPanel { inset-block-start: auto; inset-block-end: calc(100% + 5px); }
+.frame .menuPanel > button, .frame .menuPanel > :global(.staff-voucher-action) > button {
+  width: 100%; display: flex; align-items: center; gap: 7px; text-align: start; justify-content: flex-start;
+  min-height: 34px; padding: 6px 9px; margin: 0; border-radius: 4px; border: 0; background: transparent;
+  color: var(--orders-ink); box-shadow: none; font: inherit; font-size: .79rem;
+}
+.frame .menuPanel > button:hover, .frame .menuPanel > :global(.staff-voucher-action) > button:hover { background: var(--orders-wash); }
+.frame .menuPanel > button[data-negative] { color: var(--orders-negative); }
+.frame :global(.staff-order-just-created) > td { background: color-mix(in srgb, var(--orders-due) 13%, var(--orders-surface)); }
+.frame .detailRow[hidden] { display: none !important; }
+.detailRow > td { padding: 0; }
+.details { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 26px; padding: 12px; border-block-start: 1px solid var(--orders-line); background: var(--orders-wash); }
+.details :is(ul,p) { margin: 4px 0 0; font-size: .75rem; overflow-wrap: anywhere; }
+.details ul { padding-inline-start: 16px; }
+.details small { display: block; color: var(--orders-muted); }
+.empty { padding: 20px !important; color: var(--orders-muted); }
+
+@media (max-width: 900px) {
+ .frame { background: transparent; border: 0; }
+ .frame .table, .frame tbody { display: block; }
+ .frame thead { position: absolute; clip-path: inset(50%); inline-size: 1px; block-size: 1px; overflow: hidden; }
+ .frame .row {
+   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+   grid-template-areas: 'identity venue' 'when balance' 'players total' 'payment booking' 'actions actions';
+   gap: 6px 10px; padding: 9px 10px 7px; margin-block-start: 8px; border: 1px solid var(--orders-line); border-radius: 8px;
+   background: var(--orders-surface); align-items: center; min-width: 0;
+ }
+ .frame .row > td { display: block; min-width: 0; padding: 0; border: 0; text-align: start; }
+ .frame .row > :is(.venue,.balance,.total,.booking) { text-align: end; }
+ .frame .row:hover > td { background: transparent; }
+ .frame .row[data-order-status='no_show'] > td:first-child { box-shadow: none; }
+ .frame .row[data-order-status='no_show'] { border-inline-start: 3px solid var(--orders-negative); }
+ .identity { grid-area: identity; max-width: none; }
+ .venue { grid-area: venue; }
+ .when { grid-area: when; }
+ .players { grid-area: players; }
+ .total { grid-area: total; }
+ .balance { grid-area: balance; }
+ .payment { grid-area: payment; }
+ .booking { grid-area: booking; }
+ .frame .row > .actions { grid-area: actions; border-block-start: 1px solid var(--orders-line); padding-block-start: 5px; }
+ .balance strong, .when strong { font-size: 1rem; }
+ .when time { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px; }
+ .when small { margin-block-start: 0; }
+ .mobileLabel { display: inline; color: var(--orders-muted); font-size: .65rem; }
+ .when .mobileLabel, .balance .mobileLabel { display: block; }
+ .mobileOnly { display: inline; }
+ .actionBar { justify-content: flex-start; gap: 5px; }
+ .frame button.record, .frame button.disclosure, .frame summary.more,
+ .frame .menuPanel > button, .frame .menuPanel > :global(.staff-voucher-action) > button { min-height: 44px; }
+ .frame .actionBar :is(button.record, button.disclosure, summary.more) { padding-inline: 6px; }
+ .frame .actionBar :is(button.record, button.disclosure) svg { width: 13px; }
+ .frame summary.more { min-width: 44px; }
+ .menu { margin-inline-start: auto; }
+ .frame .detailRow, .frame .detailRow > td,
+ .frame :global(.staff-order-detail-row), .frame :global(.staff-order-detail-row) > td { display: block; min-width: 0; }
+ .details { grid-template-columns: minmax(0, 1fr); padding: 10px; border: 1px solid var(--orders-line); }
+}
+@media (max-width: 380px) {
+ .frame .actionBar { gap: 3px; }
+ .frame .actionBar :is(button.record, button.disclosure, summary.more) { font-size: .69rem; }
+}

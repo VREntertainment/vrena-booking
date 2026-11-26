@@ -1,5 +1,6 @@
 'use client'
 
+import { StaffOrderList, StaffOrderListEntry, compactOrderColumnCount } from './staff/StaffOrderList'
 import '../app/staff/staff.css'
 
 import { useStaffVoucherSummaries } from '../hooks/useStaffVoucherSummaries'
@@ -697,76 +698,104 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
     )
   )
 
-  const orderRows = (rows: StaffOrder[], paymentsByOrderId = orderPaymentsByOrderId) => (
-    <div className="staff-table-wrap staff-orders-table-wrap">
-      <table className="staff-table staff-orders-table">
-        <thead><tr>{[text.labels.order, resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking', text.labels.total, text.labels.payment, text.labels.status, ...(canCreateOrders ? [text.labels.actions] : [])].map((label) => <th key={label}>{label}</th>)}</tr></thead>
-        <tbody>{rows.map((order) => {
-          const draft = orderEditDraft?.orderId === order.id ? orderEditDraft : null
-          const payments = paymentsByOrderId.get(order.id) || []
-          const paid = orderPaidAmount(order, paymentsByOrderId)
-          const balance = Math.max(0, order.total - paid)
-          const terminal = ['cancelled', 'refunded', 'no_show', 'completed'].includes(order.order_status)
-          const canPay = balance > 0 && !['cancelled', 'refunded', 'no_show'].includes(order.order_status) && order.payment_status !== 'refunded' && !(payments.length === 0 && order.payment_status === 'partially_paid')
-          const paymentSummary = <span className="staff-order-payment-values"><span>{paymentStatusLabel(order.payment_status, text)}</span><span>{resolvedLanguage === 'vi' ? 'Đã trả' : 'Paid'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(paid)}</span><span>{resolvedLanguage === 'vi' ? 'Còn lại' : 'Balance'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(balance)}</span></span>
-          const venue = order.arena_id?.startsWith('cafe:') ? 'cafe-des-stagiaires' : order.arena_id ? 'ha-do-centrosa' : null
-          return <Fragment key={order.id}>
-            <tr ref={order.order_number === confirmedSummary?.orderNumber ? confirmedOrderRef : undefined} tabIndex={order.order_number === confirmedSummary?.orderNumber ? -1 : undefined} className={`staff-order-row ${order.order_number === confirmedSummary?.orderNumber ? 'staff-order-just-created' : ''} ${order.order_status === 'cancelled' ? 'staff-order-cancelled' : ''}`} data-collapsed={order.order_status === 'cancelled' && !expandedCancelledOrders.has(order.id)}>
-              <td className="staff-order-identity" colSpan={order.order_status === 'cancelled' && !expandedCancelledOrders.has(order.id) ? (canCreateOrders ? 6 : 5) : undefined} data-label={text.labels.order}>
-                <div className="staff-order-heading">
-                  {order.order_status === 'cancelled' ? <button className="staff-order-number staff-order-cancelled-number" type="button" aria-expanded={expandedCancelledOrders.has(order.id)} onClick={() => { setExpandedCancelledOrders(current => { const next = new Set(current); if (next.has(order.id)) next.delete(order.id); else next.add(order.id); return next }); setPaymentOrderId(null); setOrderEditDraft(null); setOrderStatusConfirm(null) }}><strong>{order.order_number}</strong><span aria-hidden="true">{expandedCancelledOrders.has(order.id) ? '⌃' : '⌄'}</span></button> : <strong>{order.order_number}</strong>}
-                  {order.order_status === 'cancelled' && <span className="staff-order-status-pill">{text.orderStatuses.cancelled}</span>}
-                </div>
-                <p className="staff-order-customer">{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</p>
-                {order.order_status === 'cancelled' && !expandedCancelledOrders.has(order.id) && <small>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}</small>}
-                <div className="staff-order-header-tools">
-                  {order.session_id && ['confirmed', 'paid', 'partially_paid', 'completed'].includes(order.order_status) && <StaffSavedBookingShare orderId={order.id} sessionId={order.session_id} language={resolvedLanguage} disabled={saving} />}
-                  {canCreateOrders && (order.order_status !== 'cancelled' || expandedCancelledOrders.has(order.id) || (voucherSummaries[order.id]?.count ?? 0) > 0) && <StaffPaymentVouchers order={order} summary={voucherSummaries[order.id]} payments={payments} language={resolvedLanguage} onClosed={() => { if (currentTab === 'report') void loadReportData(true) }} onChanged={async () => {
-                  const [updated, receipts] = await Promise.all([supabase.from('staff_orders').select('*').eq('id', order.id).single(), fetchOrderPayments([order])])
-                  if (updated.error) throw new Error(updated.error.message)
-                  const fresh = updated.data as StaffOrder
-                  setOrders(items => items.map(item => item.id === order.id ? fresh : item))
-                  setBrowsedOrders(current => current ? { ...current, rows: current.rows.map(item => item.id === order.id ? fresh : item) } : null)
-                  setOrderPayments(items => [...items.filter(item => item.order_id !== order.id), ...receipts])
-                  setReportSnapshot(current => current ? { ...current, orders: current.orders.map(item => item.id === order.id ? fresh : item), payments: [...current.payments.filter(item => item.order_id !== order.id), ...receipts] } : null)
-                  markStaffDataStale('report')
-                }} />}
-                </div>
-              </td>
-              <td className="staff-order-booking-cell" data-label={resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking'}>{canCreateOrders && order.session_id ? <button className="staff-order-data-button" type="button" aria-label={resolvedLanguage === 'vi' ? 'Sửa chi tiết đặt chỗ' : 'Edit booking details'} disabled={saving} onClick={() => setEditingBookingId(order.session_id)}><div className="staff-order-booking-data"><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{(() => { const game = games.find((item) => item.id === order.game_id); return game ? brandedGameName(game.slug, game.name) : text.gameFallback })()}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div></button> : <div className="staff-order-booking-data"><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{(() => { const game = games.find((item) => item.id === order.game_id); return game ? brandedGameName(game.slug, game.name) : text.gameFallback })()}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div>}</td>
-              <td className="staff-order-total-cell" data-label={text.labels.total}>{canCreateOrders && !terminal ? <button className="staff-order-data-button" type="button" aria-label={resolvedLanguage === 'vi' ? 'Điều chỉnh tổng đơn' : 'Adjust order total'} disabled={saving} onClick={() => { setPaymentOrderId(null); beginOrderEdit(order) }}><strong>{formatVnd(order.total)}</strong><span className="staff-order-data-hint">{resolvedLanguage === 'vi' ? 'Chạm để sửa' : 'Tap to edit'}</span></button> : <strong>{formatVnd(order.total)}</strong>}</td>
-              <td className="staff-order-payment-cell" data-label={text.labels.payment}>
-                <div>{canCreateOrders && canPay ? <button className="staff-order-data-button staff-order-payment-link" type="button" aria-label={resolvedLanguage === 'vi' ? 'Ghi nhận thanh toán' : 'Record payment'} disabled={saving} onClick={() => { setOrderEditDraft(null); setPaymentOrderId(order.id) }}>{paymentSummary}<span className="staff-order-data-hint">{resolvedLanguage === 'vi' ? 'Chạm để thanh toán' : 'Tap to pay'}</span></button> : paymentSummary}
-                  <details className="staff-order-receipts"><summary>{resolvedLanguage === 'vi' ? 'Chi tiết thanh toán' : 'Payment details'}</summary>
-                    {payments.length ? <ul>{payments.map((payment) => <li key={payment.id}>{paymentMethodLabel(payment.payment_method, text)} · {formatVnd(payment.amount)}<small>{new Date(payment.created_at).toLocaleString(resolvedLanguage === 'vi' ? 'vi-VN' : 'en-GB', { timeZone: 'Asia/Ho_Chi_Minh' })}</small></li>)}</ul> : <p>{order.payment_status === 'unpaid' ? (resolvedLanguage === 'vi' ? 'Chưa ghi nhận thanh toán.' : 'No payments recorded.') : (resolvedLanguage === 'vi' ? 'Thiếu biên nhận cũ. Kiểm tra trước khi thay đổi thanh toán.' : 'Historical receipts are missing. Review the existing payment record before making changes.')}</p>}
-                    {order.price_override_reason && <p>{resolvedLanguage === 'vi' ? 'Lý do điều chỉnh giá' : 'Price adjustment reason'}: {order.price_override_reason}</p>}
-                    {order.internal_note && <p>{text.labels.internalNote}: {order.internal_note}</p>}
-                  </details>
-                </div>
-              </td>
-              <td className="staff-order-status-cell" data-label={text.labels.status}><span className="staff-order-status-pill">{text.orderStatuses[order.order_status]}</span></td>
-              {canCreateOrders && <td className="staff-order-actions-cell" data-has-actions={canPay || !!order.session_id || !terminal} data-label={text.labels.actions}><div className="staff-order-action-menu" data-expanded={expandedOrderActions.has(order.id)}><button type="button" className="secondary staff-order-more-toggle" aria-expanded={expandedOrderActions.has(order.id)} onClick={() => setExpandedOrderActions(current => { const next = new Set(current); if (next.has(order.id)) next.delete(order.id); else next.add(order.id); return next })}>{resolvedLanguage === 'vi' ? 'Thao tác khác' : 'More actions'}</button><div className="staff-row-actions staff-order-actions">
-                <button className="primary" type="button" disabled={saving || !canPay} onClick={() => { setOrderEditDraft(null); setPaymentOrderId(order.id) }}>{text.labels.payment}</button>
-                {order.session_id ? <button className="secondary" type="button" disabled={saving} onClick={() => setEditingBookingId(order.session_id)}>{resolvedLanguage === 'vi' ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button> : <small>{resolvedLanguage === 'vi' ? 'Liên kết lịch đặt chỗ trong Hôm nay để chuyển cửa hàng.' : 'Link a calendar booking in Today to move shops.'}</small>}
-                <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => { setPaymentOrderId(null); beginOrderEdit(order) }}>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'}</button>
-                <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'completed' })}>{text.actions.done}</button>
-                <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'no_show' })}>{text.actions.noShow}</button>
-              </div></div></td>}
-            </tr>
-            {paymentOrderId === order.id && <tr className="staff-order-detail-row"><td colSpan={6}>{orderPaymentForm(order, paymentsByOrderId)}</td></tr>}
-            {draft && <tr className="staff-order-detail-row"><td colSpan={6}><form className="staff-visit-editor" onSubmit={(event) => { event.preventDefault(); void saveOrderEdit(order) }}>
-              <fieldset disabled={saving}><legend>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'} · {order.order_number}</legend><p>{resolvedLanguage === 'vi' ? 'Các khoản đã thanh toán được giữ nguyên. Tổng mới không được thấp hơn số tiền đã trả.' : 'Recorded payments are retained. The new total cannot be lower than the amount already paid.'}</p>
-                <label>{text.labels.total}<input required min={paid} step={1} type="number" value={draft.total} onChange={(event) => patchOrderEditDraft({ total: event.target.value })} /></label>
-                <label>{resolvedLanguage === 'vi' ? 'Lý do điều chỉnh giá' : 'Reason for price adjustment'}<textarea required maxLength={1000} value={draft.reason} onChange={(event) => patchOrderEditDraft({ reason: event.target.value })} /></label>
-                <div className="staff-row-actions"><button className="primary" type="submit" disabled={!draft.reason.trim()}>{text.actions.save}</button><button className="secondary" type="button" onClick={cancelOrderEdit}>{text.actions.cancel}</button></div>
-              </fieldset>{orderEditError && <p role="alert">{orderEditError}</p>}
-            </form></td></tr>}
-            {orderStatusConfirm?.orderId === order.id && <tr className="staff-order-detail-row"><td colSpan={6}><StaffOrderStatusConfirmation order={order} status={orderStatusConfirm.status} balance={payments.length === 0 && order.payment_status === 'partially_paid' ? null : balance} language={resolvedLanguage} disabled={saving} onConfirm={async () => { await updateOrder(order, { order_status: orderStatusConfirm.status }); setOrderStatusConfirm(null) }} onCancel={() => setOrderStatusConfirm(null)} /></td></tr>}
-          </Fragment>
-        })}{rows.length === 0 && <tr><td colSpan={canCreateOrders ? 6 : 5}>{text.messages.noOrders}</td></tr>}</tbody>
-      </table>
-    </div>
-  )
+  const orderRows = (rows: StaffOrder[], paymentsByOrderId = orderPaymentsByOrderId) => {
+    const compact = currentTab === 'orders'
+    const columnCount = compact ? compactOrderColumnCount : canCreateOrders ? 6 : 5
+    const entries = rows.map((order) => {
+      const draft = orderEditDraft?.orderId === order.id ? orderEditDraft : null
+      const payments = paymentsByOrderId.get(order.id) || []
+      const paid = orderPaidAmount(order, paymentsByOrderId)
+      const balance = Math.max(0, order.total - paid)
+      const terminal = ['cancelled', 'refunded', 'no_show', 'completed'].includes(order.order_status)
+      const canPay = balance > 0 && !['cancelled', 'refunded', 'no_show'].includes(order.order_status) && order.payment_status !== 'refunded' && !(payments.length === 0 && order.payment_status === 'partially_paid')
+      const paymentSummary = <span className="staff-order-payment-values"><span>{paymentStatusLabel(order.payment_status, text)}</span><span>{resolvedLanguage === 'vi' ? 'Đã trả' : 'Paid'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(paid)}</span><span>{resolvedLanguage === 'vi' ? 'Còn lại' : 'Balance'}: {payments.length === 0 && order.payment_status === 'partially_paid' ? '—' : formatVnd(balance)}</span></span>
+      const venue = order.arena_id?.startsWith('cafe:') ? 'cafe-des-stagiaires' : order.arena_id ? 'ha-do-centrosa' : null
+      const unknownPayment = payments.length === 0 && order.payment_status === 'partially_paid'
+      const highlighted = order.order_number === confirmedSummary?.orderNumber
+      const game = games.find((item) => item.id === order.game_id)
+      const shareAction = order.session_id && ['confirmed', 'paid', 'partially_paid', 'completed'].includes(order.order_status) && <StaffSavedBookingShare orderId={order.id} sessionId={order.session_id} language={resolvedLanguage} disabled={saving} />
+      const voucherAction = canCreateOrders && (compact || order.order_status !== 'cancelled' || expandedCancelledOrders.has(order.id) || (voucherSummaries[order.id]?.count ?? 0) > 0) && <StaffPaymentVouchers order={order} summary={voucherSummaries[order.id]} payments={payments} language={resolvedLanguage} onClosed={() => { if (currentTab === 'report') void loadReportData(true) }} onChanged={async () => {
+        const [updated, receipts] = await Promise.all([supabase.from('staff_orders').select('*').eq('id', order.id).single(), fetchOrderPayments([order])])
+        if (updated.error) throw new Error(updated.error.message)
+        const fresh = updated.data as StaffOrder
+        setOrders(items => items.map(item => item.id === order.id ? fresh : item))
+        setBrowsedOrders(current => current ? { ...current, rows: current.rows.map(item => item.id === order.id ? fresh : item) } : null)
+        setOrderPayments(items => [...items.filter(item => item.order_id !== order.id), ...receipts])
+        setReportSnapshot(current => current ? { ...current, orders: current.orders.map(item => item.id === order.id ? fresh : item), payments: [...current.payments.filter(item => item.order_id !== order.id), ...receipts] } : null)
+        markStaffDataStale('report')
+      }} />
+      const recordPayment = () => { setOrderEditDraft(null); setPaymentOrderId(order.id) }
+      const adjustTotal = () => { setPaymentOrderId(null); beginOrderEdit(order) }
+      const actions = (shareAction || voucherAction || (canCreateOrders && (order.session_id || !terminal))) ? <>
+        {shareAction}
+        {voucherAction}
+        {canCreateOrders && order.session_id && <button type="button" data-close-order-menu disabled={saving} onClick={() => setEditingBookingId(order.session_id)}>{resolvedLanguage === 'vi' ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button>}
+        {canCreateOrders && !terminal && <>
+          <button type="button" data-close-order-menu disabled={saving} onClick={adjustTotal}>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'}</button>
+          <button type="button" data-close-order-menu disabled={saving} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'completed' })}>{text.actions.done}</button>
+          <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'no_show' })}>{text.actions.noShow}</button>
+        </>}
+      </> : undefined
+      return <Fragment key={order.id}>
+        {compact ? <StaffOrderListEntry
+          language={resolvedLanguage} order={order} payments={payments} paid={paid}
+          balance={unknownPayment ? null : balance} gameName={game ? brandedGameName(game.slug, game.name) : text.gameFallback}
+          recordPayment={canCreateOrders && canPay ? recordPayment : undefined}
+          actions={actions} disabled={saving} highlighted={highlighted} rowRef={highlighted ? confirmedOrderRef : undefined}
+        /> : <tr ref={order.order_number === confirmedSummary?.orderNumber ? confirmedOrderRef : undefined} tabIndex={order.order_number === confirmedSummary?.orderNumber ? -1 : undefined} className={`staff-order-row ${order.order_number === confirmedSummary?.orderNumber ? 'staff-order-just-created' : ''} ${order.order_status === 'cancelled' ? 'staff-order-cancelled' : ''}`} data-collapsed={order.order_status === 'cancelled' && !expandedCancelledOrders.has(order.id)}>
+          <td className="staff-order-identity" colSpan={order.order_status === 'cancelled' && !expandedCancelledOrders.has(order.id) ? (canCreateOrders ? 6 : 5) : undefined} data-label={text.labels.order}>
+            <div className="staff-order-heading">
+              {order.order_status === 'cancelled' ? <button className="staff-order-number staff-order-cancelled-number" type="button" aria-expanded={expandedCancelledOrders.has(order.id)} onClick={() => { setExpandedCancelledOrders(current => { const next = new Set(current); if (next.has(order.id)) next.delete(order.id); else next.add(order.id); return next }); setPaymentOrderId(null); setOrderEditDraft(null); setOrderStatusConfirm(null) }}><strong>{order.order_number}</strong><span aria-hidden="true">{expandedCancelledOrders.has(order.id) ? '⌃' : '⌄'}</span></button> : <strong>{order.order_number}</strong>}
+              {order.order_status === 'cancelled' && <span className="staff-order-status-pill">{text.orderStatuses.cancelled}</span>}
+            </div>
+            <p className="staff-order-customer">{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</p>
+            {order.order_status === 'cancelled' && !expandedCancelledOrders.has(order.id) && <small>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}</small>}
+            <div className="staff-order-header-tools">
+              {shareAction}
+              {voucherAction}
+            </div>
+          </td>
+          <td className="staff-order-booking-cell" data-label={resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking'}>{canCreateOrders && order.session_id ? <button className="staff-order-data-button" type="button" aria-label={resolvedLanguage === 'vi' ? 'Sửa chi tiết đặt chỗ' : 'Edit booking details'} disabled={saving} onClick={() => setEditingBookingId(order.session_id)}><div className="staff-order-booking-data"><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{(() => { const game = games.find((item) => item.id === order.game_id); return game ? brandedGameName(game.slug, game.name) : text.gameFallback })()}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div></button> : <div className="staff-order-booking-data"><span className={`staff-order-shop ${venue === 'cafe-des-stagiaires' ? 'cafe' : ''}`}>{venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue ? 'Hà Đô Centrosa' : (resolvedLanguage === 'vi' ? 'Chưa xác định' : 'Unspecified')}</span><p>{(() => { const game = games.find((item) => item.id === order.game_id); return game ? brandedGameName(game.slug, game.name) : text.gameFallback })()}</p>{staffDateLabel(order.booking_date)} · {normalizeTime(order.booking_time)}<p>{text.labels.players}: {order.players_count}</p></div>}</td>
+          <td className="staff-order-total-cell" data-label={text.labels.total}>{canCreateOrders && !terminal ? <button className="staff-order-data-button" type="button" aria-label={resolvedLanguage === 'vi' ? 'Điều chỉnh tổng đơn' : 'Adjust order total'} disabled={saving} onClick={() => { setPaymentOrderId(null); beginOrderEdit(order) }}><strong>{formatVnd(order.total)}</strong><span className="staff-order-data-hint">{resolvedLanguage === 'vi' ? 'Chạm để sửa' : 'Tap to edit'}</span></button> : <strong>{formatVnd(order.total)}</strong>}</td>
+          <td className="staff-order-payment-cell" data-label={text.labels.payment}>
+            <div>{canCreateOrders && canPay ? <button className="staff-order-data-button staff-order-payment-link" type="button" aria-label={resolvedLanguage === 'vi' ? 'Ghi nhận thanh toán' : 'Record payment'} disabled={saving} onClick={() => { setOrderEditDraft(null); setPaymentOrderId(order.id) }}>{paymentSummary}<span className="staff-order-data-hint">{resolvedLanguage === 'vi' ? 'Chạm để thanh toán' : 'Tap to pay'}</span></button> : paymentSummary}
+              <details className="staff-order-receipts"><summary>{resolvedLanguage === 'vi' ? 'Chi tiết thanh toán' : 'Payment details'}</summary>
+                {payments.length ? <ul>{payments.map((payment) => <li key={payment.id}>{paymentMethodLabel(payment.payment_method, text)} · {formatVnd(payment.amount)}<small>{new Date(payment.created_at).toLocaleString(resolvedLanguage === 'vi' ? 'vi-VN' : 'en-GB', { timeZone: 'Asia/Ho_Chi_Minh' })}</small></li>)}</ul> : <p>{order.payment_status === 'unpaid' ? (resolvedLanguage === 'vi' ? 'Chưa ghi nhận thanh toán.' : 'No payments recorded.') : (resolvedLanguage === 'vi' ? 'Thiếu biên nhận cũ. Kiểm tra trước khi thay đổi thanh toán.' : 'Historical receipts are missing. Review the existing payment record before making changes.')}</p>}
+                {order.price_override_reason && <p>{resolvedLanguage === 'vi' ? 'Lý do điều chỉnh giá' : 'Price adjustment reason'}: {order.price_override_reason}</p>}
+                {order.internal_note && <p>{text.labels.internalNote}: {order.internal_note}</p>}
+              </details>
+            </div>
+          </td>
+          <td className="staff-order-status-cell" data-label={text.labels.status}><span className="staff-order-status-pill">{text.orderStatuses[order.order_status]}</span></td>
+          {canCreateOrders && <td className="staff-order-actions-cell" data-has-actions={canPay || !!order.session_id || !terminal} data-label={text.labels.actions}><div className="staff-order-action-menu" data-expanded={expandedOrderActions.has(order.id)}><button type="button" className="secondary staff-order-more-toggle" aria-expanded={expandedOrderActions.has(order.id)} onClick={() => setExpandedOrderActions(current => { const next = new Set(current); if (next.has(order.id)) next.delete(order.id); else next.add(order.id); return next })}>{resolvedLanguage === 'vi' ? 'Thao tác khác' : 'More actions'}</button><div className="staff-row-actions staff-order-actions">
+            <button className="primary" type="button" disabled={saving || !canPay} onClick={() => { setOrderEditDraft(null); setPaymentOrderId(order.id) }}>{text.labels.payment}</button>
+            {order.session_id ? <button className="secondary" type="button" disabled={saving} onClick={() => setEditingBookingId(order.session_id)}>{resolvedLanguage === 'vi' ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button> : <small>{resolvedLanguage === 'vi' ? 'Liên kết lịch đặt chỗ trong Hôm nay để chuyển cửa hàng.' : 'Link a calendar booking in Today to move shops.'}</small>}
+            <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => { setPaymentOrderId(null); beginOrderEdit(order) }}>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'}</button>
+            <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'completed' })}>{text.actions.done}</button>
+            <button className="staff-order-tertiary" type="button" disabled={saving || terminal} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'no_show' })}>{text.actions.noShow}</button>
+          </div></div></td>}
+        </tr>}
+        {paymentOrderId === order.id && <tr className="staff-order-detail-row"><td colSpan={columnCount}>{orderPaymentForm(order, paymentsByOrderId)}</td></tr>}
+        {draft && <tr className="staff-order-detail-row"><td colSpan={columnCount}><form className="staff-visit-editor" onSubmit={(event) => { event.preventDefault(); void saveOrderEdit(order) }}>
+          <fieldset disabled={saving}><legend>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'} · {order.order_number}</legend><p>{resolvedLanguage === 'vi' ? 'Các khoản đã thanh toán được giữ nguyên. Tổng mới không được thấp hơn số tiền đã trả.' : 'Recorded payments are retained. The new total cannot be lower than the amount already paid.'}</p>
+            <label>{text.labels.total}<input required min={paid} step={1} type="number" value={draft.total} onChange={(event) => patchOrderEditDraft({ total: event.target.value })} /></label>
+            <label>{resolvedLanguage === 'vi' ? 'Lý do điều chỉnh giá' : 'Reason for price adjustment'}<textarea required maxLength={1000} value={draft.reason} onChange={(event) => patchOrderEditDraft({ reason: event.target.value })} /></label>
+            <div className="staff-row-actions"><button className="primary" type="submit" disabled={!draft.reason.trim()}>{text.actions.save}</button><button className="secondary" type="button" onClick={cancelOrderEdit}>{text.actions.cancel}</button></div>
+          </fieldset>{orderEditError && <p role="alert">{orderEditError}</p>}
+        </form></td></tr>}
+        {orderStatusConfirm?.orderId === order.id && <tr className="staff-order-detail-row"><td colSpan={columnCount}><StaffOrderStatusConfirmation order={order} status={orderStatusConfirm.status} balance={payments.length === 0 && order.payment_status === 'partially_paid' ? null : balance} language={resolvedLanguage} disabled={saving} onConfirm={async () => { await updateOrder(order, { order_status: orderStatusConfirm.status }); setOrderStatusConfirm(null) }} onCancel={() => setOrderStatusConfirm(null)} /></td></tr>}
+      </Fragment>
+    })
+    if (compact) return <StaffOrderList language={resolvedLanguage} empty={rows.length === 0}>{entries}</StaffOrderList>
+    return (
+      <div className="staff-table-wrap staff-orders-table-wrap">
+        <table className="staff-table staff-orders-table">
+          <thead><tr>{[text.labels.order, resolvedLanguage === 'vi' ? 'Đặt chỗ' : 'Booking', text.labels.total, text.labels.payment, text.labels.status, ...(canCreateOrders ? [text.labels.actions] : [])].map((label) => <th key={label}>{label}</th>)}</tr></thead>
+          <tbody>{entries}{rows.length === 0 && <tr><td colSpan={columnCount}>{text.messages.noOrders}</td></tr>}</tbody>
+        </table>
+      </div>
+    )
+  }
 
   if (rank < 20) {
     return (
