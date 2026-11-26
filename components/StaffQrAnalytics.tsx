@@ -3,14 +3,13 @@
 import {
   Activity,
   CircleCheck,
-  Monitor,
   QrCode,
   ShieldCheck,
-  Smartphone,
-  Tablet,
   Trophy,
 } from 'lucide-react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
+import { ReportPanel, ReportRanking, ReportTrend, reportNumber } from '../features/staff/reportCharts'
+import chartStyles from '../features/staff/ReportCharts.module.css'
 
 export type StaffQrAnalyticsSummary = {
   activeCodes: number
@@ -189,12 +188,6 @@ function InsightCard({ help, icon, label, note, value }: {
   )
 }
 
-function DeviceIcon({ deviceClass }: { deviceClass: StaffQrAnalyticsSnapshot['deviceMix'][number]['deviceClass'] }) {
-  if (deviceClass === 'mobile') return <Smartphone aria-hidden="true" size={15} />
-  if (deviceClass === 'tablet') return <Tablet aria-hidden="true" size={15} />
-  return <Monitor aria-hidden="true" size={15} />
-}
-
 export default function StaffQrAnalytics({
   compareEnabled,
   compareLabel,
@@ -207,9 +200,8 @@ export default function StaffQrAnalytics({
   const text = copy[language]
   const summary = { ...emptySummary, ...(data?.summary ?? {}) }
   const comparison = { ...emptySummary, ...(data?.comparisonSummary ?? {}) }
-  const maxScans = Math.max(1, ...(data?.scanSeries ?? []).map((point) => point.scans))
-  const totalDeviceScans = Math.max(1, (data?.deviceMix ?? []).reduce((total, item) => total + item.scans, 0))
-  const chartStyle = { '--qr-point-count': Math.max(data?.scanSeries.length ?? 0, 1) } as CSSProperties
+  const count = (value: number) => reportNumber(language, value)
+  const daily = data?.scanSeries ?? []
   const comparisonNote = compareEnabled
     ? `${changeLabel(summary.totalScans, comparison.totalScans, text.newValue)} ${text.vs} ${compareLabel}`
     : null
@@ -250,50 +242,20 @@ export default function StaffQrAnalytics({
       {error ? <p className="staff-insights-empty error" role="alert">{error}</p> : null}
       {!error && summary.totalScans === 0 ? <p className="staff-insights-empty">{text.empty}</p> : null}
 
-      <div className="staff-insights-grid staff-qr-grid">
-        <section className="staff-insight-panel staff-qr-trend-panel" aria-label={text.trend}>
-          <div className="staff-insight-panel-head">
-            <div>
-              <h5>{text.trend}</h5>
-              <span>{text.trendHelp} · {rangeLabel}</span>
-            </div>
-          </div>
-          <div className="staff-qr-chart-scroll">
-            <div className="staff-qr-chart" style={chartStyle}>
-              {(data?.scanSeries ?? []).map((point, index, points) => (
-                <div className="staff-qr-chart-day" key={point.date} title={`${dateLabel(point.date, language)}: ${point.scans}`}>
-                  <div className="staff-qr-chart-track">
-                    <span style={{ height: point.scans > 0 ? `${Math.max(4, (point.scans / maxScans) * 100)}%` : '0%' }} />
-                  </div>
-                  {(index === 0 || index === points.length - 1) ? <small>{dateLabel(point.date, language)}</small> : <small aria-hidden="true" />}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="staff-insight-panel" aria-label={text.deviceMix}>
-          <div className="staff-insight-panel-head">
-            <div>
-              <h5>{text.deviceMix}</h5>
-              <span>{text.deviceMixHelp}</span>
-            </div>
-          </div>
-          <div className="staff-qr-device-list">
-            {(data?.deviceMix ?? []).map((item) => (
-              <div key={item.deviceClass}>
-                <div>
-                  <span><DeviceIcon deviceClass={item.deviceClass} /> {text[item.deviceClass]}</span>
-                  <strong>{item.scans.toLocaleString()}</strong>
-                </div>
-                <div className="staff-payment-track">
-                  <span style={{ width: `${Math.round((item.scans / totalDeviceScans) * 100)}%` }} />
-                </div>
-              </div>
-            ))}
-            {(data?.deviceMix.length ?? 0) === 0 ? <p className="notice">{text.empty}</p> : null}
-          </div>
-        </section>
+      <div className={chartStyles.grid}>
+        <ReportPanel title={text.trend} description={`${text.trendHelp} · ${rangeLabel}`} wide>
+          <ReportTrend label={text.trend} language={language} labels={daily.map((point) => dateLabel(point.date, language))}
+            series={[{ label: text.scans, color: 'primary', values: daily.map((point) => point.scans) }]} valueLabel={count} />
+        </ReportPanel>
+        <ReportPanel title={text.deviceMix} description={text.deviceMixHelp}>
+          <ReportRanking rows={(data?.deviceMix ?? []).map((item) => ({ label: text[item.deviceClass], value: item.scans }))
+            .sort((a, b) => b.value - a.value)} valueLabel={count} empty={text.empty} />
+        </ReportPanel>
+        <ReportPanel title={language === 'vi' ? 'Mã QR hàng đầu' : 'Top QR codes'} description={rangeLabel}>
+          <ReportRanking rows={(data?.qrCodes ?? []).filter((item) => item.scans > 0)
+            .map((item) => ({ id: item.id, label: item.name, value: item.scans, detail: `/q/${item.slug}` }))
+            .sort((a, b) => b.value - a.value).slice(0, 8)} valueLabel={count} empty={text.empty} />
+        </ReportPanel>
       </div>
 
       <section className="staff-insight-panel staff-qr-table-panel" aria-label={text.qrPerformance}>
