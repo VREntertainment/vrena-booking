@@ -226,13 +226,17 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
           tickLabel={metric === 'sales' ? shortMoney : count} language={language} />
       </ReportPanel>
       {venueTotals.length > 1 && <ReportPanel title={t.venueComparison} description={t.venueDescription} wide>
-        <div className={styles.tableWrap}><table><thead><tr><th scope="col">{t.venue}</th>{previous && <th scope="col">{t.period}</th>}
+        <div className={styles.tableWrap}><table className={styles.venueTable} role="table"><thead><tr><th scope="col">{t.venue}</th>{previous && <th scope="col">{t.period}</th>}
           {Object.values(metrics).map((label) => <th scope="col" key={label}>{label}</th>)}</tr></thead>
           <tbody>{venueTotals.map((item) => [current, ...(previous ? [previous] : [])].map((period, index) => <tr key={`${item}-${index}`}>
             <th scope="row" className={styles.venueLabel} data-color={colors[item]}>{venueNames[item]}</th>
-            {previous && <td>{index ? t.previous : t.current}</td>}
-            <td>{money(period.byVenue[item].sales)}</td><td>{count(period.byVenue[item].bookings)}</td>
-            <td>{count(period.byVenue[item].players)}</td><td>{count(period.byVenue[item].paidPlayers)}</td>
+            {previous && <td className={styles.venuePeriod}>{index ? t.previous : t.current}</td>}
+            {(Object.keys(metrics) as Array<keyof typeof metrics>).map((key) => (
+              <td key={key} className={styles.venueMetric}>
+                <span className={styles.mobileMetricLabel} aria-hidden="true">{metrics[key]}</span>
+                <span>{key === 'sales' ? money(period.byVenue[item][key]) : count(period.byVenue[item][key])}</span>
+              </td>
+            ))}
           </tr>))}</tbody>
         </table></div>
       </ReportPanel>}
