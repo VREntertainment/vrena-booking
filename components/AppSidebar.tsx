@@ -169,9 +169,9 @@ export default function AppSidebar({
           </Link>
         )}
         {canAccessHrConsole && (
-          <Link className={activeView === 'hr' ? 'tab sidebar-staff-tab sidebar-hr-tab active' : 'tab sidebar-staff-tab sidebar-hr-tab'} href={publicAppRoutes.hr} title="HR" onClick={() => onViewChange('hr')}>
+          <Link className={activeView === 'hr' ? 'tab sidebar-staff-tab sidebar-hr-tab active' : 'tab sidebar-staff-tab sidebar-hr-tab'} href={publicAppRoutes.hr} title={language === 'vi' ? 'Quyền nhân viên' : 'Employee Access'} onClick={() => onViewChange('hr')}>
             <BriefcaseBusiness aria-hidden="true" className="sidebar-tab-icon" size={18} strokeWidth={2.3} />
-            <span className="sidebar-tab-label">HR</span>
+            <span className="sidebar-tab-label">{language === 'vi' ? 'Quyền nhân viên' : 'Employee Access'}</span>
           </Link>
         )}
       </div>

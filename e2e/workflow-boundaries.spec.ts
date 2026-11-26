@@ -22,30 +22,18 @@ test('staff draft survives switching independently loaded workflows', async ({ p
   expect(errors).toEqual([])
 })
 
-test('HR feature sections render independently and remain contained', async ({ page }, testInfo) => {
+test('employee access shows the access fields and keeps Zalo settings available', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
   await loginAsAdmin(page)
   await page.goto('/hr')
-  await expect(page.getByTestId('staff-console')).toBeVisible()
-  const sections = [
-    ['Employee profile', '.staff-hr-employee-layout'],
-    ['Calendar', '.staff-hr-schedule-stack'],
-    ['Timesheet', '.staff-hr-timesheet-toolbar'],
-    ['Payroll', '.staff-hr-accountant-workspace'],
-    ['Bonuses', '.staff-attendance-form'],
-    ['Debts & advances', '.staff-attendance-form'],
-    ['Zalo Mini App', '.staff-zalo-settings'],
-    ['HR settings', '.staff-hr-settings-shell'],
-  ]
-  for (const [name, selector] of sections) {
-    const tab = page.locator('.staff-hr-module-rail').getByRole('button', { name: new RegExp(`^${name} `) })
-    await tab.click()
-    await expect(tab).toHaveAttribute('aria-current', 'page')
-    await expect(page.locator('.staff-hr-content').locator(selector)).toBeVisible()
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
-  }
-  await page.screenshot({ path: `/tmp/vrena-workflows-hr-${testInfo.project.name}.png` })
+  await expect(page.getByRole('heading', { name: 'Employee Access', exact: true })).toBeVisible()
+  await expect(page.getByLabel('Full name', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('Contract end date and PIN expiry', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('Store access level', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Payroll', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Zalo Mini App', exact: true }).click()
+  await expect(page.locator('.staff-zalo-settings')).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
   expect(errors).toEqual([])
 })
-

@@ -4,8 +4,8 @@ import HomeAppShell from '../../components/HomeAppShell'
 import { publicAppRoutes } from '../../lib/appRoutes'
 
 export const metadata: Metadata = {
-  title: 'VRena HR Console',
-  description: 'VRena company HR hub for employee records, attendance, payroll, and HR setup.',
+  title: 'VRena Employee Access',
+  description: 'Manage employee store access and PIN validity.',
   alternates: {
     canonical: publicAppRoutes.hr,
   },

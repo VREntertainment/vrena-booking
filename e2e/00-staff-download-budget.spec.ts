@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { gzipSync } from 'node:zlib'
 import { loginAsAdmin } from './support/admin'
 
-test('staff and HR initial downloads stay within production budgets', async ({ page }, testInfo) => {
+test('staff and employee access initial downloads stay within production budgets', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'chromium', 'Download measurements use one fixed desktop browser.')
   await loginAsAdmin(page)
   for (const route of ['/staff', '/hr']) {
@@ -16,7 +16,7 @@ test('staff and HR initial downloads stay within production budgets', async ({ p
     page.on('response', onResponse)
     await page.goto(route)
     await expect(page.getByTestId('staff-console')).toBeVisible()
-    await expect(page.getByRole('heading', { name: route === '/staff' ? 'New booking' : 'Employee profiles', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: route === '/staff' ? 'New booking' : 'Employee Access', exact: true })).toBeVisible()
     // Bound the measurement to the first settled screen, including its deferred view.
     await page.waitForTimeout(1500)
     await Promise.all(pending)

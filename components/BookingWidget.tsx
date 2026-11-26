@@ -205,7 +205,7 @@ import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import type { BookingForm } from '../lib/staff/types'
-import { canAccessHrConsole as canAccessHrConsoleForActor, canEnterStaffConsole, canStaffKioskOperatorAccessHr, canStaffKioskOperatorAccessStaff, requiresStaffKioskPin } from '../lib/staffKioskScope'
+import { canEnterStaffConsole, canRevealStaffKioskPin, canStaffKioskOperatorAccessStaff, requiresStaffKioskPin } from '../lib/staffKioskScope'
 import { isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import { setStaffKioskOperatorToken } from '../lib/supabase/client'
 import { ticketPriceBlockMinutesForDate } from '../lib/ticketTariffs'
@@ -230,6 +230,7 @@ import {
   ShortDateInput,
   StaffCalendarBookingDialog,
   StaffConsole,
+  StaffEmployeeAccess,
   TariffPaymentModal,
   TicketBookingView
 } from './BookingWidgetSurfaces'
@@ -4036,15 +4037,8 @@ function BookingWorkspace({
         profileRank: staffAccessRank,
       })
   ))
-  const canAccessHrConsole = Boolean(profile && canAccessStaffConsole && (
-    sharedKioskAccount
-      ? canStaffKioskOperatorAccessHr(kioskOperator?.accessRole)
-      : canAccessHrConsoleForActor({
-        authEmail: staffAccountEmail,
-        role: profile.role,
-        roleRank: staffAccessRank,
-      })
-  ))
+  const canAccessHrConsole = Boolean(profile && canAccessStaffConsole
+    && canRevealStaffKioskPin(staffAccountEmail, profile.role, staffAccessRank))
   const { locations: staffLocations } = useStaffLocations(canAccessStaffConsole, kioskOperator?.profileId || profile?.id || '')
   const staffLocationAllowed = !canAccessStaffConsole || staffLocations.some((location) => location.venue_key === bookingVenue)
   const canManageCalendarBookings = staffLocationAllowed && canAccessStaffConsole && (sharedKioskAccount ? ['staff', 'manager'].includes(kioskOperator?.accessRole || '') : staffAccessRank >= 50)
@@ -5473,7 +5467,6 @@ function BookingWorkspace({
               key={`staff-console-${kioskOperator.profileId}`}
               kioskOperator={kioskOperator}
               language={language}
-              mode="staff"
               onKioskLock={kioskLock || undefined}
               profile={profile ? { ...profile, id: kioskOperator.profileId, email: null, full_name: kioskOperator.name, role: kioskOperator.accessRole } : null}
               onOpenPlayerProfile={openStaffPlayerProfile}
@@ -5486,7 +5479,6 @@ function BookingWorkspace({
               authEmail={authEmail}
               key="staff-console"
               language={language}
-              mode="staff"
               profile={profile}
               onOpenPlayerProfile={openStaffPlayerProfile}
               onOpenSessionCalendar={openStaffCalendar}
@@ -5504,37 +5496,11 @@ function BookingWorkspace({
 
       {activeView === 'hr' && (
         isProfileAuthLoading ? <AppLoadingState label={language === 'vi' ? 'Đang kiểm tra đăng nhập…' : 'Checking sign-in…'} /> : canAccessHrConsole ? (
-          sharedKioskAccount && kioskOperator ? (
-            <StaffConsole
-              authEmail=""
-              key={`hr-console-${kioskOperator.profileId}`}
-              kioskOperator={kioskOperator}
-              language={language}
-              mode="hr"
-              onKioskLock={kioskLock || undefined}
-              profile={profile ? { ...profile, id: kioskOperator.profileId, email: null, full_name: kioskOperator.name, role: kioskOperator.accessRole } : null}
-              onOpenPlayerProfile={openStaffPlayerProfile}
-              onOpenSessionCalendar={openStaffCalendar}
-              initialBooking={calendarBookingDraft}
-              onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
-            />
-          ) : (
-            <StaffConsole
-              authEmail={authEmail}
-              key="hr-console"
-              language={language}
-              mode="hr"
-              profile={profile}
-              onOpenPlayerProfile={openStaffPlayerProfile}
-              onOpenSessionCalendar={openStaffCalendar}
-              initialBooking={calendarBookingDraft}
-              onBookingCreated={calendarBookingDraft ? openStaffCalendar : undefined}
-            />
-          )
+          <StaffEmployeeAccess language={language === 'vi' ? 'vi' : 'en'} showZalo={staffAccessRank >= 100} />
         ) : (
           <section className="section staff-console">
-            <h2>{language === 'vi' ? 'HR' : 'HR Console'}</h2>
-            <p className="notice">{language === 'vi' ? 'Cần quyền truy cập HR.' : 'HR access required.'}</p>
+            <h2>{language === 'vi' ? 'Quyền truy cập của nhân viên' : 'Employee Access'}</h2>
+            <p className="notice">{language === 'vi' ? 'Cần quyền quản trị nhân viên.' : 'Employee access administration required.'}</p>
           </section>
         )
       )}

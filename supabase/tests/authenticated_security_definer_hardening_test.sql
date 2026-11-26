@@ -220,7 +220,6 @@ select case when (
   'staff_save_player_achievement_profile_v3(uuid,integer,jsonb,jsonb,jsonb,text,uuid[])',
   'staff_set_employee_locations(uuid,text[])',
   'staff_set_player_stat_overrides(uuid,integer,jsonb,jsonb)',
-  'staff_sync_payroll_draft(date,boolean)',
   'staff_update_booking_details(uuid,jsonb)',
   'staff_update_order_operation(uuid,uuid,date,time without time zone,integer)',
   'staff_update_session_operation(uuid,text,date,time without time zone,integer,integer,integer,text,text,text)',

@@ -822,7 +822,6 @@ export type StaffConsoleProps = {
   profile: StaffProfile | null
   authEmail?: string
   language?: string
-  mode?: 'staff' | 'hr'
   kioskOperator?: StaffKioskOperator | null
   onKioskLock?: () => void
   onOpenPlayerProfile?: (profile: StaffProfile) => void
