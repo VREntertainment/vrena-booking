@@ -1,12 +1,10 @@
 'use client'
-import { ArrowRight } from 'lucide-react'
 
 import { brandedGameName } from '../lib/anvio'
 
 import {
   Activity,
   CalendarCheck2,
-  Gamepad2,
   Gauge,
   MessageCircle,
   MonitorSmartphone,
@@ -19,7 +17,9 @@ import {
   Timer,
   UsersRound,
 } from 'lucide-react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
+import { ReportHeatmap, ReportPanel, ReportRanking, ReportTrend, reportNumber } from '../features/staff/reportCharts'
+import chartStyles from '../features/staff/ReportCharts.module.css'
 
 export type StaffPlayerInsightsSummary = {
   engagedPlayers: number
@@ -386,22 +386,6 @@ function changeLabel(current: number, previous: number, newValue: string) {
   return `${change >= 0 ? '+' : ''}${change}%`
 }
 
-function activityChartScale(values: number[]) {
-  const rawMax = Math.max(0, ...values)
-  if (rawMax === 0) return { height: 112, max: 1, ticks: [1, 0] }
-
-  const roughStep = Math.max(1, rawMax / 4)
-  const magnitude = 10 ** Math.floor(Math.log10(roughStep))
-  const normalizedStep = roughStep / magnitude
-  const stepFactor = normalizedStep <= 1 ? 1 : normalizedStep <= 2 ? 2 : normalizedStep <= 5 ? 5 : 10
-  const step = Math.max(1, stepFactor * magnitude)
-  const max = Math.ceil(rawMax / step) * step
-  const ticks: number[] = []
-  for (let value = max; value >= 0; value -= step) ticks.push(value)
-  const height = Math.min(238, 112 + Math.ceil(Math.log2(max + 1)) * 14)
-  return { height, max, ticks }
-}
-
 function normalizedAcquisitionMix(rows: StaffProductAnalyticsSnapshot['acquisitionMix']) {
   const grouped = new Map<string, { source: string; medium: string; sessions: number }>()
 
@@ -430,65 +414,6 @@ function normalizedAcquisitionMix(rows: StaffProductAnalyticsSnapshot['acquisiti
   }
 
   return [...grouped.values()].sort((left, right) => right.sessions - left.sessions || left.source.localeCompare(right.source))
-}
-
-type ActivityChartPoint = {
-  first: number
-  key: string
-  label: string | null
-  second: number
-  title: string
-}
-
-function ActivityChart({
-  firstClass,
-  points,
-  secondClass,
-}: {
-  firstClass: string
-  points: ActivityChartPoint[]
-  secondClass: string
-}) {
-  const scale = activityChartScale(points.flatMap((point) => [point.first, point.second]))
-  const plotTop = 6
-  const chartStyle = {
-    '--activity-chart-height': `${scale.height}px`,
-    '--activity-point-count': Math.max(points.length, 1),
-    '--activity-plot-top': `${plotTop}px`,
-  } as CSSProperties
-  const barHeight = (value: number) => value > 0 ? `${Math.max(3, (value / scale.max) * 100)}%` : '0%'
-  const showsLabel = (index: number, targetCount: number) => {
-    if (points.length <= targetCount) return true
-    const step = Math.ceil((points.length - 1) / (targetCount - 1))
-    return index === 0 || index === points.length - 1 || index % step === 0
-  }
-
-  return (
-    <div className="staff-insight-activity-chart" style={chartStyle}>
-      {scale.ticks.map((tick) => (
-        <span
-          aria-hidden="true"
-          className="staff-insight-activity-gridline"
-          key={tick}
-          style={{ top: `${plotTop + ((1 - (tick / scale.max)) * scale.height)}px` }}
-        >
-          <small>{tick.toLocaleString()}</small>
-        </span>
-      ))}
-      <div className="staff-insight-activity-days">
-        {points.map((point, index) => (
-          <div className="staff-insight-activity-day" key={point.key} title={point.title}>
-            <div className="staff-insight-activity-track">
-              <span className={firstClass} style={{ height: barHeight(point.first) }} />
-              <span className={secondClass} style={{ height: barHeight(point.second) }} />
-            </div>
-            <small className={showsLabel(index, 8) ? 'activity-label-desktop' : 'activity-label-desktop is-hidden'}>{point.label}</small>
-            <small className={showsLabel(index, 5) ? 'activity-label-mobile' : 'activity-label-mobile is-hidden'}>{point.label}</small>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
 }
 
 function dateLabel(value: string | null, language: 'en' | 'vi') {
@@ -549,13 +474,10 @@ export default function StaffPlayerInsights({
   const comparison = { ...emptySummary, ...(data?.comparisonSummary ?? {}) }
   const productSummary = { ...emptyProductSummary, ...(data?.productAnalytics?.summary ?? {}) }
   const productComparison = { ...emptyProductSummary, ...(data?.productAnalytics?.comparisonSummary ?? {}) }
-  const maxPeak = Math.max(1, ...(data?.peakTimes ?? []).map((point) => point.visits))
-  const maxGame = Math.max(1, ...(data?.gameDemand ?? []).map((game) => game.reservations))
-  const maxTopPage = Math.max(1, ...(data?.productAnalytics?.topPages ?? []).map((page) => page.pageViews))
-  const maxTransition = Math.max(1, ...(data?.productAnalytics?.transitions ?? []).map((transition) => transition.transitions))
-  const maxSearchSurface = Math.max(1, ...(data?.productAnalytics?.searchSurfaces ?? []).map((surface) => surface.searches))
-  const totalDeviceSessions = (data?.productAnalytics?.deviceMix ?? []).reduce((sum, item) => sum + item.sessions, 0)
   const acquisitionMix = normalizedAcquisitionMix(data?.productAnalytics?.acquisitionMix ?? [])
+  const activity = data?.activitySeries ?? []
+  const digitalActivity = data?.productAnalytics?.activitySeries ?? []
+  const count = (value: number) => reportNumber(language, value)
   const weekdayLabels = language === 'vi' ? ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const dayparts = ['morning', 'afternoon', 'evening'] as const
   const productFreshness = timeLabel(productSummary.latestEventAt, language)
@@ -612,84 +534,26 @@ export default function StaffPlayerInsights({
 
       {summary.engagedPlayers === 0 ? <p className="staff-insights-empty">{text.empty}</p> : null}
 
-      <div className="staff-insights-grid">
-        <section className="staff-insight-panel staff-insight-activity-panel" aria-label={text.activityTitle}>
-          <div className="staff-insight-panel-head">
-            <div>
-              <h5>{text.activityTitle}</h5>
-              <span>{text.activitySubtitle}</span>
-            </div>
-            <div className="staff-insight-legend" aria-hidden="true">
-              <span><i className="reservations" />{text.reservations}</span>
-              <span><i className="check-ins" />{text.checkIns}</span>
-            </div>
-          </div>
-          <ActivityChart
-            firstClass="reservations"
-            points={(data?.activitySeries ?? []).map((point) => ({
-              first: point.reservations,
-              key: point.date,
-              label: dateLabel(point.date, language),
-              second: point.checkIns,
-              title: `${dateLabel(point.date, language)} · ${text.reservations} ${point.reservations} · ${text.checkIns} ${point.checkIns}`,
-            }))}
-            secondClass="check-ins"
-          />
-        </section>
-
-        <section className="staff-insight-panel" aria-label={text.peakTitle}>
-          <div className="staff-insight-panel-head">
-            <div>
-              <h5>{text.peakTitle}</h5>
-              <span>{text.peakSubtitle}</span>
-            </div>
-          </div>
-          <div className="staff-insight-heatmap">
-            <span />
-            {dayparts.map((daypart) => <strong key={daypart}>{text[daypart]}</strong>)}
-            {weekdayLabels.map((weekday, weekdayIndex) => (
-              <div className="staff-insight-heatmap-row" key={weekday}>
-                <strong>{weekday}</strong>
-                {dayparts.map((daypart) => {
-                  const point = data?.peakTimes.find((item) => item.weekday === weekdayIndex + 1 && item.daypart === daypart)
-                  const intensity = point?.visits ? Math.round((point.visits / maxPeak) * 82) + 12 : 5
-                  return (
-                    <span
-                      key={daypart}
-                      style={{ '--heat-intensity': `${intensity}%` } as CSSProperties}
-                      title={`${weekday} · ${text[daypart]} · ${point?.visits ?? 0} ${text.visits}`}
-                    >
-                      {point?.visits ?? 0}
-                    </span>
-                  )
-                })}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="staff-insight-panel" aria-label={text.gameTitle}>
-          <div className="staff-insight-panel-head">
-            <div>
-              <h5>{text.gameTitle}</h5>
-              <span>{text.gameSubtitle}</span>
-            </div>
-            <Gamepad2 aria-hidden="true" size={18} />
-          </div>
-          <div className="staff-insight-ranking">
-            {(data?.gameDemand ?? []).map((game, index) => (
-              <div className="staff-insight-ranking-row" key={game.gameKey}>
-                <span>{index + 1}</span>
-                <div>
-                  <strong>{brandedGameName(game.gameKey, game.gameName)}</strong>
-                  <small>{game.visits} {text.visits} · {game.reservations} {text.bookings}</small>
-                  <div><i style={{ width: `${Math.max(4, (game.reservations / maxGame) * 100)}%` }} /></div>
-                </div>
-              </div>
-            ))}
-            {(data?.gameDemand.length ?? 0) === 0 ? <p>{text.empty}</p> : null}
-          </div>
-        </section>
+      <div className={chartStyles.grid}>
+        <ReportPanel title={text.activityTitle} description={text.activitySubtitle} wide>
+          <ReportTrend label={text.activityTitle} labels={activity.map((point) => dateLabel(point.date, language) ?? point.date)}
+            series={[
+              { label: text.reservations, color: 'primary', values: activity.map((point) => point.reservations) },
+              { label: text.checkIns, color: 'secondary', values: activity.map((point) => point.checkIns) },
+            ]} language={language} valueLabel={count} />
+        </ReportPanel>
+        <ReportPanel title={text.peakTitle} description={text.peakSubtitle}>
+          <ReportHeatmap rows={weekdayLabels} columns={dayparts.map((part) => text[part])}
+            values={weekdayLabels.map((_, day) => dayparts.map((daypart) =>
+              data?.peakTimes.find((entry) => entry.weekday === day + 1 && entry.daypart === daypart)?.visits ?? 0))}
+            label={text.peakTitle} legend={['0', count(Math.max(0, ...(data?.peakTimes ?? []).map((point) => point.visits)))]} language={language} />
+        </ReportPanel>
+        <ReportPanel title={text.gameTitle} description={text.gameSubtitle}>
+          <ReportRanking rows={(data?.gameDemand ?? []).map((game) => ({
+            label: brandedGameName(game.gameKey, game.gameName), value: game.reservations,
+            detail: `${count(game.visits)} ${text.visits} · ${count(game.sessions)} ${language === 'vi' ? 'phiên' : 'sessions'}`,
+          })).sort((a, b) => b.value - a.value)} valueLabel={count} empty={text.empty} />
+        </ReportPanel>
 
         <section className="staff-insight-panel staff-insight-signal-panel">
           <div className="staff-insight-panel-head">
@@ -779,64 +643,24 @@ export default function StaffPlayerInsights({
 
         {productSummary.sessions > 0 ? (
           <div className="staff-digital-grid">
-            <section className="staff-insight-panel staff-digital-trend-panel" aria-label={digitalText.trendTitle}>
-              <div className="staff-insight-panel-head">
-                <div><h5>{digitalText.trendTitle}</h5><span>{digitalText.trendSubtitle}</span></div>
-                <div className="staff-insight-legend" aria-hidden="true">
-                  <span><i className="digital-views" />{digitalText.pageViews}</span>
-                  <span><i className="digital-sessions" />{digitalText.sessions}</span>
-                </div>
-              </div>
-              <ActivityChart
-                firstClass="digital-views"
-                points={(data?.productAnalytics?.activitySeries ?? []).map((point) => ({
-                  first: point.pageViews,
-                  key: point.date,
-                  label: dateLabel(point.date, language),
-                  second: point.sessions,
-                  title: `${dateLabel(point.date, language)} · ${point.pageViews} ${digitalText.views} · ${point.sessions} ${digitalText.sessionUnit}`,
-                }))}
-                secondClass="digital-sessions"
-              />
-            </section>
+            <ReportPanel title={digitalText.trendTitle} description={digitalText.trendSubtitle} wide>
+              <ReportTrend label={digitalText.trendTitle} labels={digitalActivity.map((point) => dateLabel(point.date, language) ?? point.date)}
+                series={[
+                  { label: digitalText.pageViews, color: 'primary', values: digitalActivity.map((point) => point.pageViews) },
+                  { label: digitalText.sessions, color: 'secondary', values: digitalActivity.map((point) => point.sessions) },
+                ]} language={language} valueLabel={count} />
+            </ReportPanel>
 
-            <section className="staff-insight-panel" aria-label={digitalText.topPages}>
-              <div className="staff-insight-panel-head">
-                <div><h5>{digitalText.topPages}</h5><span>{digitalText.topPagesSubtitle}</span></div>
-                <MousePointerClick aria-hidden="true" size={18} />
-              </div>
-              <div className="staff-insight-ranking">
-                {(data?.productAnalytics?.topPages ?? []).map((page, index) => (
-                  <div className="staff-insight-ranking-row" key={page.path}>
-                    <span>{index + 1}</span>
-                    <div>
-                      <strong>{page.path}</strong>
-                      <small>{page.pageViews} {digitalText.views} · {page.visitors} {digitalText.visitors.toLowerCase()} · {durationLabel(page.engagementSeconds)}</small>
-                      <div><i style={{ width: `${Math.max(4, (page.pageViews / maxTopPage) * 100)}%` }} /></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="staff-insight-panel" aria-label={digitalText.journeys}>
-              <div className="staff-insight-panel-head">
-                <div><h5>{digitalText.journeys}</h5><span>{digitalText.journeysSubtitle}</span></div>
-                <Route aria-hidden="true" size={18} />
-              </div>
-              <div className="staff-insight-ranking staff-digital-journeys">
-                {(data?.productAnalytics?.transitions ?? []).map((transition, index) => (
-                  <div className="staff-insight-ranking-row" key={`${transition.fromPath}-${transition.toPath}`}>
-                    <span>{index + 1}</span>
-                    <div>
-                      <strong>{transition.fromPath} <ArrowRight aria-hidden="true" size={16} /> {transition.toPath}</strong>
-                      <small>{transition.transitions} {digitalText.transitionUnit}</small>
-                      <div><i style={{ width: `${Math.max(4, (transition.transitions / maxTransition) * 100)}%` }} /></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <ReportPanel title={digitalText.topPages} description={digitalText.topPagesSubtitle}>
+              <ReportRanking rows={(data?.productAnalytics?.topPages ?? []).map((page) => ({
+                label: page.path, value: page.pageViews, detail: `${count(page.visitors)} ${digitalText.visitors.toLowerCase()} · ${durationLabel(page.engagementSeconds)}`,
+              }))} valueLabel={count} empty={text.empty} />
+            </ReportPanel>
+            <ReportPanel title={digitalText.journeys} description={digitalText.journeysSubtitle}>
+              <ReportRanking rows={(data?.productAnalytics?.transitions ?? []).map((transition) => ({
+                label: `${transition.fromPath} → ${transition.toPath}`, value: transition.transitions,
+              }))} valueLabel={count} empty={text.empty} />
+            </ReportPanel>
 
             <section className="staff-insight-panel staff-digital-audience" aria-label={digitalText.devices}>
               <div className="staff-digital-breakdown">
@@ -845,46 +669,27 @@ export default function StaffPlayerInsights({
                     <div><h5>{digitalText.devices}</h5><span>{digitalText.devicesSubtitle}</span></div>
                     <MonitorSmartphone aria-hidden="true" size={18} />
                   </div>
-                  <div className="staff-digital-mix-list">
-                    {(data?.productAnalytics?.deviceMix ?? []).map((device) => (
-                      <div key={device.deviceClass}>
-                        <span><strong>{device.deviceClass}</strong><small>{device.sessions} {digitalText.sessionUnit}</small></span>
-                        <i><b style={{ width: `${totalDeviceSessions ? (device.sessions / totalDeviceSessions) * 100 : 0}%` }} /></i>
-                      </div>
-                    ))}
-                  </div>
+                  <ReportRanking rows={(data?.productAnalytics?.deviceMix ?? []).map((device) => ({
+                    label: device.deviceClass, value: device.sessions,
+                  }))} valueLabel={count} empty={text.empty} />
                 </div>
                 <div>
                   <div className="staff-insight-panel-head">
                     <div><h5>{digitalText.acquisition}</h5><span>{digitalText.acquisitionSubtitle}</span></div>
                   </div>
-                  <div className="staff-digital-source-list">
-                    {acquisitionMix.map((source) => (
-                      <div key={`${source.source}-${source.medium}`}><span><strong>{source.source}</strong><small>{source.medium}</small></span><b>{source.sessions}</b></div>
-                    ))}
-                  </div>
+                  <ReportRanking rows={acquisitionMix.map((source) => ({
+                    label: `${source.source} · ${source.medium}`, value: source.sessions,
+                  }))} valueLabel={count} empty={text.empty} />
                 </div>
               </div>
             </section>
 
-            <section className="staff-insight-panel staff-digital-search-panel" aria-label={digitalText.searchIntent}>
-              <div className="staff-insight-panel-head">
-                <div><h5>{digitalText.searchIntent}</h5><span>{digitalText.searchIntentSubtitle}</span></div>
-                <Search aria-hidden="true" size={18} />
-              </div>
-              <div className="staff-insight-ranking">
-                {(data?.productAnalytics?.searchSurfaces ?? []).map((surface, index) => (
-                  <div className="staff-insight-ranking-row" key={surface.surface}>
-                    <span>{index + 1}</span>
-                    <div>
-                      <strong>{surface.surface}</strong>
-                      <small>{surface.searches} {digitalText.searches.toLowerCase()}{surface.averageResults === null ? '' : ` · ${surface.averageResults} ${digitalText.averageResults}`}</small>
-                      <div><i style={{ width: `${Math.max(4, (surface.searches / maxSearchSurface) * 100)}%` }} /></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+            <ReportPanel title={digitalText.searchIntent} description={digitalText.searchIntentSubtitle}>
+              <ReportRanking rows={(data?.productAnalytics?.searchSurfaces ?? []).map((surface) => ({
+                label: surface.surface, value: surface.searches,
+                detail: surface.averageResults == null ? undefined : `${surface.averageResults} ${digitalText.averageResults}`,
+              }))} valueLabel={count} empty={text.empty} />
+            </ReportPanel>
           </div>
         ) : null}
       </section>

@@ -75,7 +75,6 @@ import {
 } from '../lib/staff/operations'
 import {
   dayTypes,
-  emptyStaffDailySeries,
   emptyStaffOrders,
   emptyStaffPayments,
   staffTabGroups
@@ -99,20 +98,13 @@ import {
   staffRoleName
 } from '../lib/staff/profiles'
 import {
-  orderPaymentLabel,
-  paymentPieItems
+  orderPaymentLabel
 } from '../lib/staff/reportDisplay'
 import { StaffPickerField } from './staff/StaffPickerField'
 
 
 import { orderedRange } from '../lib/staff/dates'
 import {
-  buildChartAreaPath,
-  buildHourlyRevenue,
-  buildLineChartPath,
-  buildSmoothLineChartPath,
-  buildWeekdayRevenue,
-  conicStops,
   emptyStaffReport,
   orderPaidAmount,
   paymentMapFromRows
@@ -289,8 +281,6 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
     setReportDatePickerOpen,
     reportDatePickerTarget,
     setReportDatePickerTarget,
-    reportChartMode,
-    setReportChartMode,
     reportView,
     setReportView,
     accountantExportOpen,
@@ -572,7 +562,7 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
 
   const emptyReport = useMemo(() => emptyStaffReport(text), [text])
   const [todayReportStart, todayReportEnd] = reportPresetRange('today')
-  const secondaryReportPreset: StaffReportRangePreset = reportView === 'business' ? 'yesterday' : 'last_30'
+  const secondaryReportPreset: StaffReportRangePreset = 'last_30'
   const [secondaryReportStart, secondaryReportEnd] = reportPresetRange(secondaryReportPreset)
   const activeReportPreset = reportStart === todayReportStart && reportEnd === todayReportEnd
     ? 'today'
@@ -584,61 +574,9 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
     && compareStart === previousReportStart
     && compareEnd === previousReportEnd
   const reportOrders = reportSnapshot?.orders ?? emptyStaffOrders
-  const comparisonOrders = compareEnabled ? reportSnapshot?.comparisonOrders ?? emptyStaffOrders : emptyStaffOrders
   const reportPayments = reportSnapshot?.payments ?? emptyStaffPayments
   const reportPaymentsByOrderId = useMemo(() => paymentMapFromRows(reportPayments), [reportPayments])
   const report = reportSnapshot?.report || emptyReport
-  const comparisonReport = compareEnabled ? reportSnapshot?.comparisonReport || emptyReport : emptyReport
-  const reportSeries = reportSnapshot?.reportSeries ?? emptyStaffDailySeries
-  const comparisonSeries = compareEnabled ? reportSnapshot?.comparisonSeries ?? emptyStaffDailySeries : emptyStaffDailySeries
-  const weekdayRevenue = useMemo(() => buildWeekdayRevenue(reportOrders, resolvedLanguage), [reportOrders, resolvedLanguage])
-  const comparisonWeekdayRevenue = useMemo(
-    () => compareEnabled ? buildWeekdayRevenue(comparisonOrders, resolvedLanguage) : [],
-    [compareEnabled, comparisonOrders, resolvedLanguage]
-  )
-  const weekdayRevenueMax = useMemo(() => Math.max(
-    1,
-    ...weekdayRevenue.map((point) => point.sales),
-    ...comparisonWeekdayRevenue.map((point) => point.sales)
-  ), [comparisonWeekdayRevenue, weekdayRevenue])
-  const hourlyRevenue = useMemo(() => buildHourlyRevenue(reportOrders), [reportOrders])
-  const comparisonHourlyRevenue = useMemo(
-    () => compareEnabled ? buildHourlyRevenue(comparisonOrders) : [],
-    [compareEnabled, comparisonOrders]
-  )
-  const hourlyRevenueMax = useMemo(() => Math.max(
-    1,
-    ...hourlyRevenue.map((point) => point.sales),
-    ...comparisonHourlyRevenue.map((point) => point.sales)
-  ), [comparisonHourlyRevenue, hourlyRevenue])
-  const hourlyLinePath = useMemo(() => buildSmoothLineChartPath(hourlyRevenue, hourlyRevenueMax), [hourlyRevenue, hourlyRevenueMax])
-  const comparisonHourlyLinePath = useMemo(
-    () => buildSmoothLineChartPath(comparisonHourlyRevenue, hourlyRevenueMax),
-    [comparisonHourlyRevenue, hourlyRevenueMax]
-  )
-  const hourlyAreaPath = useMemo(() => buildChartAreaPath(hourlyLinePath), [hourlyLinePath])
-  const comparisonHourlyAreaPath = useMemo(() => buildChartAreaPath(comparisonHourlyLinePath), [comparisonHourlyLinePath])
-  const reportChartMax = useMemo(() => Math.max(
-    1,
-    ...reportSeries.map((point) => point.sales),
-    ...comparisonSeries.map((point) => point.sales)
-  ), [comparisonSeries, reportSeries])
-  const paymentMix = useMemo(() => {
-    const items = [
-      { label: text.labels.cash, value: report.cashTotal },
-      { label: text.labels.bankTransfer, value: report.bankTransferTotal },
-      { label: text.paymentMethods.card_manual, value: report.cardTotal },
-      { label: text.paymentMethods.momo_manual, value: report.momoTotal },
-      { label: text.paymentMethods.vnpay, value: report.vnpayTotal },
-      { label: text.unpaid, value: report.unpaidAmount },
-    ]
-    const total = Math.max(1, items.reduce((sum, item) => sum + item.value, 0))
-    return items.map((item) => ({ ...item, share: Math.round((item.value / total) * 100) }))
-  }, [report, text])
-  const reportLinePath = useMemo(() => buildLineChartPath(reportSeries, reportChartMax), [reportChartMax, reportSeries])
-  const comparisonLinePath = useMemo(() => buildLineChartPath(comparisonSeries, reportChartMax), [comparisonSeries, reportChartMax])
-  const pieItems = useMemo(() => paymentPieItems(report, text), [report, text])
-  const pieStops = useMemo(() => conicStops(pieItems), [pieItems])
   const selectedGameAudiences = useMemo(() => normalizeStaffAudience(gameForm.audience), [gameForm.audience])
   const selectedGameArenaIds = useMemo(() => parseStaffArenaIds(gameForm.available_arena_ids), [gameForm.available_arena_ids])
   const selectedDiscountValueUnit = discountValueUnit(discountForm.discount_type)
@@ -1408,7 +1346,7 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
         </div>
       )}
 
-      {currentTabReady && currentTab === 'report' && (<ReportSection
+      {currentTab === 'report' && (<ReportSection
         resolvedLanguage={resolvedLanguage}
         reportView={reportView}
         selectReportView={selectReportView}
@@ -1450,25 +1388,7 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
         downloadAccountantExport={downloadAccountantExport}
         reportExportFeedback={reportExportFeedback}
         report={report}
-        weekdayRevenue={weekdayRevenue}
-        comparisonWeekdayRevenue={comparisonWeekdayRevenue}
-        weekdayRevenueMax={weekdayRevenueMax}
-        hourlyRevenueMax={hourlyRevenueMax}
-        comparisonHourlyAreaPath={comparisonHourlyAreaPath}
-        hourlyAreaPath={hourlyAreaPath}
-        comparisonHourlyLinePath={comparisonHourlyLinePath}
-        hourlyLinePath={hourlyLinePath}
-        reportChartMode={reportChartMode}
-        setReportChartMode={setReportChartMode}
-        reportSeries={reportSeries}
-        comparisonSeries={comparisonSeries}
-        reportChartMax={reportChartMax}
-        reportLinePath={reportLinePath}
-        comparisonLinePath={comparisonLinePath}
-        pieStops={pieStops}
-        pieItems={pieItems}
-        comparisonReport={comparisonReport}
-        paymentMix={paymentMix}
+        reportReady={currentTabReady}
         orderRows={orderRows}
         reportOrders={reportOrders}
         reportPaymentsByOrderId={reportPaymentsByOrderId}

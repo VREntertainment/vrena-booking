@@ -5,6 +5,7 @@ import type { StaffPlayerInsightsSnapshot } from '../../components/StaffPlayerIn
 import type { StaffQrAnalyticsSnapshot } from '../../components/StaffQrAnalytics'
 import {
   addDays,
+  reportPresetRange,
   todayString
 } from '../../lib/staff/dates'
 import {
@@ -17,21 +18,19 @@ import type {
   AccountantExportFormat,
   AccountantExportReportId,
   StaffConsoleLanguage,
-  StaffReportChartMode,
   StaffReportSnapshot,
   StaffReportView
 } from '../../lib/staff/types'
 
 /** Feature-owned state. Mounted unconditionally so navigation preserves drafts and request locks. */
 export function useStaffReportsState({ language }: { language: string | undefined }) {
-  const [reportStart, setReportStart] = useState(todayString())
-  const [reportEnd, setReportEnd] = useState(todayString())
+  const [reportStart, setReportStart] = useState(() => reportPresetRange('last_30')[0])
+  const [reportEnd, setReportEnd] = useState(() => reportPresetRange('last_30')[1])
   const [compareEnabled, setCompareEnabled] = useState(false)
   const [compareStart, setCompareStart] = useState(() => addDays(todayString(), -1))
   const [compareEnd, setCompareEnd] = useState(() => addDays(todayString(), -1))
   const [reportDatePickerOpen, setReportDatePickerOpen] = useState(false)
   const [reportDatePickerTarget, setReportDatePickerTarget] = useState<'report' | 'compare'>('report')
-  const [reportChartMode, setReportChartMode] = useState<StaffReportChartMode>('columns')
   const [reportView, setReportView] = useState<StaffReportView>('business')
   const [accountantExportOpen, setAccountantExportOpen] = useState(false)
   const [accountantExportFormat, setAccountantExportFormat] = useState<AccountantExportFormat>('excel')
@@ -60,8 +59,6 @@ export function useStaffReportsState({ language }: { language: string | undefine
     setReportDatePickerOpen,
     reportDatePickerTarget,
     setReportDatePickerTarget,
-    reportChartMode,
-    setReportChartMode,
     reportView,
     setReportView,
     accountantExportOpen,
