@@ -1,6 +1,6 @@
 begin;
 
-select plan(5);
+select plan(6);
 
 select ok(
   pg_get_functiondef('public.staff_kiosk_verify_pin(uuid,text,text,text)'::regprocedure)
@@ -24,14 +24,26 @@ select ok(
 
 select ok(
   pg_get_functiondef('public.staff_kiosk_touch_session(uuid,text)'::regprocedure)
-    like '%and token_hash = p_token_hash%',
-  'activity refresh remains scoped to the current station token'
+    like '%s.token_hash = p_token_hash%'
+    and pg_get_functiondef('public.staff_kiosk_touch_session(uuid,text)'::regprocedure)
+      like '%s.auth_user_id = p_actor_user_id%',
+  'activity refresh remains scoped to the current station token and account'
 );
 
 select ok(
   pg_get_functiondef('public.staff_kiosk_revoke_session(uuid,text,text)'::regprocedure)
     like '%and token_hash = p_token_hash%',
   'lock and logout remain scoped to the current station token'
+);
+
+select ok(
+  pg_get_functiondef('public.staff_kiosk_verify_pin(uuid,text,text,text)'::regprocedure)
+    like '%employee.contract_end_date >= (now() at time zone ''Asia/Ho_Chi_Minh'')::date%'
+    and pg_get_functiondef('public.staff_kiosk_touch_session(uuid,text)'::regprocedure)
+      like '%e.contract_end_date >= (now() at time zone ''Asia/Ho_Chi_Minh'')::date%'
+    and pg_get_functiondef('private.current_staff_kiosk_session_id()'::regprocedure)
+      like '%employee.contract_end_date >= (now() at time zone ''Asia/Ho_Chi_Minh'')::date%',
+  'contract end date applies to PIN unlock, activity refresh, and current operator access'
 );
 
 select * from finish();
