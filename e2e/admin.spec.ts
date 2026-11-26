@@ -80,7 +80,7 @@ test.describe('admin flows', () => {
     expect(hasHorizontalOverflow).toBe(false)
   })
 
-  test('reporting and typed HR screens load without browser errors', async ({ page }) => {
+  test('reporting and employee access screens load without browser errors', async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', (error) => errors.push(error.message))
     await loginAsAdmin(page)
@@ -89,9 +89,8 @@ test.describe('admin flows', () => {
     await expect(page.locator('.staff-report-workspace')).toBeVisible()
     await page.goto('/hr')
     await expect(page.getByTestId('staff-console')).toBeVisible()
-    await expect(page.getByRole('button', { name: /^Employee profile/ })).toBeVisible()
-    await page.getByRole('button', { name: /^HR settings/ }).click()
-    await expect(page.getByRole('button', { name: /^HR settings/ })).toHaveClass(/active/)
+    await expect(page.getByRole('heading', { name: 'Employee Access', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Add employee', exact: true })).toBeVisible()
     expect(errors).toEqual([])
     await page.screenshot({ path: `/tmp/vrena-hr-${test.info().project.name}.png` })
   })

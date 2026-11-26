@@ -19,8 +19,6 @@ import type { OrderStatusChange } from './staff/StaffOrderStatusConfirmation'
 const StaffCalendarBookingDialog = dynamic(() => import('./StaffCalendarBookingDialog'), { ssr: false })
 const NewSection = dynamic(() => import('../features/staff/NewSection'), { ssr: false })
 const TodaySection = dynamic(() => import('../features/staff/TodaySection'), { ssr: false })
-const AttendanceSection = dynamic(() => import('../features/staff/AttendanceSection'), { ssr: false })
-const HrSection = dynamic(() => import('../features/staff/HrSection'), { ssr: false })
 const GamesSection = dynamic(() => import('../features/staff/GamesSection'), { ssr: false })
 const DiscountsSection = dynamic(() => import('../features/staff/DiscountsSection'), { ssr: false })
 const ClientProfileSection = dynamic(() => import('../features/staff/ClientProfileSection'), { ssr: false })
@@ -31,27 +29,18 @@ const ReportSection = dynamic(() => import('../features/staff/ReportSection'), {
 import { useStaffBookingState } from '../features/staff/useStaffBookingState'
 import { useStaffClientsState } from '../features/staff/useStaffClientsState'
 import { useStaffCommerceState } from '../features/staff/useStaffCommerceState'
-import { useStaffEmployeesState } from '../features/staff/useStaffEmployeesState'
 import { useStaffLoadingState } from '../features/staff/useStaffLoadingState'
 import { useStaffOperationsState } from '../features/staff/useStaffOperationsState'
-import { useStaffPayrollState } from '../features/staff/useStaffPayrollState'
 import { useStaffReportsState } from '../features/staff/useStaffReportsState'
-import { useStaffSchedulingState } from '../features/staff/useStaffSchedulingState'
-import { useStaffSettingsState } from '../features/staff/useStaffSettingsState'
 
 import { isStaffGroupDiscount } from '../lib/staff/pricing'
 import { createStaffBookingActions } from '../features/staff/booking.actions'
 import { createStaffClientsActions } from '../features/staff/clients.actions'
 import { createStaffCommerceActions } from '../features/staff/commerce.actions'
-import { createStaffEmployeesActions } from '../features/staff/employees.actions'
-import { createStaffPayrollExportActions } from '../features/staff/lazyPayrollExport'
 import { createStaffLoadingActions } from '../features/staff/loading.actions'
 import { createStaffOperationsActions } from '../features/staff/operations.actions'
 import { createStaffOrdersActions } from '../features/staff/orders.actions'
-import { createStaffPayrollActions } from '../features/staff/lazyPayrollActions'
 import { createStaffReportsActions } from '../features/staff/reports.actions'
-import { createStaffSchedulingActions } from '../features/staff/scheduling.actions'
-import { createStaffSettingsActions } from '../features/staff/lazySettingsActions'
 import { ButtonIconText, StaffReportDateRangeModal } from '../features/staff/shared'
 
 
@@ -66,18 +55,11 @@ import {
   parseStaffArenaIds
 } from '../lib/staff/catalog'
 import {
-  attendanceDateKeys,
-  attendanceDateRange,
-  endOfMonth,
-  minutesBetween,
-  minutesBetweenTimes,
   normalizeTime,
   previousPeriodRange,
   reportPresetRange,
   shortDateLabel,
-  staffDateLabel,
-  startOfMonth,
-  todayString
+  staffDateLabel
 } from '../lib/staff/dates'
 import {
   dongDigits,
@@ -86,9 +68,6 @@ import {
   resolveStaffConsoleLanguage
 } from '../lib/staff/formatting'
 import { defaultDiscountForm, defaultLoyaltyForm } from '../lib/staff/forms'
-import {
-  normalizeStaffShiftTemplates
-} from '../lib/staff/hrSettings'
 import {
   sessionBookedPlayers,
   sessionCapacity,
@@ -99,16 +78,9 @@ import {
   emptyStaffDailySeries,
   emptyStaffOrders,
   emptyStaffPayments,
-  staffAttendanceTabs,
-  staffHrSetupOptionTypes,
   staffTabGroups
 } from '../lib/staff/options'
 import { normalizePaymentSplits, paymentSplitTotal, paymentStatusLabel, paymentMethodLabel } from '../lib/staff/payments'
-import {
-  adjustmentAppliesToPeriod,
-  calculateStaffPayroll,
-  emptyStaffPayrollCalculation
-} from '../lib/staff/payroll'
 import {
   calculateDiscount,
   calculateManualDiscount,
@@ -124,14 +96,12 @@ import {
   isDemoProfile,
   normalizeStaffSearchValue,
   roleLabel,
-  staffProfileFromEmployee,
   staffRoleName
 } from '../lib/staff/profiles'
 import {
   orderPaymentLabel,
   paymentPieItems
 } from '../lib/staff/reportDisplay'
-import { shiftConflictWarnings } from '../lib/staff/scheduling'
 import { StaffPickerField } from './staff/StaffPickerField'
 
 
@@ -154,15 +124,9 @@ import type {
   StaffCommerceTab,
   StaffConsoleProps,
   StaffDataKey,
-  StaffHrSetupOption,
-  StaffHrSetupOptionType,
-  StaffHrTab,
   StaffOrder,
-  StaffPayrollCalculation,
   StaffPriceRule,
   StaffReportRangePreset,
-  StaffScheduleScope,
-  StaffScheduleShift,
   StaffTab
 } from '../lib/staff/types'
 export type { StaffProfile } from '../lib/staff/types'
@@ -180,8 +144,6 @@ import {
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { uiText } from '../lib/i18n/translations'
 import type { RateLimitAction } from '../lib/security/rateLimit'
-import { allocateStaffCompanyCost } from '../lib/staffCostAllocation'
-import { canAccessCoreHrSettings, canAccessZaloHrSettings } from '../lib/staffKioskScope'
 import { summarizeOperationMoney } from '../lib/staffOperationMoney'
 import { staffConsoleRoleRank as staffRank } from '../lib/staffRoles'
 
@@ -189,43 +151,24 @@ import { supabase } from '../lib/supabase/client'
 import AppLoadingState from './AppLoadingState'
 import { staffKioskCopy } from './StaffKioskGate'
 
-export default function StaffConsole({ profile, authEmail, language, mode = 'staff', kioskOperator, onKioskLock, onOpenPlayerProfile, onOpenSessionCalendar, initialBooking, onBookingCreated }: StaffConsoleProps) {
+export default function StaffConsole({ profile, authEmail, language, kioskOperator, onKioskLock, onOpenPlayerProfile, onOpenSessionCalendar, initialBooking, onBookingCreated }: StaffConsoleProps) {
 
   const resolvedLanguage = resolveStaffConsoleLanguage(language)
   const text = staffConsoleText[resolvedLanguage]
   const sharedText = uiText[resolvedLanguage]
   const kioskText = staffKioskCopy(language)
-  const isHrConsole = mode === 'hr'
-  const consoleTitle = isHrConsole ? (resolvedLanguage === 'vi' ? 'HR' : 'HR Console') : text.title
   const kioskRoleRank = kioskOperator?.accessRole === 'manager' ? 80 : kioskOperator?.accessRole === 'staff' ? 50 : 0
   const rank = kioskOperator
     ? kioskRoleRank
     : Math.max(staffRank(profile?.role, profile?.email), staffRank(profile?.role, authEmail))
-  const role = kioskOperator?.accessRole
-    || roleLabel(profile?.role, staffRank(null, authEmail) > staffRank(null, profile?.email) ? authEmail : profile?.email)
   const canManageConfig = rank >= 80
   const canCreateOrders = rank >= 50
   const canCreateCustomerAccounts = rank >= 50
   const canAwardAchievements = rank >= 50
   const canManageRoles = rank >= 100
   const canRestoreDeleted = rank >= 120
-  const isOwnerOrAdmin = role === 'owner' || role === 'admin'
-  const isOfficeStaff = role === 'cashier'
-  const isStaffOnly = role === 'staff'
-  const canManageAttendance = isOwnerOrAdmin || role === 'manager' || isOfficeStaff
-  const canEditAttendance = canManageAttendance
-  const canViewAllEmployeeProfiles = isOwnerOrAdmin
-  const canEditEmployeeProfiles = isOwnerOrAdmin
-  const canManageEmployeeKioskPins = isOwnerOrAdmin && !kioskOperator
-  const canRevealEmployeeKioskPin = (isOwnerOrAdmin || isOfficeStaff) && !kioskOperator
-  const hrAccessContext = { authEmail: authEmail || profile?.email, role, roleRank: rank }
-  const canAccessHrSettings = canAccessCoreHrSettings(hrAccessContext)
-  const canAccessZaloSettings = canAccessZaloHrSettings(hrAccessContext)
-  const canViewAttendanceClock = !isStaffOnly
-  const canViewAttendanceSettings = !isStaffOnly
   const canOpenRoleProfiles = rank >= 20 && Boolean(onOpenPlayerProfile)
-  const currentProfileId = profile?.id || ''
-  const [activeTab, setActiveTab] = useState<StaffTab>(isHrConsole ? 'hr' : (rank >= 50 ? 'new' : 'report'))
+  const [activeTab, setActiveTab] = useState<StaffTab>(rank >= 50 ? 'new' : 'report')
   const lastFocusedOrder = useRef('')
   const confirmedOrderRef = useRef<HTMLTableRowElement>(null)
   const [confirmedSummary, setConfirmedSummary] = useState<ConfirmedBookingSummary | null>(null)
@@ -235,35 +178,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [expandedCancelledOrders, setExpandedCancelledOrders] = useState<Set<string>>(new Set())
   const [expandedOrderActions, setExpandedOrderActions] = useState<Set<string>>(new Set())
   const [commerceTab, setCommerceTab] = useState<StaffCommerceTab>('discounts')
-  const {
-    attendanceTab,
-    setAttendanceTab,
-    attendanceShifts,
-    setAttendanceShifts,
-    attendanceLogs,
-    setAttendanceLogs,
-    leaveRequests,
-    setLeaveRequests,
-    attendanceSettings,
-    setAttendanceSettings,
-    selectedShiftTemplate,
-    setSelectedShiftTemplate,
-    attendanceScheduleScope,
-    setAttendanceScheduleScope,
-    draggingShiftId,
-    setDraggingShiftId,
-    shiftForm,
-    setShiftForm,
-    attendanceLogForm,
-    setAttendanceLogForm,
-    leaveForm,
-    setLeaveForm,
-    attendanceRangeStart,
-    setAttendanceRangeStart,
-    attendanceRangeEnd,
-    setAttendanceRangeEnd,
-  } = useStaffSchedulingState({ canViewAllEmployeeProfiles })
-  const [hrTab, setHrTab] = useState<StaffHrTab>('employees')
   const {
     games,
     setGames,
@@ -284,54 +198,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     gameImageUploading,
     setGameImageUploading,
   } = useStaffCommerceState()
-  const {
-    costAssignments,
-    setCostAssignments,
-    hrAdjustments,
-    setHrAdjustments,
-    payrollRuns,
-    setPayrollRuns,
-    payrollItems,
-    setPayrollItems,
-    payrollSourceSnapshots,
-    setPayrollSourceSnapshots,
-    hrAdjustmentForm,
-    setHrAdjustmentForm,
-    payrollRunForm,
-    setPayrollRunForm,
-  } = useStaffPayrollState()
-  const {
-    employeeProfiles,
-    setEmployeeProfiles,
-    employeePhotoUrls,
-    setEmployeePhotoUrls,
-    hrDocuments,
-    setHrDocuments,
-    employeeForm,
-    setEmployeeForm,
-    employeeKioskPin,
-    setEmployeeKioskPin,
-    employeeKioskPinConfirm,
-    setEmployeeKioskPinConfirm,
-    employeeKioskAccessRole,
-    setEmployeeKioskAccessRole,
-    employeeKioskPinSaveConfirmation,
-    setEmployeeKioskPinSaveConfirmation,
-    employeeKioskPinVisibleValue,
-    setEmployeeKioskPinVisibleValue,
-    employeeKioskPinLoading,
-    setEmployeeKioskPinLoading,
-    employeeKioskPinEmailState,
-    setEmployeeKioskPinEmailState,
-    employeeKioskPinEmailRecipient,
-    setEmployeeKioskPinEmailRecipient,
-    employeeKioskPinProfileRef,
-    employeeKioskPinConfirmationTimerRef,
-    employeeKioskPinEmailTimerRef,
-    hrDocumentUploading,
-    setHrDocumentUploading,
-  } = useStaffEmployeesState()
-  const { hrSettings, setHrSettings, hrSetupOptions, setHrSetupOptions, hrSetupForm, setHrSetupForm } = useStaffSettingsState()
   const {
     orders,
     setOrders,
@@ -453,14 +319,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     setQrAnalyticsError,
   } = useStaffReportsState({ language })
 
-  useEffect(() => () => {
-    if (employeeKioskPinConfirmationTimerRef.current !== null) {
-      window.clearTimeout(employeeKioskPinConfirmationTimerRef.current)
-    }
-    if (employeeKioskPinEmailTimerRef.current !== null) {
-      window.clearTimeout(employeeKioskPinEmailTimerRef.current)
-    }
-  }, [employeeKioskPinConfirmationTimerRef, employeeKioskPinEmailTimerRef])
   const {
     status,
     setStatus,
@@ -481,9 +339,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const [canScrollStaffTabsForward, setCanScrollStaffTabsForward] = useState(false)
 
   const allowedTabs = useMemo<StaffTab[]>(() => {
-    if (isHrConsole) {
-      return rank >= 20 ? ['hr'] : ['report']
-    }
     const staffTabs: StaffTab[] = [
       'new',
       ...(canCreateCustomerAccounts || canAwardAchievements ? (['clientProfile'] satisfies StaffTab[]) : []),
@@ -498,7 +353,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     if (rank >= 120) return [...staffTabs, 'restore']
     if (rank >= 20) return staffTabs
     return ['report']
-  }, [canAwardAchievements, canCreateCustomerAccounts, isHrConsole, rank])
+  }, [canAwardAchievements, canCreateCustomerAccounts, rank])
   const currentTab = allowedTabs.includes(activeTab) ? activeTab : allowedTabs[0]
   const visibleTabGroups = useMemo(() => staffTabGroups.map((group) => ({
     ...group,
@@ -539,19 +394,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     })
   }, [currentTab])
   const canEditCommerceTab = commerceTab === 'loyalty' ? canManageConfig : canCreateOrders
-  const visibleAttendanceTabs = useMemo(() => staffAttendanceTabs.filter((item) => {
-    if (item === 'clock' && !canViewAttendanceClock) return false
-    if (item === 'settings' && !canViewAttendanceSettings) return false
-    return true
-  }), [canViewAttendanceClock, canViewAttendanceSettings])
-  const currentAttendanceTab = visibleAttendanceTabs.includes(attendanceTab)
-    ? attendanceTab
-    : visibleAttendanceTabs[0] || 'schedule'
-  const effectiveShiftTemplates = useMemo(
-    () => normalizeStaffShiftTemplates(attendanceSettings.shift_templates, attendanceSettings.standard_break_minutes),
-    [attendanceSettings.shift_templates, attendanceSettings.standard_break_minutes],
-  )
-
   const activeGames = useMemo(() => games.filter((game) => game.active), [games])
   const discountRules = useMemo(() => discounts.filter((discount) => !discount.code), [discounts])
   const voucherRules = useMemo(() => discounts.filter((discount) => Boolean(discount.code)), [discounts])
@@ -669,173 +511,14 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       money,
     }
   }, [operationOrders, operationSessions, orderPaymentsByOrderId])
-  const [attendanceWeekStart, attendanceWeekEnd] = useMemo(
-    () => attendanceDateRange(attendanceRangeStart, attendanceRangeEnd),
-    [attendanceRangeEnd, attendanceRangeStart]
-  )
-  const employeeStaffProfiles = useMemo(() => (
-    employeeProfiles.map((employee) => staffProfileFromEmployee(employee, employeePhotoUrls[employee.profile_id]))
-  ), [employeePhotoUrls, employeeProfiles])
   const profileById = useMemo(() => new Map(
-    [...profiles, ...employeeStaffProfiles].map((item) => [item.id, item])
-  ), [employeeStaffProfiles, profiles])
+    profiles.map((item) => [item.id, item])
+  ), [profiles])
   const awardableProfiles = useMemo(() => (
     profiles.filter((item) => !isDemoProfile(item) && roleLabel(item.role, item.email) === 'player')
   ), [profiles])
   const gameNameById = useMemo(() => new Map(games.map((item) => [item.id, brandedGameName(item.slug, item.name)])), [games])
   const priceRuleNameById = useMemo(() => new Map(prices.map((item) => [item.id, item.rule_name])), [prices])
-  const employeeProfileById = useMemo(() => new Map(employeeProfiles.map((item) => [item.profile_id, item])), [employeeProfiles])
-  const allStaffProfileOptions = employeeStaffProfiles
-  const attendanceWeekStaffIds = useMemo(() => {
-    const ids = new Set<string>()
-    attendanceShifts.forEach((shift) => ids.add(shift.staff_profile_id))
-    attendanceLogs.forEach((log) => ids.add(log.staff_profile_id))
-    leaveRequests.forEach((leave) => ids.add(leave.staff_profile_id))
-    return ids
-  }, [attendanceLogs, attendanceShifts, leaveRequests])
-  const staffProfileOptions = useMemo(() => (
-    allStaffProfileOptions.filter((item) => {
-      const employee = employeeProfileById.get(item.id)
-      return employee?.active !== false || attendanceWeekStaffIds.has(item.id)
-    })
-  ), [allStaffProfileOptions, attendanceWeekStaffIds, employeeProfileById])
-  const visibleAllStaffProfileOptions = useMemo(() => (
-    canViewAllEmployeeProfiles
-      ? allStaffProfileOptions
-      : allStaffProfileOptions.filter((item) => item.id === currentProfileId)
-  ), [allStaffProfileOptions, canViewAllEmployeeProfiles, currentProfileId])
-  const visibleStaffProfileOptions = useMemo(() => (
-    canViewAllEmployeeProfiles
-      ? staffProfileOptions
-      : staffProfileOptions.filter((item) => item.id === currentProfileId)
-  ), [canViewAllEmployeeProfiles, currentProfileId, staffProfileOptions])
-  const visibleAttendanceShifts = useMemo(() => (
-    canViewAllEmployeeProfiles
-      ? attendanceShifts
-      : attendanceShifts.filter((shift) => shift.staff_profile_id === currentProfileId)
-  ), [attendanceShifts, canViewAllEmployeeProfiles, currentProfileId])
-  const currentEmployeeDepartment = (employeeProfileById.get(currentProfileId)?.department || '').trim()
-  const effectiveAttendanceScheduleScope = attendanceScheduleScope === 'all' && !canViewAllEmployeeProfiles
-    ? 'department'
-    : attendanceScheduleScope
-  const attendanceScheduleScopeOptions = useMemo<StaffScheduleScope[]>(() => (
-    canViewAllEmployeeProfiles ? ['all', 'department', 'mine'] : ['department', 'mine']
-  ), [canViewAllEmployeeProfiles])
-  const visibleScheduleStaffProfileOptions = useMemo(() => {
-    if (effectiveAttendanceScheduleScope === 'mine') {
-      return staffProfileOptions.filter((item) => item.id === currentProfileId)
-    }
-    if (effectiveAttendanceScheduleScope === 'department') {
-      if (!currentEmployeeDepartment) {
-        return staffProfileOptions.filter((item) => item.id === currentProfileId)
-      }
-      return staffProfileOptions.filter((item) => (
-        (employeeProfileById.get(item.id)?.department || '').trim() === currentEmployeeDepartment
-      ))
-    }
-    return staffProfileOptions
-  }, [currentEmployeeDepartment, currentProfileId, effectiveAttendanceScheduleScope, employeeProfileById, staffProfileOptions])
-  const visibleScheduleStaffIds = useMemo(() => new Set(visibleScheduleStaffProfileOptions.map((item) => item.id)), [visibleScheduleStaffProfileOptions])
-  const visibleScheduleAttendanceShifts = useMemo(() => (
-    attendanceShifts.filter((shift) => visibleScheduleStaffIds.has(shift.staff_profile_id))
-  ), [attendanceShifts, visibleScheduleStaffIds])
-  const visibleAttendanceLogs = useMemo(() => (
-    canViewAllEmployeeProfiles
-      ? attendanceLogs
-      : attendanceLogs.filter((log) => log.staff_profile_id === currentProfileId)
-  ), [attendanceLogs, canViewAllEmployeeProfiles, currentProfileId])
-  const visibleLeaveRequests = useMemo(() => (
-    canViewAllEmployeeProfiles
-      ? leaveRequests
-      : leaveRequests.filter((leave) => leave.staff_profile_id === currentProfileId)
-  ), [canViewAllEmployeeProfiles, currentProfileId, leaveRequests])
-  const firstStaffProfileId = visibleStaffProfileOptions[0]?.id || ''
-  const firstScheduleStaffProfileId = visibleScheduleStaffProfileOptions[0]?.id || firstStaffProfileId
-  const firstEmployeeStaffProfileId = visibleAllStaffProfileOptions[0]?.id || ''
-  const selectedEmployeeStaffId = employeeForm.profile_id || firstEmployeeStaffProfileId
-  const selectedEmployeeStaffProfile = selectedEmployeeStaffId
-    ? visibleAllStaffProfileOptions.find((item) => item.id === selectedEmployeeStaffId) || null
-    : null
-  const hrOptionsByType = useMemo(() => {
-    const map = new Map<StaffHrSetupOptionType, StaffHrSetupOption[]>()
-    staffHrSetupOptionTypes.forEach((type) => map.set(type, []))
-    hrSetupOptions
-      .filter((option) => option.active)
-      .sort((left, right) => left.sort_order - right.sort_order || left.name.localeCompare(right.name))
-      .forEach((option) => {
-        const items = map.get(option.option_type) || []
-        items.push(option)
-        map.set(option.option_type, items)
-      })
-    return map
-  }, [hrSetupOptions])
-  const hrDepartmentOptions = hrOptionsByType.get('department') || []
-  const hrLocationOptions = hrOptionsByType.get('location') || []
-  const hrJobTitleOptions = hrOptionsByType.get('job_title') || []
-  const hrContractTypeOptions = hrOptionsByType.get('contract_type') || []
-  const payrollPeriodStart = payrollRunForm.period_start || startOfMonth(todayString())
-  const payrollPeriodEnd = payrollRunForm.period_end || endOfMonth(payrollPeriodStart)
-  const staffPayrollCalculations = useMemo(() => {
-    const map = new Map<string, StaffPayrollCalculation>()
-    visibleStaffProfileOptions.forEach((staffProfile) => {
-      const employee = employeeProfileById.get(staffProfile.id)
-      const periodReference = payrollSourceSnapshots.find((snapshot) => (
-        snapshot.employee_code === employee?.employee_code &&
-        snapshot.period_start === payrollPeriodStart &&
-        snapshot.period_end === payrollPeriodEnd
-      ))
-      map.set(staffProfile.id, calculateStaffPayroll(
-        staffProfile.id,
-        employee,
-        attendanceShifts,
-        attendanceLogs,
-        leaveRequests,
-        hrAdjustments,
-        hrSettings,
-        attendanceSettings,
-        payrollPeriodStart,
-        payrollPeriodEnd,
-        periodReference,
-      ))
-    })
-    return map
-  }, [attendanceLogs, attendanceSettings, attendanceShifts, employeeProfileById, hrAdjustments, hrSettings, leaveRequests, payrollPeriodEnd, payrollPeriodStart, payrollSourceSnapshots, visibleStaffProfileOptions])
-  const staffCostAllocations = useMemo(() => new Map(visibleStaffProfileOptions.map((staffProfile) => {
-    const employee = employeeProfileById.get(staffProfile.id)
-    const calculation = staffPayrollCalculations.get(staffProfile.id)
-    return [staffProfile.id, allocateStaffCompanyCost({
-      profileId: staffProfile.id,
-      homeLocation: employee?.payroll_location || employee?.main_work_location || '',
-      periodStart: payrollPeriodStart, periodEnd: payrollPeriodEnd,
-      companyCost: calculation?.companyCost || 0,
-      paidLeaveMinutes: Math.round((calculation?.paidLeaveHours || 0) * 60),
-      assignments: costAssignments, attendance: attendanceLogs,
-    })]
-  })), [attendanceLogs, costAssignments, employeeProfileById, payrollPeriodEnd, payrollPeriodStart, staffPayrollCalculations, visibleStaffProfileOptions])
-  const selectedEmployeePayrollSummary = staffPayrollCalculations.get(selectedEmployeeStaffId) || emptyStaffPayrollCalculation(selectedEmployeeStaffId)
-  const hrPayrollTotals = useMemo(() => {
-    const rows = Array.from(staffPayrollCalculations.values())
-    return {
-      gross: rows.reduce((sum, row) => sum + row.grossIncome, 0),
-      net: rows.reduce((sum, row) => sum + row.netIncome, 0),
-      companyCost: rows.reduce((sum, row) => sum + row.companyCost, 0),
-      restWarnings: rows.reduce((sum, row) => sum + row.restWarningCount, 0),
-    }
-  }, [staffPayrollCalculations])
-  const selectedEmployeeDocuments = useMemo(() => (
-    hrDocuments.filter((document) => document.profile_id === selectedEmployeeStaffId)
-  ), [hrDocuments, selectedEmployeeStaffId])
-  const periodHrAdjustments = useMemo(() => (
-    hrAdjustments.filter((adjustment) => adjustmentAppliesToPeriod(adjustment, payrollPeriodStart, payrollPeriodEnd))
-  ), [hrAdjustments, payrollPeriodEnd, payrollPeriodStart])
-  const selectedEmployeeOutstandingDebt = useMemo(() => (
-    hrAdjustments
-      .filter((item) => item.profile_id === selectedEmployeeStaffId && ['advance', 'debt'].includes(item.adjustment_type) && item.status !== 'cancelled' && item.status !== 'rejected')
-      .reduce((sum, item) => sum + item.amount_vnd, 0) -
-    hrAdjustments
-      .filter((item) => item.profile_id === selectedEmployeeStaffId && item.adjustment_type === 'debt_repayment' && item.status !== 'cancelled' && item.status !== 'rejected')
-      .reduce((sum, item) => sum + item.amount_vnd, 0)
-  ), [hrAdjustments, selectedEmployeeStaffId])
   const customerNameSuggestions = useMemo(() => {
     const query = normalizeStaffSearchValue(booking.customerName.trim())
     return profiles
@@ -854,51 +537,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const showCustomerNameSuggestions = !booking.guestBooking && customerNameFocused
   const visibleCustomerSuggestions = customerNameSuggestions.slice(0, 50)
   const canOfferNewCustomer = Boolean(booking.customerName.trim()) && !booking.customerId
-  const employeePayrollSummary = selectedEmployeePayrollSummary
-  const attendanceWeekDates = useMemo(() => attendanceDateKeys(attendanceWeekStart, attendanceWeekEnd), [attendanceWeekEnd, attendanceWeekStart])
-  const attendanceGridStyle = useMemo(() => ({
-    gridTemplateColumns: `minmax(156px, 0.75fr) repeat(${attendanceWeekDates.length}, minmax(108px, 1fr))`,
-    minWidth: `${156 + attendanceWeekDates.length * 112}px`,
-  }), [attendanceWeekDates.length])
-  const attendanceShiftsByCell = useMemo(() => {
-    const map = new Map<string, StaffScheduleShift[]>()
-    visibleScheduleAttendanceShifts.forEach((shift) => {
-      const key = `${shift.staff_profile_id}:${shift.shift_date}`
-      const shifts = map.get(key) || []
-      shifts.push(shift)
-      map.set(key, shifts)
-    })
-    map.forEach((shifts) => {
-      shifts.sort((left, right) => left.start_time.localeCompare(right.start_time) || left.end_time.localeCompare(right.end_time))
-    })
-    return map
-  }, [visibleScheduleAttendanceShifts])
-  const shiftWarningsById = useMemo(() => {
-    const map = new Map<string, string[]>()
-    attendanceShifts.forEach((shift) => {
-      const warnings = shiftConflictWarnings(shift, attendanceShifts, leaveRequests, attendanceSettings, text)
-      if (warnings.length > 0) map.set(shift.id, warnings)
-    })
-    return map
-  }, [attendanceSettings, attendanceShifts, leaveRequests, text])
-  const draftShiftCount = useMemo(() => attendanceShifts.filter((shift) => shift.status === 'draft').length, [attendanceShifts])
-  const attendanceSummary = useMemo(() => {
-    const scheduledMinutes = visibleAttendanceShifts.reduce((sum, shift) => (
-      shift.status === 'cancelled'
-        ? sum
-        : sum + minutesBetweenTimes(shift.start_time, shift.end_time, shift.break_minutes)
-    ), 0)
-    const workedMinutes = visibleAttendanceLogs.reduce((sum, log) => sum + minutesBetween(log.clock_in_at, log.clock_out_at, log.break_minutes), 0)
-    const regularMinutes = visibleAttendanceLogs.reduce((sum, log) => sum + log.regular_minutes, 0)
-    const overtimeMinutes = visibleAttendanceLogs.reduce((sum, log) => sum + log.overtime_minutes, 0)
-    const nightMinutes = visibleAttendanceLogs.reduce((sum, log) => sum + log.night_minutes, 0)
-    const holidayMinutes = visibleAttendanceLogs.reduce((sum, log) => sum + log.holiday_minutes, 0)
-    const leaveHours = visibleLeaveRequests
-      .filter((item) => item.status === 'approved')
-      .reduce((sum, item) => sum + Number(item.hours || 0), 0)
-
-    return { scheduledMinutes, workedMinutes, regularMinutes, overtimeMinutes, nightMinutes, holidayMinutes, leaveHours }
-  }, [visibleAttendanceLogs, visibleAttendanceShifts, visibleLeaveRequests])
   const filteredRoleProfiles = useMemo(() => {
     const query = roleSearch.trim().toLowerCase()
     const rows = profiles.filter((item) => {
@@ -1008,10 +646,8 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   const currentDataKeys: StaffDataKey[] = currentTab === 'new' ? ['games', 'prices', 'discounts', 'profiles']
     : currentTab === 'clientProfile' ? (canAwardAchievements ? ['profiles', 'achievementAwards'] : [])
       : currentTab === 'today' ? ['games', 'today', 'todaySessions', 'profiles'].filter((key) => operationSessionScope !== 'past' || key !== 'today') as StaffDataKey[]
-        : currentTab === 'attendance' ? ['profiles', 'attendance']
-          : currentTab === 'hr' ? ['profiles', 'attendance', 'hr']
-            : currentTab === 'games' ? ['games']
-              : currentTab === 'prices' ? ['games', 'prices']
+        : currentTab === 'games' ? ['games']
+          : currentTab === 'prices' ? ['games', 'prices']
                 : currentTab === 'discounts' ? ['games', 'prices', 'discounts', ...(commerceTab === 'loyalty' ? ['loyalty' as const] : [])]
                   : currentTab === 'roles' ? ['profiles']
                     : currentTab === 'restore' ? ['restore']
@@ -1031,10 +667,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
       void Promise.all(loaders)
     } else if (currentTab === 'today') {
       void Promise.all([loadGames(), loadProfiles(), loadTodayOrders(true), loadTodaySessions(true)])
-    } else if (currentTab === 'attendance') {
-      void Promise.all([loadProfiles(), loadAttendanceData(true)])
-    } else if (currentTab === 'hr') {
-      void Promise.all([loadProfiles(), loadAttendanceData(true), loadHrData(true)])
     } else if (currentTab === 'games') {
       void loadGames()
     } else if (currentTab === 'prices') {
@@ -1052,7 +684,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     }
     // Loaders are keyed by tab and internally dedupe with refs; adding loader functions would refetch on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTab, commerceTab, operationsDate, operationSessionScope, attendanceWeekEnd, attendanceWeekStart, payrollPeriodEnd, payrollPeriodStart, ordersQuery, dataRetry])
+  }, [currentTab, commerceTab, operationsDate, operationSessionScope, ordersQuery, dataRetry])
 
   useEffect(() => {
     if (currentTab !== 'report') return
@@ -1201,7 +833,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
   if (rank < 20) {
     return (
       <section className="section staff-console" data-testid="staff-console">
-        <h2>{consoleTitle}</h2>
+        <h2>{text.title}</h2>
         <p className="notice">{text.accessRequired}</p>
       </section>
     )
@@ -1349,196 +981,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
     accountantExportFormat,
   }))
   const {
-    employeeFormForProfile,
-    editEmployeeProfile,
-    revealEmployeeKioskPin,
-    sendEmployeeKioskPinEmail,
-    configureEmployeeKioskPin,
-    generateEmployeeKioskPin,
-    saveEmployeeProfile,
-    createEmployeeRecord,
-    handleHrDocumentUpload,
-  } = createStaffEmployeesActions(() => ({
-    text,
-    employeeProfileById,
-    setEmployeeForm,
-    setEmployeeKioskPin,
-    setEmployeeKioskPinConfirm,
-    setEmployeeKioskPinSaveConfirmation,
-    setEmployeeKioskPinVisibleValue,
-    setEmployeeKioskPinEmailState,
-    setEmployeeKioskPinEmailRecipient,
-    employeeKioskPinProfileRef,
-    employeeKioskPinConfirmationTimerRef,
-    employeeKioskPinEmailTimerRef,
-    setEmployeeKioskAccessRole,
-    setHrTab,
-    setActiveTab,
-    canRevealEmployeeKioskPin,
-    setEmployeeKioskPinLoading,
-    setStatus,
-    employeeKioskPinEmailState,
-    resolvedLanguage,
-    canManageEmployeeKioskPins,
-    employeeForm,
-    firstEmployeeStaffProfileId,
-    employeeKioskPin,
-    employeeKioskPinConfirm,
-    kioskText,
-    setSaving,
-    employeeKioskAccessRole,
-    markStaffDataStale,
-    loadAttendanceData,
-    canEditEmployeeProfiles,
-    visibleAllStaffProfileOptions,
-    profile,
-    loadHrData,
-    isOwnerOrAdmin,
-    saving,
-    selectedEmployeeStaffId,
-    setHrDocumentUploading,
-  }))
-  const {
-    loadAttendanceData,
-    saveShift,
-    editShift,
-    updateShiftStatus,
-    applyShiftTemplate,
-    updateAttendanceShiftTemplate,
-    startShiftForCell,
-    approveAttendancePeriod,
-    setAttendanceRange,
-    shiftAttendanceRange,
-    resetAttendanceRangeToThisWeek,
-    copyPreviousAttendanceWeek,
-    publishAttendanceWeek,
-    moveShiftToCell,
-    saveAttendanceLog,
-    editAttendanceLog,
-    submitLeaveRequest,
-    editLeaveRequest,
-    updateLeaveStatus,
-    saveAttendanceSettings,
-  } = createStaffSchedulingActions(() => ({
-    runStaffLoader,
-    currentTab,
-    payrollPeriodStart,
-    payrollPeriodEnd,
-    attendanceWeekStart,
-    attendanceWeekEnd,
-    canViewAllEmployeeProfiles,
-    setAttendanceShifts,
-    setAttendanceLogs,
-    setLeaveRequests,
-    setAttendanceSettings,
-    setEmployeeProfiles,
-    setEmployeePhotoUrls,
-    employeeForm,
-    setEmployeeForm,
-    employeeFormForProfile,
-    setEmployeeKioskPin,
-    setEmployeeKioskPinConfirm,
-    setEmployeeKioskPinSaveConfirmation,
-    setEmployeeKioskPinVisibleValue,
-    setEmployeeKioskPinEmailState,
-    setEmployeeKioskPinEmailRecipient,
-    setEmployeeKioskAccessRole,
-    employeeKioskPinProfileRef,
-    canRevealEmployeeKioskPin,
-    revealEmployeeKioskPin,
-    canManageAttendance,
-    shiftForm,
-    firstStaffProfileId,
-    employeeProfileById,
-    setStatus,
-    text,
-    setSaving,
-    attendanceSettings,
-    profile,
-    setShiftForm,
-    markStaffDataStale,
-    setAttendanceTab,
-    effectiveShiftTemplates,
-    setSelectedShiftTemplate,
-    saving,
-    selectedShiftTemplate,
-    attendanceShifts,
-    isOwnerOrAdmin,
-    resolvedLanguage,
-    setAttendanceRangeStart,
-    setAttendanceRangeEnd,
-    canEditAttendance,
-    attendanceLogForm,
-    setAttendanceLogForm,
-    leaveForm,
-    setLeaveForm,
-  }))
-  const { loadHrData, saveHrSettings, saveHrSetupOption, updateHrSetupOption, setHrSetupOptionActive } = createStaffSettingsActions(() => ({
-    runStaffLoader,
-    canAccessHrSettings,
-    setHrSettings,
-    setHrSetupOptions,
-    setHrAdjustments,
-    setPayrollRuns,
-    setPayrollItems,
-    setPayrollSourceSnapshots,
-    setHrDocuments,
-    setCostAssignments,
-    canManageAttendance,
-    setSaving,
-    hrSettings,
-    profile,
-    setStatus,
-    text,
-    markStaffDataStale,
-    hrSetupForm,
-    setHrSetupForm,
-    loadAttendanceData,
-  }))
-  const { syncPayrollDraft, saveHrAdjustment, updateHrAdjustmentStatus, generatePayrollRun, approvePayrollRun, downloadEmployeePayslip } = createStaffPayrollActions(() => ({
-    isOwnerOrAdmin,
-    setSaving,
-    setStatus,
-    resolvedLanguage,
-    markStaffDataStale,
-    loadHrData,
-    canManageAttendance,
-    hrAdjustmentForm,
-    selectedEmployeeStaffId,
-    firstEmployeeStaffProfileId,
-    text,
-    profile,
-    setHrAdjustmentForm,
-    payrollRunForm,
-    visibleStaffProfileOptions,
-    staffPayrollCalculations,
-    employeeProfileById,
-    profileById,
-    hrSettings,
-    staffCostAllocations,
-    costAssignments,
-    setPayrollRunForm,
-    payrollPeriodStart,
-    payrollPeriodEnd,
-    attendanceSettings,
-  }))
-  const { downloadPayrollExcel } = createStaffPayrollExportActions(() => ({
-    payrollPeriodStart,
-    payrollPeriodEnd,
-    payrollSourceSnapshots,
-    visibleStaffProfileOptions,
-    employeeProfileById,
-    staffPayrollCalculations,
-    text,
-    attendanceLogs,
-    profileById,
-    leaveRequests,
-    hrAdjustments,
-    hrSettings,
-    attendanceSettings,
-    setStatus,
-  }))
-  const {
     loadGames,
     loadPrices,
     loadDiscounts,
@@ -1631,7 +1073,7 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
 
 
   return (
-    <section className={`section staff-console ${isHrConsole ? 'staff-hr-route' : ''}`} data-testid="staff-console">
+    <section className="section staff-console" data-testid="staff-console">
       {kioskOperator && onKioskLock && (
         <div className="staff-kiosk-operator-bar">
           <div>
@@ -1645,42 +1087,40 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
           </button>
         </div>
       )}
-      {!isHrConsole && (
-        <div className="staff-console-nav" aria-label={text.aria.staffConsole}>
-          <div className="staff-tabs-shell">
-            <button
-              aria-label={resolvedLanguage === 'vi' ? 'Cuộn menu sang trái' : 'Scroll menu left'}
-              className="staff-tabs-scroll-button"
-              disabled={!canScrollStaffTabsBack}
-              type="button"
-              onClick={() => scrollStaffTabs(-1)}
-            >
-              <ChevronLeft aria-hidden="true" size={18} strokeWidth={2.4} />
-            </button>
-            <div className="staff-tabs" ref={staffTabsRef} role="tablist" aria-label={text.aria.staffConsole}>
-              {visibleTabGroups.map((group) => (
-                <div className={currentTabGroup === group.id ? 'staff-tab-group active' : 'staff-tab-group'} key={group.id} role="presentation">
-                  <span aria-hidden="true" className="staff-tab-group-label">{text.tabGroups[group.id]}</span>
-                  <div className="staff-tab-group-buttons" role="presentation">
-                    {group.tabs.map((tab) => (
-                      <Fragment key={tab}>{tabButton(tab, text.tabs[tab])}</Fragment>
-                    ))}
-                  </div>
+      <div className="staff-console-nav" aria-label={text.aria.staffConsole}>
+        <div className="staff-tabs-shell">
+          <button
+            aria-label={resolvedLanguage === 'vi' ? 'Cuộn menu sang trái' : 'Scroll menu left'}
+            className="staff-tabs-scroll-button"
+            disabled={!canScrollStaffTabsBack}
+            type="button"
+            onClick={() => scrollStaffTabs(-1)}
+          >
+            <ChevronLeft aria-hidden="true" size={18} strokeWidth={2.4} />
+          </button>
+          <div className="staff-tabs" ref={staffTabsRef} role="tablist" aria-label={text.aria.staffConsole}>
+            {visibleTabGroups.map((group) => (
+              <div className={currentTabGroup === group.id ? 'staff-tab-group active' : 'staff-tab-group'} key={group.id} role="presentation">
+                <span aria-hidden="true" className="staff-tab-group-label">{text.tabGroups[group.id]}</span>
+                <div className="staff-tab-group-buttons" role="presentation">
+                  {group.tabs.map((tab) => (
+                    <Fragment key={tab}>{tabButton(tab, text.tabs[tab])}</Fragment>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <button
-              aria-label={resolvedLanguage === 'vi' ? 'Cuộn menu sang phải' : 'Scroll menu right'}
-              className="staff-tabs-scroll-button"
-              disabled={!canScrollStaffTabsForward}
-              type="button"
-              onClick={() => scrollStaffTabs(1)}
-            >
-              <ChevronRight aria-hidden="true" size={18} strokeWidth={2.4} />
-            </button>
+              </div>
+            ))}
           </div>
+          <button
+            aria-label={resolvedLanguage === 'vi' ? 'Cuộn menu sang phải' : 'Scroll menu right'}
+            className="staff-tabs-scroll-button"
+            disabled={!canScrollStaffTabsForward}
+            type="button"
+            onClick={() => scrollStaffTabs(1)}
+          >
+            <ChevronRight aria-hidden="true" size={18} strokeWidth={2.4} />
+          </button>
         </div>
-      )}
+      </div>
 
       {status && <p className="sr-only" aria-live="polite">{status}</p>}
       {currentTabLoading && <AppLoadingState compact label={text.loading} />}
@@ -1773,179 +1213,6 @@ export default function StaffConsole({ profile, authEmail, language, mode = 'sta
         updateOperationChapterTime={updateOperationChapterTime}
         unlinkedOperationOrders={unlinkedOperationOrders}
         orderRows={orderRows}
-      />)}
-
-      {currentTabReady && currentTab === 'attendance' && (<AttendanceSection
-        shiftAttendanceRange={shiftAttendanceRange}
-        attendanceWeekDates={attendanceWeekDates}
-        text={text}
-        attendanceWeekStart={attendanceWeekStart}
-        setAttendanceRange={setAttendanceRange}
-        attendanceWeekEnd={attendanceWeekEnd}
-        resetAttendanceRangeToThisWeek={resetAttendanceRangeToThisWeek}
-        canEditAttendance={canEditAttendance}
-        attendanceSummary={attendanceSummary}
-        visibleAttendanceTabs={visibleAttendanceTabs}
-        currentAttendanceTab={currentAttendanceTab}
-        setAttendanceTab={setAttendanceTab}
-        visibleStaffProfileOptions={visibleStaffProfileOptions}
-        selectedShiftTemplate={selectedShiftTemplate}
-        applyShiftTemplate={applyShiftTemplate}
-        canManageAttendance={canManageAttendance}
-        effectiveShiftTemplates={effectiveShiftTemplates}
-        copyPreviousAttendanceWeek={copyPreviousAttendanceWeek}
-        saving={saving}
-        publishAttendanceWeek={publishAttendanceWeek}
-        draftShiftCount={draftShiftCount}
-        attendanceGridStyle={attendanceGridStyle}
-        employeeProfileById={employeeProfileById}
-        attendanceShiftsByCell={attendanceShiftsByCell}
-        visibleAttendanceShifts={visibleAttendanceShifts}
-        draggingShiftId={draggingShiftId}
-        moveShiftToCell={moveShiftToCell}
-        setDraggingShiftId={setDraggingShiftId}
-        startShiftForCell={startShiftForCell}
-        shiftWarningsById={shiftWarningsById}
-        editShift={editShift}
-        profileById={profileById}
-        updateShiftStatus={updateShiftStatus}
-        shiftForm={shiftForm}
-        firstStaffProfileId={firstStaffProfileId}
-        setShiftForm={setShiftForm}
-        saveShift={saveShift}
-        visibleAttendanceLogs={visibleAttendanceLogs}
-        editAttendanceLog={editAttendanceLog}
-        attendanceLogForm={attendanceLogForm}
-        setAttendanceLogForm={setAttendanceLogForm}
-        saveAttendanceLog={saveAttendanceLog}
-        visibleLeaveRequests={visibleLeaveRequests}
-        editLeaveRequest={editLeaveRequest}
-        updateLeaveStatus={updateLeaveStatus}
-        leaveForm={leaveForm}
-        setLeaveForm={setLeaveForm}
-        submitLeaveRequest={submitLeaveRequest}
-        attendanceSettings={attendanceSettings}
-        setAttendanceSettings={setAttendanceSettings}
-        updateAttendanceShiftTemplate={updateAttendanceShiftTemplate}
-        saveAttendanceSettings={saveAttendanceSettings}
-      />)}
-
-      {currentTabReady && currentTab === 'hr' && (<HrSection
-        approvePayrollRun={approvePayrollRun}
-        downloadEmployeePayslip={downloadEmployeePayslip}
-        downloadPayrollExcel={downloadPayrollExcel}
-        generatePayrollRun={generatePayrollRun}
-        hrAdjustmentForm={hrAdjustmentForm}
-        hrPayrollTotals={hrPayrollTotals}
-        leaveRequests={leaveRequests}
-        payrollItems={payrollItems}
-        payrollPeriodEnd={payrollPeriodEnd}
-        payrollPeriodStart={payrollPeriodStart}
-        payrollRunForm={payrollRunForm}
-        payrollRuns={payrollRuns}
-        periodHrAdjustments={periodHrAdjustments}
-        profileById={profileById}
-        costAssignments={costAssignments}
-        loadHrData={loadHrData}
-        staffCostAllocations={staffCostAllocations}
-        saveHrAdjustment={saveHrAdjustment}
-        setHrAdjustmentForm={setHrAdjustmentForm}
-        setPayrollRunForm={setPayrollRunForm}
-        staffPayrollCalculations={staffPayrollCalculations}
-        updateHrAdjustmentStatus={updateHrAdjustmentStatus}
-        visibleStaffProfileOptions={visibleStaffProfileOptions}
-        approveAttendancePeriod={approveAttendancePeriod}
-        applyShiftTemplate={applyShiftTemplate}
-        attendanceLogs={attendanceLogs}
-        attendanceScheduleScopeOptions={attendanceScheduleScopeOptions}
-        attendanceSettings={attendanceSettings}
-        attendanceShiftsByCell={attendanceShiftsByCell}
-        attendanceWeekEnd={attendanceWeekEnd}
-        attendanceWeekDates={attendanceWeekDates}
-        attendanceWeekStart={attendanceWeekStart}
-        draggingShiftId={draggingShiftId}
-        draftShiftCount={draftShiftCount}
-        effectiveAttendanceScheduleScope={effectiveAttendanceScheduleScope}
-        effectiveShiftTemplates={effectiveShiftTemplates}
-        editShift={editShift}
-        firstScheduleStaffProfileId={firstScheduleStaffProfileId}
-        saveAttendanceSettings={saveAttendanceSettings}
-        saveShift={saveShift}
-        selectedShiftTemplate={selectedShiftTemplate}
-        setAttendanceScheduleScope={setAttendanceScheduleScope}
-        setAttendanceSettings={setAttendanceSettings}
-        setAttendanceRange={setAttendanceRange}
-        setDraggingShiftId={setDraggingShiftId}
-        setShiftForm={setShiftForm}
-        shiftForm={shiftForm}
-        shiftAttendanceRange={shiftAttendanceRange}
-        shiftWarningsById={shiftWarningsById}
-        startShiftForCell={startShiftForCell}
-        resetAttendanceRangeToThisWeek={resetAttendanceRangeToThisWeek}
-        updateShiftStatus={updateShiftStatus}
-        visibleScheduleAttendanceShifts={visibleScheduleAttendanceShifts}
-        visibleScheduleStaffProfileOptions={visibleScheduleStaffProfileOptions}
-        copyPreviousAttendanceWeek={copyPreviousAttendanceWeek}
-        moveShiftToCell={moveShiftToCell}
-        publishAttendanceWeek={publishAttendanceWeek}
-        canEditEmployeeProfiles={canEditEmployeeProfiles}
-        canAccessHrSettings={canAccessHrSettings}
-        canAccessZaloSettings={canAccessZaloSettings}
-        canManageEmployeeKioskPins={canManageEmployeeKioskPins}
-        canManageAttendance={canManageAttendance}
-        isOwnerOrAdmin={isOwnerOrAdmin}
-        canRevealEmployeeKioskPin={canRevealEmployeeKioskPin}
-        editEmployeeProfile={editEmployeeProfile}
-        configureEmployeeKioskPin={configureEmployeeKioskPin}
-        createEmployeeRecord={createEmployeeRecord}
-        employeeForm={employeeForm}
-        employeeKioskAccessRole={employeeKioskAccessRole}
-        employeeKioskPin={employeeKioskPin}
-        employeeKioskPinConfirm={employeeKioskPinConfirm}
-        employeeKioskPinEmailRecipient={employeeKioskPinEmailRecipient}
-        employeeKioskPinEmailState={employeeKioskPinEmailState}
-        employeeKioskPinSaveConfirmation={employeeKioskPinSaveConfirmation}
-        employeeKioskPinLoading={employeeKioskPinLoading}
-        employeeKioskPinVisibleValue={employeeKioskPinVisibleValue}
-        employeePayrollSummary={employeePayrollSummary}
-        employeeProfileById={employeeProfileById}
-        firstEmployeeStaffProfileId={firstEmployeeStaffProfileId}
-        generateEmployeeKioskPin={generateEmployeeKioskPin}
-        handleHrDocumentUpload={handleHrDocumentUpload}
-        hrDocumentUploading={hrDocumentUploading}
-        saveEmployeeProfile={saveEmployeeProfile}
-        sendEmployeeKioskPinEmail={sendEmployeeKioskPinEmail}
-        selectedEmployeeDocuments={selectedEmployeeDocuments}
-        selectedEmployeeOutstandingDebt={selectedEmployeeOutstandingDebt}
-        selectedEmployeeStaffId={selectedEmployeeStaffId}
-        selectedEmployeeStaffProfile={selectedEmployeeStaffProfile}
-        setEmployeeForm={setEmployeeForm}
-        setEmployeeKioskAccessRole={setEmployeeKioskAccessRole}
-        setEmployeeKioskPin={setEmployeeKioskPin}
-        setEmployeeKioskPinConfirm={setEmployeeKioskPinConfirm}
-        visibleAllStaffProfileOptions={visibleAllStaffProfileOptions}
-        hrContractTypeOptions={hrContractTypeOptions}
-        hrDepartmentOptions={hrDepartmentOptions}
-        hrJobTitleOptions={hrJobTitleOptions}
-        hrLocationOptions={hrLocationOptions}
-        hrOptionsByType={hrOptionsByType}
-        hrSettings={hrSettings}
-        hrSetupForm={hrSetupForm}
-        hrSetupOptions={hrSetupOptions}
-        saveHrSettings={saveHrSettings}
-        saveHrSetupOption={saveHrSetupOption}
-        updateHrSetupOption={updateHrSetupOption}
-        setHrSetupOptionActive={setHrSetupOptionActive}
-        setHrSettings={setHrSettings}
-        setHrSetupForm={setHrSetupForm}
-        syncPayrollDraft={syncPayrollDraft}
-        hrTab={hrTab}
-        resolvedLanguage={resolvedLanguage}
-        saving={saving}
-        setHrTab={setHrTab}
-        setStatus={setStatus}
-        sharedText={sharedText}
-        text={text}
       />)}
 
       {currentTabReady && currentTab === 'games' && (<GamesSection

@@ -1192,3 +1192,18 @@
 .staff-location-options { display: grid; gap: .65rem; padding: .75rem; }
 .staff-location-options label { display: flex; align-items: center; gap: .65rem; }
 .staff-location-options input[type="checkbox"] { width: auto; }
+
+.staff-employee-access-form > fieldset {
+  border: 0;
+  display: grid;
+  gap: 0.85rem;
+  margin: 1rem 0;
+  max-width: 34rem;
+  min-width: 0;
+  padding: 0;
+}
+
+.staff-employee-access-form > fieldset > label {
+  display: grid;
+  gap: 0.35rem;
+}

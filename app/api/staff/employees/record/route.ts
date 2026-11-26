@@ -1,70 +1,83 @@
 import type { NextRequest } from 'next/server'
-import { trustedClientIp } from '@/lib/security/requestIp'
 import {
   authenticateStaffKioskRequest,
   staffKioskCurrentRank,
   staffKioskJsonError,
 } from '@/lib/security/staffKioskServer'
-import { validateStaffEmployeeRecord } from '@/lib/staffEmployeeRecord'
-import { canConfigureStaffKioskPin } from '@/lib/staffKioskScope'
+import { canConfigureStaffKioskPin, canRevealStaffKioskPin } from '@/lib/staffKioskScope'
 
-export const runtime = 'nodejs'
+const headers = { 'Cache-Control': 'no-store, private' }
+const uuid = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i
 
-function errorMessage(value: unknown) {
-  if (value instanceof Error) return value.message
-  if (value && typeof value === 'object' && 'message' in value) {
-    return String((value as { message?: unknown }).message || '')
+export async function GET(request: NextRequest) {
+  const auth = await authenticateStaffKioskRequest(request)
+  if (auth instanceof Response) return auth
+
+  const { adminClient, user } = auth
+  const [rank, profile] = await Promise.all([
+    staffKioskCurrentRank(auth),
+    adminClient.from('profiles').select('role').eq('id', user.id).is('deleted_at', null).maybeSingle(),
+  ])
+  if (profile.error) return staffKioskJsonError('Could not verify employee access permissions.', 500)
+  if (!canRevealStaffKioskPin(user.email, profile.data?.role, rank)) {
+    return staffKioskJsonError('Employee access administration required.', 403)
   }
-  return ''
+
+  const [employees, locations, assignments] = await Promise.all([
+    adminClient.from('staff_employee_profiles')
+      .select('profile_id,legal_name,department,contract_end_date,kiosk_access_role,kiosk_pin_configured_at,kiosk_staff_access_granted')
+      .eq('active', true).is('deleted_at', null).order('legal_name'),
+    adminClient.from('staff_locations').select('venue_key,name').eq('active', true).order('name'),
+    adminClient.from('staff_employee_locations').select('profile_id,venue_key'),
+  ])
+  if (employees.error || locations.error || assignments.error) {
+    return staffKioskJsonError('Could not load employee access.', 500)
+  }
+
+  return Response.json({
+    canEdit: canConfigureStaffKioskPin(user.email, rank),
+    locations: locations.data,
+    employees: employees.data
+      .filter((employee) => !['gc', 'gong cha'].includes(employee.department?.trim().toLowerCase()))
+      .map((employee) => ({
+        id: employee.profile_id,
+        name: employee.legal_name || '',
+        contractEnd: employee.contract_end_date || '',
+        role: employee.kiosk_access_role === 'manager' ? 'manager' : 'staff',
+        pinConfigured: Boolean(employee.kiosk_pin_configured_at),
+        staffOnly: employee.kiosk_staff_access_granted,
+        venues: assignments.data.filter((row) => row.profile_id === employee.profile_id).map((row) => row.venue_key),
+      })),
+  }, { headers })
 }
 
 export async function POST(request: NextRequest) {
   const auth = await authenticateStaffKioskRequest(request)
   if (auth instanceof Response) return auth
-
-  try {
-    const rank = await staffKioskCurrentRank(auth)
-    if (!canConfigureStaffKioskPin(auth.user.email, rank)) {
-      return staffKioskJsonError('Sign in with an individual Owner or Admin account to create employees.', 403)
-    }
-
-    let body: Record<string, unknown>
-    try {
-      body = await request.json()
-    } catch {
-      return staffKioskJsonError('Invalid employee details.', 400)
-    }
-
-    const validation = validateStaffEmployeeRecord(body)
-    if (!validation.ok) return staffKioskJsonError(validation.error, 400)
-    const { email, employmentType, fullName, phone } = validation.value
-    const adminClient = auth.adminClient
-    const ip = trustedClientIp(request.headers)
-
-    const { error: rateLimitError } = await adminClient.rpc('consume_rate_limit', {
-      p_action: 'employee_hr_record',
-      p_limit: 8,
-      p_window_seconds: 10 * 60,
-      p_subject: `staff:${auth.user.id}:ip:${ip}`,
-    })
-    if (rateLimitError) return staffKioskJsonError(rateLimitError.message, 429)
-
-    const { data, error } = await adminClient.rpc('staff_hr_create_employee_record', {
-      p_actor_user_id: auth.user.id,
-      p_employment_type: employmentType,
-      p_full_name: fullName,
-      p_personal_email: email || null,
-      p_personal_phone: phone || null,
-    })
-    if (error) return staffKioskJsonError(error.message, 400)
-
-    const result = data as { employee?: unknown } | null
-    if (!result?.employee) {
-      return staffKioskJsonError('Could not create the employee HR record.', 500)
-    }
-
-    return Response.json(result, { status: 201 })
-  } catch (error) {
-    return staffKioskJsonError(errorMessage(error) || 'Could not create the employee HR record.', 500)
+  const rank = await staffKioskCurrentRank(auth)
+  if (!canConfigureStaffKioskPin(auth.user.email, rank)) {
+    return staffKioskJsonError('Sign in with an individual Owner or Admin account.', 403)
   }
+
+  const body = await request.json().catch(() => null)
+  if (!body || typeof body.name !== 'string' || !body.name.trim() || body.name.trim().length > 120
+    || (body.id !== null && (typeof body.id !== 'string' || !uuid.test(body.id)))
+    || typeof body.contractEnd !== 'string' || (body.contractEnd && !/^\d{4}-\d{2}-\d{2}$/.test(body.contractEnd))
+    || !['manager', 'staff'].includes(body.role)
+    || !Array.isArray(body.venues) || !body.venues.every((venue: unknown) => typeof venue === 'string')
+    || typeof body.pin !== 'string' || ((!body.id || body.pin) && !/^\d{6}$/.test(body.pin))) {
+    return staffKioskJsonError('Check the name, contract end date, store selection, access level and PIN.', 400)
+  }
+
+  const { data, error } = await auth.adminClient.rpc('staff_save_store_access', {
+    actor_id: auth.user.id,
+    employee_id: body.id,
+    employee_name: body.name.trim(),
+    contract_end: body.contractEnd || null,
+    access_level: body.role,
+    venues: body.venues,
+    new_pin: body.pin || null,
+  })
+  if (error) return staffKioskJsonError(error.message, 400)
+  return Response.json({ id: data }, { headers })
 }

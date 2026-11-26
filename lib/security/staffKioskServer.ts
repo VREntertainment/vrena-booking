@@ -97,11 +97,13 @@ export async function staffKioskCurrentSessionId(auth: StaffKioskAuth) {
 }
 
 export async function loadStaffKioskOperatorDirectory(adminClient: SupabaseClient) {
+  const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).format()
   const { data: employees, error: employeeError } = await adminClient
     .from('staff_employee_profiles')
     .select('profile_id, employee_code, legal_name, job_title, department, kiosk_staff_access_granted, kiosk_access_role, kiosk_pin_configured_at')
     .eq('active', true)
     .is('deleted_at', null)
+    .or(`contract_end_date.is.null,contract_end_date.gte.${today}`)
     .order('legal_name', { ascending: true })
   if (employeeError) throw new Error(employeeError.message)
 

@@ -14,7 +14,6 @@ const checkSize = (file, limit) => {
 // Transitional ceilings for existing controllers. New domain modules stay much smaller.
 checkSize('components/BookingWidget.tsx', 6500)
 checkSize('components/StaffConsole.tsx', 2500)
-checkSize('components/StaffHrHub.tsx', 900)
 checkSize('hooks/useTicketCheckout.ts', 450)
 
 const domainFiles = ['lib/staff', 'lib/booking'].flatMap((directory) =>
@@ -53,7 +52,7 @@ for (const file of domainFiles) {
 }
 // Feature modules own effects and UI; they must not reach back into their controllers
 // or import server-only credentials. Type-only edges do not create runtime cycles.
-const featureFiles = ['features/booking', 'features/staff', 'features/hr'].flatMap((directory) =>
+const featureFiles = ['features/booking', 'features/staff'].flatMap((directory) =>
   readdirSync(path.join(root, directory)).filter((name) => /\.tsx?$/.test(name)).map((name) => directory + '/' + name),
 )
 for (const file of featureFiles) {
@@ -62,8 +61,7 @@ for (const file of featureFiles) {
   const dependencies = []
   const checkImport = (specifier) => {
     // The staff entry is the only bridge allowed to mount the independent HR controller.
-    const isHrEntry = file === 'features/staff/shared.tsx' && specifier === '../../components/StaffHrHub'
-    if (!isHrEntry && /(?:server-only|(?:^|\/)app\/.*route|supabaseAdmin|(?:^|\/)server(?:\/|$)|components\/(?:BookingWidget|StaffConsole|StaffHrHub)$)/.test(specifier)) {
+    if (/(?:server-only|(?:^|\/)app\/.*route|supabaseAdmin|(?:^|\/)server(?:\/|$)|components\/(?:BookingWidget|StaffConsole)$)/.test(specifier)) {
       failures.push(file + ': forbidden feature dependency on ' + specifier)
     }
     if (!specifier.startsWith('.')) return
