@@ -14,6 +14,7 @@ export async function shareBookingLink({
   key,
   title,
   path = '',
+  language,
   linkCopiedText,
   onCreateStatus,
   onSharedKey,
@@ -21,11 +22,14 @@ export async function shareBookingLink({
   key: string
   title: string
   path?: string
+  language: LanguageCode
   linkCopiedText: string
   onCreateStatus: (status: string) => void
   onSharedKey: (updater: string | ((current: string) => string)) => void
 }) {
-  const url = typeof window === 'undefined' ? '' : `${window.location.origin}${window.location.pathname}${path}`
+  const target = new URL(`${window.location.pathname}${path}`, window.location.origin)
+  target.searchParams.set('lang', language)
+  const url = target.href
 
   try {
     if (navigator.share) {

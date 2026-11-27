@@ -1,5 +1,6 @@
 'use client'
 
+import { ShareLanguageButton, type PrepareShare } from './ShareLanguageButton'
 import { brandedGameName } from '../lib/anvio'
 
 import NextImage from 'next/image'
@@ -76,7 +77,8 @@ type LeaderboardPanelProps = {
   onLeaderboardGameChange?: (gameId: string) => void
   onLeaderboardSearchChange?: (search: string) => void
   onLoadMorePlayers?: () => void
-  onShareCurrentUserStats?: () => void
+  shareLanguage?: string
+  prepareCurrentUserStats?: PrepareShare
   players: LeaderboardPlayer[]
   renderAvatar: (player: LeaderboardPlayer) => ReactNode
   serverFiltered?: boolean
@@ -244,7 +246,8 @@ export default function LeaderboardPanel({
   onLeaderboardSearchChange,
   onLoadMorePlayers,
   onOpenPlayerProfile,
-  onShareCurrentUserStats,
+  shareLanguage = 'en',
+  prepareCurrentUserStats,
   players,
   renderAvatar,
   serverFiltered = false,
@@ -411,7 +414,7 @@ export default function LeaderboardPanel({
     }
   }, [currentUserRankPlayer, leaderboardCriterion, rankedLeaderboardRows, userId])
   const selectedLeaderboardCriterionLabel = leaderboardCriteria.find((item) => item.value === leaderboardCriterion)?.label || text.totalScoreCriterion
-  const showCurrentUserShareButton = Boolean(onShareCurrentUserStats)
+  const showCurrentUserShareButton = Boolean(prepareCurrentUserStats)
   const activeGalleryImage = activeGalleryIndex === null ? null : galleryPreviewImages[activeGalleryIndex] ?? null
 
   useEffect(() => {
@@ -680,12 +683,12 @@ export default function LeaderboardPanel({
             )}
           </button>
           {showCurrentUserShareButton && (
-            <button className="secondary small-button leaderboard-share-button" type="button" onClick={() => onShareCurrentUserStats?.()}>
+            <ShareLanguageButton className="secondary small-button leaderboard-share-button" language={shareLanguage} prepare={prepareCurrentUserStats}>
               <span className="button-icon-text">
                 <Share aria-hidden="true" size={15} />
                 <span>{isCurrentUserStatsShared ? text.shared : text.shareStats}</span>
               </span>
-            </button>
+            </ShareLanguageButton>
           )}
         </div>
       )}

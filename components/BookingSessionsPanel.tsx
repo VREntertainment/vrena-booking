@@ -15,6 +15,7 @@ import { games, ticketServices, type TicketType } from '../lib/bookingStaticData
 import { BookingType, MatchStatus, QualificationRule, TicketStatus, TournamentFormat, compactDisplayName, displayName, eligibleTournamentParticipants, formatShortDate, isBestSessionPerformer, isChallengeSession, isInteractiveClickTarget, isPastSession, isTicketSession, localDateString, participantPaymentAmountSummary, participantPaymentMethodSummary, playerCardLabel, queueLabel, seatsLeft, sessionCoverGame, ticketDurationForPlayers, ticketPricingSummary, ticketTypeLabel, type FriendConnection, type Participant, type PoolStanding, type Profile, type SessionInvite, type SessionMessage, type TournamentAuditLog, type TournamentEditor, type TournamentMatch, type TournamentPool, type TournamentPoolEntry, type WaitlistEntry } from '../lib/bookingWidgetDomain'
 import MessageBodyText from './MessageBodyText'
 import SessionsView from './SessionsView'
+import { ShareLanguageButton } from './ShareLanguageButton'
 import { ShareSymbol } from './BookingWidgetUi'
 import AppLoadingState from './AppLoadingState'
 import type { Session } from '../lib/bookingWidgetDomain'
@@ -249,7 +250,7 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
     setTournamentPoolSize,
     setupTournamentPools,
     shareLink,
-    shareTournamentResults,
+    prepareTournamentResults,
     sharedKey,
     startEditingSession,
     stopEditingSession,
@@ -389,10 +390,6 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
       }
       return
     }
-    if (action === 'share') {
-      void shareLink('app', 'VRena Sessions')
-      return
-    }
     if (action === 'today') {
       setSessionTimeScope('upcoming')
       setSelectedSessionDate(localDateString(new Date()))
@@ -417,6 +414,10 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
         </span>
         {card.action === 'guide' ? (
           renderGameGuideTrigger(null, 'session-retention-card-cta')
+        ) : card.action === 'share' ? (
+          <ShareLanguageButton className="session-retention-card-cta" language={language} onShare={(locale) => shareLink('app', locale === 'vi' ? 'Phiên chơi VRena' : 'VRena Sessions', '', locale)}>
+            {card.cta}
+          </ShareLanguageButton>
         ) : (
           <button className="session-retention-card-cta" type="button" onClick={() => handleSessionRetentionAction(card.action)}>
             {card.cta}
@@ -695,18 +696,14 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                           : text.joinSession}
                 </button>
               )}
-              <button
+              <ShareLanguageButton
                 aria-label={text.share}
                 className={sharedKey === session.id ? 'share-icon-button compact-share desktop-session-share copied' : 'share-icon-button compact-share desktop-session-share'}
                 title={text.share}
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  shareLink(session.id, session.name, `#session-${session.id}`)
-                }}
-              >
+                language={language}
+                onShare={(locale) => shareLink(session.id, session.name, `#session-${session.id}`, locale)}>
                 <ShareSymbol />
-              </button>
+              </ShareLanguageButton>
               {canExpandDetails && (
                 <button
                   className="secondary compact-expand"
@@ -1138,15 +1135,14 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                   <h3 id={`invite-session-title-${session.id}`}>{text.invitePlayer}</h3>
                   <p>{text.sessionNetworkHint}</p>
                 </div>
-                <button
+                <ShareLanguageButton
                   aria-label={text.share}
                   className={sharedKey === session.id ? 'share-icon-button session-invite-share copied' : 'share-icon-button session-invite-share'}
                   title={text.share}
-                  type="button"
-                  onClick={() => shareLink(session.id, session.name, `#session-${session.id}`)}
-                >
+                  language={language}
+                  onShare={(locale) => shareLink(session.id, session.name, `#session-${session.id}`, locale)}>
                   <ShareSymbol />
-                </button>
+                </ShareLanguageButton>
                 <input
                   aria-label={text.invitePlayerSearch}
                   autoFocus
@@ -1442,9 +1438,9 @@ export default function BookingSessionsPanel({ context }: BookingSessionsPanelPr
                         <h3>{text.tournamentPodiumTitle}</h3>
                         <p className="muted">{text.tournamentPodiumHint}</p>
                       </div>
-                      <button className="share-icon-button" type="button" onClick={() => shareTournamentResults(session)}>
+                      <ShareLanguageButton className="share-icon-button" aria-label={text.share} language={language} prepare={(locale, signal) => prepareTournamentResults(session, locale, signal)}>
                         ⇧
-                      </button>
+                      </ShareLanguageButton>
                     </div>
                     <div className="podium-row">
                       {podium.map((participant) => (

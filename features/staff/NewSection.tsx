@@ -133,7 +133,6 @@ export default function NewSection({
 }: NewSectionProps) {
   const { locations } = useStaffLocations()
   const locationAllowed = locations.some((location) => location.venue_key === booking.venueKey)
-  const summaryRef = useRef<HTMLDivElement>(null)
   const hours = staffBookingHours(booking.venueKey, quote.duration)
   const outsideHours = booking.allowOutsideHours
   const validTime = validStaffBookingTime(booking.venueKey, quote.duration, booking.time, outsideHours)
@@ -538,9 +537,9 @@ export default function NewSection({
       <div className="staff-card staff-summary-card staff-new-booking-summary">
         <div className="staff-card-heading">
           <h3>{text.labels.summary}</h3>
-          {availabilityState === 'available' && validTime && <StaffBookingShareButton contentRef={summaryRef} snapshotKey={JSON.stringify([booking, quote, selectedGame?.name, bookingVenueName, resolvedLanguage])} date={booking.date} language={resolvedLanguage} />}
+          {availabilityState === 'available' && validTime && <StaffBookingShareButton details={{ booking, quote }} language={resolvedLanguage} />}
         </div>
-        {availabilityState === 'available' && validTime ? <StaffBookingSummary contentRef={summaryRef} booking={booking} venueName={bookingVenueName} language={resolvedLanguage} text={text} quote={quote} /> : <p className="field-help" role="status">{availabilityState === 'checking' ? bookingText.checkingAvailability : en ? 'Choose an available date, arena and starting time to preview this booking.' : 'Chọn ngày, arena và giờ bắt đầu còn trống để xem trước đặt chỗ.'}</p>}
+        {availabilityState === 'available' && validTime ? <StaffBookingSummary booking={booking} venueName={bookingVenueName} language={resolvedLanguage} text={text} quote={quote} /> : <p className="field-help" role="status">{availabilityState === 'checking' ? bookingText.checkingAvailability : en ? 'Choose an available date, arena and starting time to preview this booking.' : 'Chọn ngày, arena và giờ bắt đầu còn trống để xem trước đặt chỗ.'}</p>}
         <p className="field-help">{bookingText.durationHelp}</p>
         <p className="field-help">{text.labels.rule}: {quote.ruleName} · {text.labels.discountType}: {quote.discountLabel}</p>
         <fieldset className="staff-total-override" disabled={!canCreateOrders || saving}>

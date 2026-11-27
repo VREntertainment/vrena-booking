@@ -1,3 +1,4 @@
+import { ShareLanguageButton, type ShareLanguage } from './ShareLanguageButton'
 import { BriefcaseBusiness, CalendarDays, Images, PanelLeftClose, PanelLeftOpen, ShieldCheck, Share, UserRound, Ticket, Trophy, UsersRound } from 'lucide-react'
 import Link from 'next/link'
 import { useState, type CSSProperties, type ReactNode } from 'react'
@@ -21,7 +22,7 @@ type AppSidebarProps = {
   navigationCollapsed: boolean
   onLanguageChange: (language: LanguageCode) => void
   onNavigationCollapsedChange: (collapsed: boolean) => void
-  onShareApp: () => void
+  onShareApp: (language: ShareLanguage) => void | Promise<void>
   onViewChange: (view: AppView) => void
   profileAvatar: ReactNode
   profileAvatarStyle?: CSSProperties
@@ -113,15 +114,15 @@ export default function AppSidebar({
               </div>
             )}
           </div>
-          {CUSTOMER_SOCIAL_FEATURES_ENABLED && <button
+          {CUSTOMER_SOCIAL_FEATURES_ENABLED && <ShareLanguageButton
+            language={language}
             aria-label={sharedApp ? text.shared : text.shareApp}
             className={sharedApp ? 'share-button app-share copied' : 'share-button app-share'}
             title={sharedApp ? text.shared : text.shareApp}
-            type="button"
-            onClick={onShareApp}
+            onShare={onShareApp}
           >
             <ShareSymbol />
-          </button>}
+          </ShareLanguageButton>}
         </div>
         <h1 className="sr-only">VRena Booking</h1>
         <p className="muted">{text.tagline}</p>

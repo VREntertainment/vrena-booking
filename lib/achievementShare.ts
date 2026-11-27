@@ -190,7 +190,7 @@ export function openAchievementShareChannel(channel: 'email' | 'whatsapp' | 'zal
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
-export async function shareAchievementImage(options: AchievementShareOptions): Promise<AchievementShareResult> {
+export async function prepareAchievementImage(options: AchievementShareOptions): Promise<() => Promise<AchievementShareResult>> {
   const appUrl = options.appUrl || DEFAULT_APP_URL
   const theme = { ...defaultTheme, ...options.theme }
   const summary = options.shareSummary || achievementShareText({ ...options, appUrl })
@@ -207,12 +207,13 @@ export async function shareAchievementImage(options: AchievementShareOptions): P
   canvas.height = templateImage?.naturalHeight || 1350
   const ctx = canvas.getContext('2d')
 
-  if (!ctx) {
-    const textShareResult = await tryNativeShare({ title: options.title, text: summary, url: appUrl })
-    if (textShareResult) return textShareResult
+  const shareText = async (): Promise<AchievementShareResult> => {
+    const result = await tryNativeShare({ title: options.title, text: summary, url: appUrl })
+    if (result) return result
     await copyShareText(summary)
     return 'ready'
   }
+  if (!ctx) return shareText
 
   const templateWidth = 1080
   const templateHeight = 1350
@@ -350,24 +351,21 @@ export async function shareAchievementImage(options: AchievementShareOptions): P
 
   const blob = await canvasToBlob(canvas, 'image/jpeg', 0.92)
 
-  if (!blob) {
-    const textShareResult = await tryNativeShare({ title: options.title, text: summary, url: appUrl })
-    if (textShareResult) return textShareResult
-    await copyShareText(summary)
-    return 'ready'
-  }
+  if (!blob) return shareText
 
   const file = new File([blob], `${safeDownloadSlug(options.fileLabel, 'vrena-achievement')}.jpg`, { type: 'image/jpeg' })
 
-  if (navigator.canShare?.({ files: [file] })) {
-    const fileShareResult = await tryNativeShare({ files: [file], title: options.title, text: summary })
-    if (fileShareResult) return fileShareResult
+  return async () => {
+    if (navigator.canShare?.({ files: [file] })) {
+      const fileShareResult = await tryNativeShare({ files: [file], title: options.title, text: summary })
+      if (fileShareResult) return fileShareResult
+    }
+
+    const textShareResult = await tryNativeShare({ title: options.title, text: summary, url: appUrl })
+    if (textShareResult) return textShareResult
+
+    downloadShareImage(blob, file.name)
+    await copyShareText(summary)
+    return 'ready'
   }
-
-  const textShareResult = await tryNativeShare({ title: options.title, text: summary, url: appUrl })
-  if (textShareResult) return textShareResult
-
-  downloadShareImage(blob, file.name)
-  await copyShareText(summary)
-  return 'ready'
 }
