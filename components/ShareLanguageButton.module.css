@@ -1,0 +1,91 @@
+.dialog {
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  width: min(100% - 32px, 400px);
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 20px;
+  border: 1px solid var(--player-border-strong);
+  border-radius: var(--player-radius);
+  background: var(--player-surface-raised);
+  color: var(--player-text);
+  box-shadow: var(--player-shadow);
+  font: inherit;
+  text-align: start;
+  overflow: auto;
+}
+
+.dialog::backdrop {
+  background: rgb(var(--vrena-neutral-950-rgb) / 0.48);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-block-end: 12px;
+}
+
+.heading h2 {
+  margin: 0;
+  color: var(--player-text);
+  font-size: 19px;
+  line-height: 1.25;
+}
+
+.dialog .heading .close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--player-radius-sm);
+  background: transparent;
+  color: var(--player-text);
+  box-shadow: none;
+}
+
+.dialog .heading .close:hover {
+  background: var(--player-control-hover);
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.dialog .options button {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  height: auto;
+  padding: 8px 6px;
+  border-radius: var(--player-radius-sm);
+  font-size: 14px;
+  white-space: normal;
+}
+
+.dialog button:focus-visible {
+  outline: 2px solid var(--vrena-focus-halo);
+  outline-offset: 2px;
+}
+
+.status,
+.error {
+  margin-block: 10px 0;
+  font-size: 14px;
+}
+
+.status {
+  color: var(--player-text-muted);
+}
+
+.error {
+  color: var(--vrena-status-danger-ink);
+}

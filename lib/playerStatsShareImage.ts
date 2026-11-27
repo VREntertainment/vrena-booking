@@ -163,7 +163,7 @@ async function shareGeneratedImageFallback(blob: Blob, fileName: string, summary
   return 'ready'
 }
 
-export async function sharePlayerStatsImage({
+export async function preparePlayerStatsImage({
   appUrl,
   contextLabel = '',
   currentRank,
@@ -172,7 +172,7 @@ export async function sharePlayerStatsImage({
   fallbackPlayerLabel,
   labels,
   player,
-}: SharePlayerStatsImageOptions): Promise<SharePlayerStatsImageResult> {
+}: SharePlayerStatsImageOptions): Promise<() => Promise<SharePlayerStatsImageResult>> {
   const { rankTitle, summary, title } = buildPlayerStatsShareSummary({
     appUrl,
     contextLabel,
@@ -199,7 +199,7 @@ export async function sharePlayerStatsImage({
   const ctx = canvas.getContext('2d')
 
   if (!ctx) {
-    return shareTextFallback(title, summary, appUrl)
+    return () => shareTextFallback(title, summary, appUrl)
   }
 
   const templateWidth = 1080
@@ -336,16 +336,17 @@ export async function sharePlayerStatsImage({
   const blob = await canvasToBlob(canvas, 'image/jpeg', 0.92)
 
   if (!blob) {
-    return shareTextFallback(title, summary, appUrl)
+    return () => shareTextFallback(title, summary, appUrl)
   }
 
   const file = new File([blob], `${safeDownloadSlug(displayName, 'vrena-player')}-stats.jpg`, { type: 'image/jpeg' })
 
-  if (navigator.canShare?.({ files: [file] })) {
-    const nativeFileResult = await tryNativeShare({ files: [file], title, text: summary })
-    if (nativeFileResult) return nativeFileResult
-  }
-
   const clipboardImageBlob = await canvasToBlob(canvas, 'image/png')
-  return shareGeneratedImageFallback(blob, file.name, summary, clipboardImageBlob)
+  return async () => {
+    if (navigator.canShare?.({ files: [file] })) {
+      const nativeFileResult = await tryNativeShare({ files: [file], title, text: summary })
+      if (nativeFileResult) return nativeFileResult
+    }
+    return shareGeneratedImageFallback(blob, file.name, summary, clipboardImageBlob)
+  }
 }

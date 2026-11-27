@@ -28,7 +28,7 @@ type TournamentShareSession = {
   session_participants?: TournamentShareParticipant[] | null
 }
 
-export async function shareTournamentResultsImage({ session, text, language, onSharedKey }: TournamentResultsShareInput) {
+export async function prepareTournamentResultsImage({ session, text, language, onSharedKey }: TournamentResultsShareInput) {
     const podium = [1, 2, 3]
       .map((placement) => (session.session_participants ?? []).find((participant) => participant.placement === placement))
       .filter(Boolean) as TournamentShareParticipant[]
@@ -38,7 +38,7 @@ export async function shareTournamentResultsImage({ session, text, language, onS
       DEFAULT_APP_URL,
     ].join('\n')
 
-    if (podium.length === 0) {
+    const shareText = async () => {
       if (navigator.share) {
         await navigator.share({ title: session.name, text: summary, url: DEFAULT_APP_URL })
         return
@@ -48,6 +48,7 @@ export async function shareTournamentResultsImage({ session, text, language, onS
       onSharedKey(`results-${session.id}`)
       return
     }
+    if (podium.length === 0) return shareText
 
     let templateImage: HTMLImageElement | null = null
     try {
@@ -61,16 +62,7 @@ export async function shareTournamentResultsImage({ session, text, language, onS
     canvas.height = templateImage?.naturalHeight || 1350
     const ctx = canvas.getContext('2d')
 
-    if (!ctx) {
-      if (navigator.share) {
-        await navigator.share({ title: session.name, text: summary, url: DEFAULT_APP_URL })
-        return
-      }
-
-      await navigator.clipboard?.writeText(summary)
-      onSharedKey(`results-${session.id}`)
-      return
-    }
+    if (!ctx) return shareText
 
     const drawRoundAvatar = async (participant: TournamentShareParticipant, x: number, y: number, size: number) => {
       ctx.save()
@@ -217,28 +209,22 @@ export async function shareTournamentResultsImage({ session, text, language, onS
       blob = null
     }
 
-    if (!blob) {
-      if (navigator.share) {
-        await navigator.share({ title: session.name, text: summary, url: DEFAULT_APP_URL })
-        return
-      }
-      await navigator.clipboard?.writeText(summary)
-      onSharedKey(`results-${session.id}`)
-      return
-    }
+    if (!blob) return shareText
 
     const file = new File([blob], `${session.name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'vrena-tournament'}-results.jpg`, { type: 'image/jpeg' })
 
-    if (navigator.canShare?.({ files: [file] })) {
-      await navigator.share({ files: [file], title: session.name, text: summary })
-      return
-    }
+    return async () => {
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: session.name, text: summary })
+        return
+      }
 
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = file.name
-    link.click()
-    URL.revokeObjectURL(url)
-    onSharedKey(`results-${session.id}`)
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = file.name
+      link.click()
+      URL.revokeObjectURL(url)
+      onSharedKey(`results-${session.id}`)
+    }
   }

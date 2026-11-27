@@ -1,4 +1,5 @@
 'use client'
+import type { ShareLanguage } from './ShareLanguageButton'
 import { CircleCheck, Crown } from 'lucide-react'
 
 import { CUSTOMER_SOCIAL_FEATURES_ENABLED, customerView } from '../lib/customerExperience'
@@ -1866,13 +1867,14 @@ function BookingWorkspace({
     }
   }
 
-  async function shareLink(key: string, title: string, path = '') {
+  async function shareLink(key: string, title: string, path: string, shareLanguage: ShareLanguage) {
     await shareBookingLink({
       key,
       linkCopiedText: text.linkCopied,
       onCreateStatus: setCreateStatus,
       onSharedKey: setSharedKey,
       path,
+      language: shareLanguage,
       title,
     })
   }
@@ -5118,7 +5120,7 @@ function BookingWorkspace({
     setTournamentEditorResults
   }))
 
-  async function shareCurrentUserStats(contextLabel = '') {
+  async function prepareCurrentUserStats(contextLabel: string, locale: ShareLanguage, signal: AbortSignal) {
     let shareStats = playerStats
     if (profile && !hasShareablePlayerStats(shareStats)) {
       const hydratedStats = await hydrateCurrentUserShareStats(userId, true)
@@ -5126,11 +5128,12 @@ function BookingWorkspace({
     }
 
     if (!profile || !hasShareablePlayerStats(shareStats)) {
-      setProfileStatus(text.statsShareUnavailable)
-      return
+      throw new Error(text.statsShareUnavailable)
     }
 
-    const playerName = compactDisplayName(shareStats.displayName || displayName(profile), text.player)
+    const shareText = await loadTranslation(locale)
+    signal.throwIfAborted()
+    const playerName = compactDisplayName(shareStats.displayName || displayName(profile), shareText.player)
     const loadedRankIndex = leaderboardPlayerStats.findIndex((item) => item.profileId === userId)
     const playerLeaderboardRank = 'leaderboardRank' in shareStats ? shareStats.leaderboardRank : undefined
     const playerLeaderboardDistinctRank = 'leaderboardDistinctRank' in shareStats ? shareStats.leaderboardDistinctRank : null
@@ -5140,16 +5143,16 @@ function BookingWorkspace({
     const currentUserDistinctRank = playerLeaderboardDistinctRank
       ?? (currentUserRankPlayer?.profileId === userId ? currentUserRankPlayer.leaderboardDistinctRank : null)
     const shareLabels = {
-      accuracy: text.accuracy,
-      bestPerformerCount: bestPerformerCountText,
-      bestScores: text.bestScores,
-      currentRank: text.currentRank,
-      gamesPlayed: text.gamesPlayedCriterion,
-      projectiles: text.projectiles,
-      rankFallback: text.rankJesterMessage,
-      statsTitle: text.statsShareTitle,
-      totalScore: text.totalScore,
-      wins: text.wins,
+      accuracy: shareText.accuracy,
+      bestPerformerCount: (shareText as Record<string, string>).bestPerformerCount || 'Best Performer count',
+      bestScores: shareText.bestScores,
+      currentRank: shareText.currentRank,
+      gamesPlayed: shareText.gamesPlayedCriterion,
+      projectiles: shareText.projectiles,
+      rankFallback: shareText.rankJesterMessage,
+      statsTitle: shareText.statsShareTitle,
+      totalScore: shareText.totalScore,
+      wins: shareText.wins,
     }
     const shareSummary = buildPlayerStatsShareSummary({
       appUrl: DEFAULT_APP_URL,
@@ -5164,15 +5167,16 @@ function BookingWorkspace({
       },
     })
 
+    let runShare
     try {
-      const { sharePlayerStatsImage } = await import('../lib/playerStatsShareImage')
-      const shareResult = await sharePlayerStatsImage({
+      const { preparePlayerStatsImage } = await import('../lib/playerStatsShareImage')
+      runShare = await preparePlayerStatsImage({
         appUrl: DEFAULT_APP_URL,
         contextLabel,
         currentRank: currentUserRank,
         displayName: playerName,
         distinctRank: currentUserDistinctRank,
-        fallbackPlayerLabel: text.player,
+        fallbackPlayerLabel: shareText.player,
         labels: shareLabels,
         player: {
           ...shareStats,
@@ -5180,32 +5184,35 @@ function BookingWorkspace({
           leaderboardRank: currentUserRank,
         },
       })
-
-      if (shareResult === 'ready') setProfileStatus(text.statsShareReady)
-      if (shareResult !== 'cancelled') setSharedKey('stats')
     } catch {
-      try {
+      runShare = async () => {
         if (navigator.share) {
           await navigator.share({ title: shareSummary.title, text: shareSummary.summary, url: DEFAULT_APP_URL })
-        } else {
-          await navigator.clipboard?.writeText(shareSummary.summary)
+          return 'shared' as const
         }
-      } catch {
-        // Sharing and clipboard permissions vary by browser; still show the user that the action finished.
+        await navigator.clipboard?.writeText(shareSummary.summary)
+        return 'ready' as const
       }
-      setProfileStatus(text.statsShareReady)
-      setSharedKey('stats')
+    }
+
+    signal.throwIfAborted()
+    return async () => {
+      const result = await runShare()
+      if (result === 'ready') setProfileStatus(text.statsShareReady)
+      if (result !== 'cancelled') setSharedKey('stats')
     }
   }
 
-  async function shareTournamentResults(session: Session) {
-    const { shareTournamentResultsImage } = await import('../lib/tournamentResultsShare')
-    await shareTournamentResultsImage({
-      language,
+  async function prepareTournamentResults(session: Session, locale: ShareLanguage, signal: AbortSignal) {
+    const { prepareTournamentResultsImage } = await import('../lib/tournamentResultsShare')
+    const share = await prepareTournamentResultsImage({
+      language: locale,
       onSharedKey: setSharedKey,
       session,
-      text,
+      text: await loadTranslation(locale),
     })
+    signal.throwIfAborted()
+    return share
   }
 
   function voteCount(session: Session, gameId: GameId) {
@@ -5235,7 +5242,7 @@ function BookingWorkspace({
           // The layout still works when storage is blocked; only persistence is skipped.
         }
       }}
-      onShareApp={() => shareLink('app', 'VRena Sessions')}
+      onShareApp={(locale) => shareLink('app', locale === 'vi' ? 'Phiên chơi VRena' : 'VRena Sessions', '', locale)}
       onViewChange={setActiveView}
       profileAvatar={avatarNode(profile ? {
         avatar_url: currentProfileAvatar?.avatar_url,
@@ -5370,9 +5377,9 @@ function BookingWorkspace({
   }))
 
 
-  const profileViewContext = { activeAgeBand, activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, consentWaiverUrl: CONSENT_WAIVER_URL, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isAdultProfile, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyLoading, isPhoneSetupSaving, isProfileAuthLoading, isProfileSaveSuccessful, isMinorBirthdayLocked, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, isTeenMinorProfile, isUnder13Profile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, phoneSetupEmail, phoneSetupRequired, phoneSetupSentTo, playerStats, privacyPolicyUrl: PRIVACY_POLICY_URL, profile, profileBirthday: effectiveProfileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileSurname, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, scheduleReturnReminder, sendPasswordReset, sendPhoneSetupEmail, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setPhoneSetupEmail, setPhoneSetupSentTo, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileSurname, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, shareCurrentUserStats, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, staffMfaEnrollmentRequired, termsConditionsUrl: TERMS_CONDITIONS_URL, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
+  const profileViewContext = { activeAgeBand, activeTotpFactor, addToCalendarText, authMode, authStep, avatarColor, avatarColorDraft, avatarEmoji, avatarInitials, avatarMode, avatarPreview, avatarTextColor, avatarTextColorDraft, beginTotpEnrollment, bestPerformerCountText, consentWaiverUrl: CONSENT_WAIVER_URL, sessionForInvite, copiedInviteId, leaveSession, cancelSession, busySessionId, startEditingSession, copyInviteCode, openSessionFromProfile, canManageSession: publicCanManageSession, canAccessStaffConsole, canShareCurrentUserStats, captchaContainerRef, chooseAvatarMode, confirmTotpEnrollment, continueAuthFromEmail, crownedTopPlayer, currentUserStatsShared, deleteMyAccount, downloadSessionCalendar, editAuthEmail, failedAvatarUrls, handleAuth, handleAvatarChange, isAdultProfile, isDeletingAccount, isMfaLoading, isOAuthLoading, isPasskeyLoading, isPhoneSetupSaving, isProfileAuthLoading, isProfileSaveSuccessful, isMinorBirthdayLocked, isRecoveryMode, isResettingPassword, isSavingAnonymousMode, isSavingProfile, isTeenMinorProfile, isUnder13Profile, language, logout, marketingConsent, mfaChallengeCode, mfaEnrollment, mfaQrCodeSrc, mfaRequired, mfaStatus, mfaVerifyCode, mySessions, newPassword, openInvitationText, passkeyButtonRef, pendingInvitationsHintText, pendingInvitationsText, pendingSessionInvites, personalDataConsent, phoneSetupEmail, phoneSetupRequired, phoneSetupSentTo, playerStats, privacyPolicyUrl: PRIVACY_POLICY_URL, profile, profileBirthday: effectiveProfileBirthday, profileCountryCode, profileEmail, profileGender, profileInvitesExpanded, profileMotto, profileName, profileSurname, profileNickname, profilePassword, profilePastExpanded, profilePastSessions, profilePhone, profileStatus, profileUpcomingExpanded, profileUpcomingSessions, registerPasskey, rememberFailedAvatarUrl, replayOnboardingTour, rememberLogin, removeTotpFactor, resetCaptcha, saveProfile, scheduleReturnReminder, sendPasswordReset, sendPhoneSetupEmail, setActiveView, setAnonymousConfirmOpen, setAuthMode, setAuthStep, setAvatarColorDraft, setAvatarEmoji, setAvatarInitials, setAvatarTextColorDraft, setMarketingConsent, setMfaChallengeCode, setMfaEnrollment, setMfaStatus, setMfaVerifyCode, setNewPassword, setPersonalDataConsent, setPhoneSetupEmail, setPhoneSetupSentTo, setProfileBirthday, setProfileCountryCode, setProfileEmail, setProfileGender, setProfileInvitesExpanded, setProfileMotto, setProfileName, setProfileSurname, setProfileNickname, setProfilePassword, setProfilePastExpanded, setProfilePhone, setProfileStatus, setProfileUpcomingExpanded, setRememberLogin, setShowPassword, showPassword, showProfileFields, signInWithGoogle, signInWithPasskey, staffMfaEnrollmentRequired, termsConditionsUrl: TERMS_CONDITIONS_URL, text, updateAnonymousMode, updateAuthMode, updateAvatarColor, updateAvatarColorDraft, updateAvatarTextColor, updateAvatarTextColorDraft, updateMarketingConsent, updatePasswordFromRecovery, userId, verifyMfaChallenge }
 
-  const sessionsPanelContext = { activeView, announcementDrafts, applyRichTextCommand, commentDrafts, editSelectedGames, editTournamentBestOf, editTournamentCustomQualifiers, editTournamentFirstPrize, editTournamentFormat, editTournamentQualificationRule, editTournamentRequirePayment, editTournamentRoundsPerMatch, editTournamentSecondPrize, editTournamentThirdPlace, editTournamentThirdPrize, handleEditArenaCountChange, handleEditMaxPlayersChange, inviteSearch, setAnnouncementDrafts, setCommentDrafts, setEditSelectedGames, setEditTournamentBestOf, setEditTournamentCustomQualifiers, setEditTournamentFirstPrize, setEditTournamentFormat, setEditTournamentQualificationRule, setEditTournamentRequirePayment, setEditTournamentRoundsPerMatch, setEditTournamentSecondPrize, setEditTournamentThirdPlace, setEditTournamentThirdPrize, setInviteSearch, setInviteModalSessionId, addToCalendarText, addTournamentEditor, advanceTournamentRound, allProfiles, avatarFields, avatarNode, avatarStyle, bestOfLabel, bestPerformerText, busyClubId, busyInviteKey, busyMessageKey, busySessionId, busyTournamentId, busyVoteKey, cancelSession, canAccessClubSession, canEditTournamentSession: publicCanEditTournamentSession, canManageSession: publicCanManageSession, canReviewSessionMessages: publicCanReviewSessionMessages, claimPrize, canSeeClubPrivateData, canStaffExpandTicketSessions, challengeStatusLabel, clubMemberCount, clubMembershipFor, confirmPlayedGame, confirmedGameDrafts, copyInviteCode, copiedInviteId, createThirdPlaceMatch, crownedTopPlayer, createStatus, currentUserStatsShared, dayStripRef, deleteSessionMessage, downloadSessionCalendar, editBookingType, editSessionArenaCount, editSessionDate, editSessionDuration, editSessionDurationRecommendation, editSessionMaxPlayers, editSessionName, editSessionNotes, editSessionTime, editSessionVisibility, editTicketCustomerId, editTicketPricing, editTicketStatus, editTicketTotalPrice, editTicketType, editTimeOptions, editingSessionId, enablePushReminders, expandedNotes, expandedSessions, filteredSessions, finishTournament, formatVnd, friendList, generateTournamentMatches, hasMoreUpcomingSessions, highlightedSessionId, isAdmin, isEnablingPush, isLoadingMoreSessions, isLoadingPastSessions, isPushSubscribed, isSearchOpen, isSessionCreator, isUpdatingSession, inviteModalSessionId, invitePlayerToSession, invitesForSession, joinClub, joinCodes, joinSession, joinWaitlist, language, leaveSession, loadedSessionDetailIds, loadingSessionDetailIds, loadSessionMessages, looseText, messageTranslationKey, messageTranslations, messagesForSession, networkTablesReady, openClubPage, openPlayerProfile, openSessionFromProfile, participantById, participantName, poolStandingsForSession, pendingInvitationsText, postSessionMessage, previousPlayersForSession, profile, promptLogin, pushReminderStatus, removeParticipant, renderGameGuideTrigger, renderTariffTrigger, requestMessageTranslation, reviewSessionMessage, search, searchShellRef, selectedSessionDate, sessionClubFor, sessionDayOptions, sessionForInvite, sessionMessagePages, sessionReminders, sessionTimeScope, setActiveView, setCheckInTarget, setConfirmedGameDrafts, setEditBookingType, setEditSessionArenaCount, setEditSessionDate, setEditSessionDuration, setEditSessionMaxPlayers, setEditSessionName, setEditSessionNotes, setEditSessionTime, setEditSessionVisibility, setEditTicketCustomerId, setEditTicketStatus, setEditTicketTotalPrice, setEditTicketType, setExpandedNotes, setIsSearchOpen, setJoinCodes, setSearch, setSelectedSessionDate, setSessionExpanded, setSessionTimeScope, setTournamentEditorEmail, setTournamentPoolSize, setupTournamentPools, shareLink, shareTournamentResults, sharedKey, startEditingSession, stopEditingSession, text, toggleMessageOriginal, tournamentBestOf, tournamentCustomQualifiers, tournamentStageLabel, tournamentEditorEmail, tournamentEditorResults, tournamentFirstPrize, tournamentFormat, tournamentForSession, tournamentLocked, tournamentPoolSize, tournamentQualificationRule, tournamentRequirePayment, tournamentRoleHint, tournamentRoundsPerMatch, tournamentSecondPrize, tournamentThirdPlace, tournamentThirdPrize, toggleEditGame, updateSession, updateSessionMessagePage, updateTournamentMatch, updateTournamentPoolEntry, userId, voteCount, voteForGame, waitlistForSession, waitlistPosition }
+  const sessionsPanelContext = { activeView, announcementDrafts, applyRichTextCommand, commentDrafts, editSelectedGames, editTournamentBestOf, editTournamentCustomQualifiers, editTournamentFirstPrize, editTournamentFormat, editTournamentQualificationRule, editTournamentRequirePayment, editTournamentRoundsPerMatch, editTournamentSecondPrize, editTournamentThirdPlace, editTournamentThirdPrize, handleEditArenaCountChange, handleEditMaxPlayersChange, inviteSearch, setAnnouncementDrafts, setCommentDrafts, setEditSelectedGames, setEditTournamentBestOf, setEditTournamentCustomQualifiers, setEditTournamentFirstPrize, setEditTournamentFormat, setEditTournamentQualificationRule, setEditTournamentRequirePayment, setEditTournamentRoundsPerMatch, setEditTournamentSecondPrize, setEditTournamentThirdPlace, setEditTournamentThirdPrize, setInviteSearch, setInviteModalSessionId, addToCalendarText, addTournamentEditor, advanceTournamentRound, allProfiles, avatarFields, avatarNode, avatarStyle, bestOfLabel, bestPerformerText, busyClubId, busyInviteKey, busyMessageKey, busySessionId, busyTournamentId, busyVoteKey, cancelSession, canAccessClubSession, canEditTournamentSession: publicCanEditTournamentSession, canManageSession: publicCanManageSession, canReviewSessionMessages: publicCanReviewSessionMessages, claimPrize, canSeeClubPrivateData, canStaffExpandTicketSessions, challengeStatusLabel, clubMemberCount, clubMembershipFor, confirmPlayedGame, confirmedGameDrafts, copyInviteCode, copiedInviteId, createThirdPlaceMatch, crownedTopPlayer, createStatus, currentUserStatsShared, dayStripRef, deleteSessionMessage, downloadSessionCalendar, editBookingType, editSessionArenaCount, editSessionDate, editSessionDuration, editSessionDurationRecommendation, editSessionMaxPlayers, editSessionName, editSessionNotes, editSessionTime, editSessionVisibility, editTicketCustomerId, editTicketPricing, editTicketStatus, editTicketTotalPrice, editTicketType, editTimeOptions, editingSessionId, enablePushReminders, expandedNotes, expandedSessions, filteredSessions, finishTournament, formatVnd, friendList, generateTournamentMatches, hasMoreUpcomingSessions, highlightedSessionId, isAdmin, isEnablingPush, isLoadingMoreSessions, isLoadingPastSessions, isPushSubscribed, isSearchOpen, isSessionCreator, isUpdatingSession, inviteModalSessionId, invitePlayerToSession, invitesForSession, joinClub, joinCodes, joinSession, joinWaitlist, language, leaveSession, loadedSessionDetailIds, loadingSessionDetailIds, loadSessionMessages, looseText, messageTranslationKey, messageTranslations, messagesForSession, networkTablesReady, openClubPage, openPlayerProfile, openSessionFromProfile, participantById, participantName, poolStandingsForSession, pendingInvitationsText, postSessionMessage, previousPlayersForSession, profile, promptLogin, pushReminderStatus, removeParticipant, renderGameGuideTrigger, renderTariffTrigger, requestMessageTranslation, reviewSessionMessage, search, searchShellRef, selectedSessionDate, sessionClubFor, sessionDayOptions, sessionForInvite, sessionMessagePages, sessionReminders, sessionTimeScope, setActiveView, setCheckInTarget, setConfirmedGameDrafts, setEditBookingType, setEditSessionArenaCount, setEditSessionDate, setEditSessionDuration, setEditSessionMaxPlayers, setEditSessionName, setEditSessionNotes, setEditSessionTime, setEditSessionVisibility, setEditTicketCustomerId, setEditTicketStatus, setEditTicketTotalPrice, setEditTicketType, setExpandedNotes, setIsSearchOpen, setJoinCodes, setSearch, setSelectedSessionDate, setSessionExpanded, setSessionTimeScope, setTournamentEditorEmail, setTournamentPoolSize, setupTournamentPools, shareLink, prepareTournamentResults, sharedKey, startEditingSession, stopEditingSession, text, toggleMessageOriginal, tournamentBestOf, tournamentCustomQualifiers, tournamentStageLabel, tournamentEditorEmail, tournamentEditorResults, tournamentFirstPrize, tournamentFormat, tournamentForSession, tournamentLocked, tournamentPoolSize, tournamentQualificationRule, tournamentRequirePayment, tournamentRoleHint, tournamentRoundsPerMatch, tournamentSecondPrize, tournamentThirdPlace, tournamentThirdPrize, toggleEditGame, updateSession, updateSessionMessagePage, updateTournamentMatch, updateTournamentPoolEntry, userId, voteCount, voteForGame, waitlistForSession, waitlistPosition }
 
   const appMain = (
     <main lang={language}>
@@ -5409,7 +5416,8 @@ function BookingWorkspace({
               onLeaderboardGameChange={handleLeaderboardGameChange}
               onLeaderboardSearchChange={handleLeaderboardSearchChange}
               onLoadMorePlayers={loadMoreLeaderboardPlayers}
-              onShareCurrentUserStats={() => shareCurrentUserStats()}
+              shareLanguage={language}
+              prepareCurrentUserStats={(locale, signal) => prepareCurrentUserStats('', locale, signal)}
               onOpenPlayerProfile={openPlayerProfile}
               players={leaderboardPlayerStats}
               renderAvatar={(player: LeaderboardPlayer) => avatarNode({
@@ -6211,7 +6219,7 @@ function BookingWorkspace({
         handleLeaderboardSearchChange={handleLeaderboardSearchChange}
         loadMoreLeaderboardPlayers={loadMoreLeaderboardPlayers}
         openPlayerProfile={openPlayerProfile}
-        shareCurrentUserStats={shareCurrentUserStats}
+        prepareCurrentUserStats={prepareCurrentUserStats}
         avatarNode={avatarNode}
         selectedClubApprovedMembers={selectedClubApprovedMembers}
         manageableRoleOptions={manageableRoleOptions}

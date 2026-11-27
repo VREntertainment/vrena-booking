@@ -168,13 +168,16 @@ export function createBookingClubManagementActions(getContext: () => ClubManagem
     setBusyClubId('')
   }
 
-  async function shareClubInvite(club: Club) {
+  async function shareClubInvite(club: Club, language: 'en' | 'vi') {
     const { text, setClubStatus } = getContext()
 
     const code = club.pin_code || ''
+    const url = new URL(DEFAULT_APP_URL)
+    url.searchParams.set('lang', language)
+    const privateCodeLabel = language === 'vi' ? 'Mã riêng tư' : 'Private code'
     const shareBody = club.visibility === 'private'
-      ? `${club.name} · ${text.privateCode}: ${code}`
-      : `${club.name} · ${DEFAULT_APP_URL}`
+      ? `${club.name} · ${privateCodeLabel}: ${code}`
+      : `${club.name} · ${url.href}`
 
     if (navigator.share) {
       await navigator.share({ title: club.name, text: shareBody })

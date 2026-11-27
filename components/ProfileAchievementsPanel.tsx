@@ -1,5 +1,6 @@
 'use client'
 
+import { ShareLanguageButton, type ShareLanguage } from './ShareLanguageButton'
 import { brandedGameName } from '../lib/anvio'
 
 import NextImage from 'next/image'
@@ -78,7 +79,7 @@ import {
 import {
   achievementShareText,
   openAchievementShareChannel,
-  shareAchievementImage,
+  prepareAchievementImage,
   type AchievementShareOptions,
 } from '../lib/achievementShare'
 import {
@@ -1546,102 +1547,94 @@ export default function ProfileAchievementsPanel({
     }
   }
 
-  async function rememberCelebration(celebration: AchievementCelebration, shared = false) {
-    await rememberCelebrations([celebration], shared)
-  }
-
-  function shareOptionsForCelebration(celebration: AchievementCelebration) {
+  function localizedCelebration(celebration: AchievementCelebration, locale: ShareLanguage): AchievementCelebration {
+    const labels = achievementCopy[locale]
+    if (celebration.id === 'summary') {
+      return {
+        ...celebration,
+        description: `${summary.totalUnlocked}/${summary.availableAchievements} ${labels.achievementsUnlockedTotal.toLowerCase()} - ${levelProgress.rankLabel}`,
+        kindLabel: labels.playerRank,
+        rarityLabel: `${labels.level} ${levelProgress.level}`,
+        title: `${playerDisplayName} - ${labels.achievements}`,
+      }
+    }
+    if (celebration.kind === 'game') {
+      const source = achievements.find((entry) => entry.game.id === celebration.id)
+      if (!source || source.tier === 'none') return celebration
+      const localized = localizeGameAchievement(source, locale)
+      return {
+        ...celebration,
+        description: `${brandedGameName(localized.game.id, localized.game.title)} - ${localized.title}`,
+        kindLabel: labels[tierLabels[source.tier]],
+        rarityLabel: labels[rarityLabels[achievementRarityForGame(source)]],
+        title: localized.title,
+      }
+    }
+    const source = retentionAchievements.find((entry) => entry.id === celebration.id)
+    if (!source) return celebration
+    const localized = localizeRetentionAchievement(source, locale)
     return {
-      appUrl: DEFAULT_APP_URL,
-      badgeImageUrl: celebration.badgeImageUrl,
-      current: celebration.current,
-      description: celebration.description,
-      displayName: playerDisplayName,
-      fileLabel: `${playerDisplayName}-${celebration.title}`,
-      footer: DEFAULT_APP_URL.replace(/^https?:\/\//, ''),
-      kindLabel: celebration.kindLabel,
-      progressLabel: `${celebration.current}/${celebration.target} ${copy.progress.toLowerCase()}`,
-      rarityLabel: celebration.rarityLabel,
-      target: celebration.target,
-      title: celebration.title,
+      ...celebration,
+      description: localized.description,
+      kindLabel: labels.trickster,
+      rarityLabel: labels[rarityLabels[achievementRarityForRetention(source)]],
+      title: localized.title,
     }
   }
 
-  function shareOptionsForCelebrations(celebrations: AchievementCelebration[]): AchievementShareOptions {
-    if (celebrations.length === 1) return shareOptionsForCelebration(celebrations[0])
+  function shareOptions(celebrations: AchievementCelebration[], locale: ShareLanguage): AchievementShareOptions {
+    const labels = achievementCopy[locale]
+    const localized = celebrations.map((celebration) => localizedCelebration(celebration, locale))
+    const url = new URL(DEFAULT_APP_URL)
+    url.searchParams.set('lang', locale)
+    const common = { appUrl: url.href, displayName: playerDisplayName, footer: DEFAULT_APP_URL.replace(/^https?:\/\//, '') }
+    if (localized.length === 1) {
+      const { badgeImageUrl, current, description, kindLabel, rarityLabel, target, title } = localized[0]
+      return {
+        ...common, badgeImageUrl, current, description, kindLabel, rarityLabel, target, title,
+        fileLabel: `${playerDisplayName}-${title}`,
+        progressLabel: `${current}/${target} ${labels.progress.toLowerCase()}`,
+      }
+    }
 
-    const count = celebrations.length
-    const title = copy.unlockCelebrationBatchTitle.replace('{count}', String(count))
-    const achievementList = celebrations.map((celebration) => `• ${celebration.title} — ${celebration.description}`).join('\n')
+    const count = localized.length
+    const title = labels.unlockCelebrationBatchTitle.replace('{count}', String(count))
+    const achievementList = localized.map((celebration) => `• ${celebration.title} — ${celebration.description}`).join('\n')
     return {
-      appUrl: DEFAULT_APP_URL,
-      badgeImageUrl: celebrations[0]?.badgeImageUrl,
-      badgeImageUrls: celebrations.map((celebration) => celebration.badgeImageUrl),
+      ...common,
+      badgeImageUrl: localized[0]?.badgeImageUrl,
+      badgeImageUrls: localized.map((celebration) => celebration.badgeImageUrl),
       current: count,
-      description: celebrations.map((celebration) => celebration.title).join(' · '),
-      displayName: playerDisplayName,
+      description: localized.map((celebration) => celebration.title).join(' · '),
       fileLabel: `${playerDisplayName}-${count}-achievements`,
-      footer: DEFAULT_APP_URL.replace(/^https?:\/\//, ''),
-      kindLabel: copy.collection,
+      kindLabel: labels.collection,
       progressLabel: title,
-      shareSummary: `${playerDisplayName} — ${title}\n${achievementList}\n${DEFAULT_APP_URL}`,
+      shareSummary: `${playerDisplayName} — ${title}\n${achievementList}\n${url.href}`,
       target: count,
       title,
     }
   }
 
-  async function shareCelebration(celebration: AchievementCelebration, markShared = false) {
-    setShareStatus('')
-    setSharingAchievementKey(celebration.key)
-    try {
-      const shareResult = await shareAchievementImage(shareOptionsForCelebration(celebration))
-      if (shareResult === 'ready') {
-        setShareStatus(copy.shareReady)
-        window.setTimeout(() => setShareStatus(''), 1800)
-      }
-      if (shareResult !== 'cancelled' && markShared) {
-        await rememberCelebration(celebration, true)
-      }
-    } catch {
-      const summary = achievementShareText(shareOptionsForCelebration(celebration))
-      await navigator.clipboard?.writeText(summary)
-      setShareStatus(copy.shareCopied)
-      window.setTimeout(() => setShareStatus(''), 1800)
-      if (markShared) {
-        await rememberCelebration(celebration, true)
-      }
-    } finally {
-      setSharingAchievementKey('')
-    }
-  }
-
-  async function shareCelebrations(celebrations: AchievementCelebration[], markShared = false) {
-    if (celebrations.length === 1) {
-      await shareCelebration(celebrations[0], markShared)
-      return
-    }
-
-    setShareStatus('')
-    setSharingAchievementKey('batch')
-    const options = shareOptionsForCelebrations(celebrations)
-    try {
-      const shareResult = await shareAchievementImage(options)
-      if (shareResult === 'ready') {
-        setShareStatus(copy.shareReady)
-        window.setTimeout(() => setShareStatus(''), 1800)
-      }
-      if (shareResult !== 'cancelled' && markShared) {
-        await rememberCelebrations(celebrations, true)
-      }
-    } catch {
+  async function prepareCelebrationShare(celebrations: AchievementCelebration[], locale: ShareLanguage, signal: AbortSignal, markShared = false) {
+    const options = shareOptions(celebrations, locale)
+    const runShare = await prepareAchievementImage(options).catch(() => async () => {
       await navigator.clipboard?.writeText(options.shareSummary ?? achievementShareText(options))
-      setShareStatus(copy.shareCopied)
-      window.setTimeout(() => setShareStatus(''), 1800)
-      if (markShared) {
-        await rememberCelebrations(celebrations, true)
+      return 'copied' as const
+    })
+    signal.throwIfAborted()
+    return async () => {
+      setShareStatus('')
+      setSharingAchievementKey(celebrations.length === 1 ? celebrations[0].key : 'batch')
+      try {
+        const result = await runShare()
+        if (result === 'ready' || result === 'copied') {
+          setShareStatus(result === 'ready' ? copy.shareReady : copy.shareCopied)
+          window.setTimeout(() => setShareStatus(''), 1800)
+        }
+        if (result !== 'cancelled' && markShared) await rememberCelebrations(celebrations, true)
+      } finally {
+        setSharingAchievementKey('')
       }
-    } finally {
-      setSharingAchievementKey('')
     }
   }
 
@@ -1649,31 +1642,25 @@ export default function ProfileAchievementsPanel({
     await rememberCelebrations(celebrations)
   }
 
-  async function shareAchievementSummary() {
+  function prepareAchievementSummary(locale: ShareLanguage, signal: AbortSignal) {
     const celebration: AchievementCelebration = {
       current: summary.totalUnlocked,
-      description: `${summary.totalUnlocked}/${summary.availableAchievements} ${copy.achievementsUnlockedTotal.toLowerCase()} - ${levelProgress.rankLabel}`,
+      description: '',
       id: 'summary',
       key: 'summary',
       kind: 'retention',
-      kindLabel: copy.playerRank,
-      rarityLabel: `${copy.level} ${levelProgress.level}`,
+      kindLabel: '',
       target: summary.availableAchievements || 1,
       tier: 'base',
-      title: `${playerDisplayName} - ${copy.achievements}`,
+      title: '',
     }
-    await shareCelebration(celebration)
+    return prepareCelebrationShare([celebration], locale, signal)
   }
 
-  function openDirectShare(channel: 'email' | 'whatsapp' | 'zalo', celebration: AchievementCelebration) {
-    const options = shareOptionsForCelebration(celebration)
-    openAchievementShareChannel(channel, achievementShareText(options), options.title)
-  }
-
-  function openDirectBatchShare(channel: 'email' | 'whatsapp' | 'zalo', celebrations: AchievementCelebration[]) {
-    const options = shareOptionsForCelebrations(celebrations)
+  function openDirectShare(channel: 'email' | 'whatsapp' | 'zalo', celebrations: AchievementCelebration[], locale: ShareLanguage, markShared = false) {
+    const options = shareOptions(celebrations, locale)
     openAchievementShareChannel(channel, options.shareSummary ?? achievementShareText(options), options.title)
-    void rememberCelebrations(celebrations, true)
+    if (markShared) void rememberCelebrations(celebrations, true)
   }
 
   const celebrationStageItems = featuredCelebration
@@ -1717,10 +1704,10 @@ export default function ProfileAchievementsPanel({
               <Trophy aria-hidden="true" size={14} />
               {copy.rankList}
             </button>
-            <button className="achievement-rank-list-button achievement-share-button" onClick={() => void shareAchievementSummary()} type="button">
+            <ShareLanguageButton className="achievement-rank-list-button achievement-share-button" language={language} prepare={prepareAchievementSummary}>
               <Share2 aria-hidden="true" size={14} />
               {copy.shareAchievements}
-            </button>
+            </ShareLanguageButton>
           </div>
         </div>
         <div className="achievement-rank-badge" aria-hidden="true">
@@ -2209,27 +2196,27 @@ export default function ProfileAchievementsPanel({
               </dl>
               {selectedAchievementCelebration && (
                 <div className="achievement-share-actions">
-                  <button
+                  <ShareLanguageButton language={language}
                     className="secondary small-button"
                     disabled={sharingAchievementKey === selectedAchievementCelebration.key}
-                    onClick={() => void shareCelebration(selectedAchievementCelebration)}
-                    type="button"
+                    prepare={(locale, signal) => prepareCelebrationShare([selectedAchievementCelebration], locale, signal)}
+
                   >
                     <Share2 aria-hidden="true" size={15} />
                     {shareStatus || copy.shareAchievement}
-                  </button>
-                  <button className="secondary small-button" onClick={() => openDirectShare('whatsapp', selectedAchievementCelebration)} type="button">
+                  </ShareLanguageButton>
+                  <ShareLanguageButton language={language} className="secondary small-button" onShare={(locale) => openDirectShare('whatsapp', [selectedAchievementCelebration], locale)}>
                     <MessageCircle aria-hidden="true" size={15} />
                     {copy.shareToWhatsApp}
-                  </button>
-                  <button className="secondary small-button achievement-zalo-button" onClick={() => openDirectShare('zalo', selectedAchievementCelebration)} type="button">
+                  </ShareLanguageButton>
+                  <ShareLanguageButton language={language} className="secondary small-button achievement-zalo-button" onShare={(locale) => openDirectShare('zalo', [selectedAchievementCelebration], locale)}>
                     <NextImage aria-hidden="true" alt="" className="achievement-zalo-icon" height={18} src="/brand/zalo-blue.svg" width={18} />
                     {copy.shareToZalo}
-                  </button>
-                  <button className="secondary small-button" onClick={() => openDirectShare('email', selectedAchievementCelebration)} type="button">
+                  </ShareLanguageButton>
+                  <ShareLanguageButton language={language} className="secondary small-button" onShare={(locale) => openDirectShare('email', [selectedAchievementCelebration], locale)}>
                     <Mail aria-hidden="true" size={15} />
                     {copy.shareByEmail}
-                  </button>
+                  </ShareLanguageButton>
                 </div>
               )}
             </div>
@@ -2277,27 +2264,27 @@ export default function ProfileAchievementsPanel({
               {selectedRetentionAchievement.id === 'secret-hunter' && <p className="notice compact-notice">{copy.hiddenHints}</p>}
               {selectedRetentionCelebration && (
                 <div className="achievement-share-actions">
-                  <button
+                  <ShareLanguageButton language={language}
                     className="secondary small-button"
                     disabled={sharingAchievementKey === selectedRetentionCelebration.key}
-                    onClick={() => void shareCelebration(selectedRetentionCelebration)}
-                    type="button"
+                    prepare={(locale, signal) => prepareCelebrationShare([selectedRetentionCelebration], locale, signal)}
+
                   >
                     <Share2 aria-hidden="true" size={15} />
                     {shareStatus || copy.shareAchievement}
-                  </button>
-                  <button className="secondary small-button" onClick={() => openDirectShare('whatsapp', selectedRetentionCelebration)} type="button">
+                  </ShareLanguageButton>
+                  <ShareLanguageButton language={language} className="secondary small-button" onShare={(locale) => openDirectShare('whatsapp', [selectedRetentionCelebration], locale)}>
                     <MessageCircle aria-hidden="true" size={15} />
                     {copy.shareToWhatsApp}
-                  </button>
-                  <button className="secondary small-button achievement-zalo-button" onClick={() => openDirectShare('zalo', selectedRetentionCelebration)} type="button">
+                  </ShareLanguageButton>
+                  <ShareLanguageButton language={language} className="secondary small-button achievement-zalo-button" onShare={(locale) => openDirectShare('zalo', [selectedRetentionCelebration], locale)}>
                     <NextImage aria-hidden="true" alt="" className="achievement-zalo-icon" height={18} src="/brand/zalo-blue.svg" width={18} />
                     {copy.shareToZalo}
-                  </button>
-                  <button className="secondary small-button" onClick={() => openDirectShare('email', selectedRetentionCelebration)} type="button">
+                  </ShareLanguageButton>
+                  <ShareLanguageButton language={language} className="secondary small-button" onShare={(locale) => openDirectShare('email', [selectedRetentionCelebration], locale)}>
                     <Mail aria-hidden="true" size={15} />
                     {copy.shareByEmail}
-                  </button>
+                  </ShareLanguageButton>
                 </div>
               )}
             </div>
@@ -2398,11 +2385,11 @@ export default function ProfileAchievementsPanel({
                 <p className="notice compact-notice">{featuredCelebration.description}</p>
               )}
               <div className="achievement-unlock-share-panel">
-                <button
+                <ShareLanguageButton language={language}
                   className="primary achievement-unlock-share-primary"
                   disabled={sharingAchievementKey === (isCelebrationBatch ? 'batch' : featuredCelebration.key)}
-                  onClick={() => void shareCelebrations(pendingCelebrations, true)}
-                  type="button"
+                  prepare={(locale, signal) => prepareCelebrationShare(pendingCelebrations, locale, signal, true)}
+
                 >
                   <Share2 aria-hidden="true" size={18} />
                   <span>
@@ -2410,38 +2397,32 @@ export default function ProfileAchievementsPanel({
                       ? copy.shareAllAchievements.replace('{count}', String(pendingCelebrations.length))
                       : copy.shareToFriends)}
                   </span>
-                </button>
+                </ShareLanguageButton>
                 <div className="achievement-share-actions achievement-unlock-channels">
-                  <button
+                  <ShareLanguageButton language={language}
                     className="secondary small-button"
-                    onClick={() => isCelebrationBatch
-                      ? openDirectBatchShare('whatsapp', pendingCelebrations)
-                      : openDirectShare('whatsapp', featuredCelebration)}
-                    type="button"
+                    onShare={(locale) => openDirectShare('whatsapp', isCelebrationBatch ? pendingCelebrations : [featuredCelebration], locale, isCelebrationBatch)}
+
                   >
                     <MessageCircle aria-hidden="true" size={17} />
                     {copy.shareToWhatsApp}
-                  </button>
-                  <button
+                  </ShareLanguageButton>
+                  <ShareLanguageButton language={language}
                     className="secondary small-button achievement-zalo-button"
-                    onClick={() => isCelebrationBatch
-                      ? openDirectBatchShare('zalo', pendingCelebrations)
-                      : openDirectShare('zalo', featuredCelebration)}
-                    type="button"
+                    onShare={(locale) => openDirectShare('zalo', isCelebrationBatch ? pendingCelebrations : [featuredCelebration], locale, isCelebrationBatch)}
+
                   >
                     <NextImage aria-hidden="true" alt="" className="achievement-zalo-icon" height={18} src="/brand/zalo-blue.svg" width={18} />
                     {copy.shareToZalo}
-                  </button>
-                  <button
+                  </ShareLanguageButton>
+                  <ShareLanguageButton language={language}
                     className="secondary small-button"
-                    onClick={() => isCelebrationBatch
-                      ? openDirectBatchShare('email', pendingCelebrations)
-                      : openDirectShare('email', featuredCelebration)}
-                    type="button"
+                    onShare={(locale) => openDirectShare('email', isCelebrationBatch ? pendingCelebrations : [featuredCelebration], locale, isCelebrationBatch)}
+
                   >
                     <Mail aria-hidden="true" size={17} />
                     {copy.shareByEmail}
-                  </button>
+                  </ShareLanguageButton>
                 </div>
               </div>
               <button

@@ -1,5 +1,6 @@
 'use client'
 
+import { ShareLanguageButton, type PrepareShare, type ShareLanguage } from '../../components/ShareLanguageButton'
 import type { Club } from '../../lib/bookingWidgetDomain'
 
 import {
@@ -69,7 +70,7 @@ export type ClubDetailProps = {
   setActiveView: React.Dispatch<React.SetStateAction<import("../../components/AppSidebar").AppView>>
   leaveClub: (club: import("../../lib/bookingWidgetDomain").Club, member: import("../../lib/bookingWidgetDomain").ClubMember) => Promise<void>
   leaveClubText: string
-  shareClubInvite: (club: import("../../lib/bookingWidgetDomain").Club) => Promise<void>
+  shareClubInvite: (club: import("../../lib/bookingWidgetDomain").Club, language: ShareLanguage) => Promise<void>
   selectedClubTab: import("../../lib/bookingWidgetDomain").ClubTab
   handleClubTabChange: (tab: import("../../lib/bookingWidgetDomain").ClubTab) => void
   isLeaderboardLoading: boolean
@@ -87,7 +88,7 @@ export type ClubDetailProps = {
   handleLeaderboardSearchChange: (searchValue: string) => void
   loadMoreLeaderboardPlayers: () => void
   openPlayerProfile: (profileId: string, sessionId?: string, seedStats?: import("../../components/LeaderboardPanel").LeaderboardPlayer | undefined) => void
-  shareCurrentUserStats: (contextLabel?: string) => Promise<void>
+  prepareCurrentUserStats: (contextLabel: string, ...args: Parameters<PrepareShare>) => ReturnType<PrepareShare>
   avatarNode: (source: { avatar_url?: string | null | undefined; avatar_emoji?: string | null | undefined; avatar_initials?: string | null | undefined; avatar_color?: string | null | undefined; avatar_text_color?: string | null | undefined; display_name?: string | null | undefined; full_name?: string | null | undefined; nickname?: string | null | undefined } | null | undefined, fallback?: string) => React.JSX.Element
   selectedClubApprovedMembers: import("../../lib/bookingWidgetDomain").ClubMember[]
   manageableRoleOptions: (club: import("../../lib/bookingWidgetDomain").Club, member: import("../../lib/bookingWidgetDomain").ClubMember) => import("../../lib/bookingWidgetDomain").ClubMemberRole[]
@@ -189,7 +190,7 @@ export default function ClubDetail({
   handleLeaderboardSearchChange,
   loadMoreLeaderboardPlayers,
   openPlayerProfile,
-  shareCurrentUserStats,
+  prepareCurrentUserStats,
   avatarNode,
   selectedClubApprovedMembers,
   manageableRoleOptions,
@@ -350,9 +351,9 @@ export default function ClubDetail({
           <div className="club-invite-box">
             <span>{text.clubInviteCode}</span>
             <strong>{selectedClub.pin_code}</strong>
-            <button className="secondary small-button" type="button" onClick={() => shareClubInvite(selectedClub)}>
+            <ShareLanguageButton className="secondary small-button" language={language} onShare={(locale) => shareClubInvite(selectedClub, locale)}>
               <ButtonIconText icon={<Share aria-hidden="true" size={15} />}>{text.shareClubCode}</ButtonIconText>
-            </button>
+            </ShareLanguageButton>
           </div>
         )}
 
@@ -408,7 +409,8 @@ export default function ClubDetail({
                     onLeaderboardSearchChange={handleLeaderboardSearchChange}
                     onLoadMorePlayers={loadMoreLeaderboardPlayers}
                     onOpenPlayerProfile={openPlayerProfile}
-                    onShareCurrentUserStats={() => shareCurrentUserStats(selectedClub.name)}
+                    shareLanguage={language}
+                    prepareCurrentUserStats={(locale, signal) => prepareCurrentUserStats(selectedClub.name, locale, signal)}
                     players={leaderboardPlayerStats}
                     renderAvatar={(player: LeaderboardPlayer) => avatarNode({
                       avatar_url: player.avatarUrl,
@@ -877,9 +879,9 @@ export default function ClubDetail({
                 <ButtonIconText icon={<RefreshCw aria-hidden="true" size={17} />}>{text.regenerateInviteCode}</ButtonIconText>
               </button>
               {selectedClub.pin_code && (
-                <button className="secondary create-button" type="button" onClick={() => shareClubInvite(selectedClub)}>
+                <ShareLanguageButton className="secondary create-button" language={language} onShare={(locale) => shareClubInvite(selectedClub, locale)}>
                   <ButtonIconText icon={<Share aria-hidden="true" size={17} />}>{text.shareClubCode}</ButtonIconText>
-                </button>
+                </ShareLanguageButton>
               )}
             </div>
           </div>

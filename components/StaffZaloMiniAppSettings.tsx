@@ -1,5 +1,6 @@
 'use client'
 
+import { ShareLanguageButton, type ShareLanguage } from './ShareLanguageButton'
 import { Check, Copy, LocateFixed, MapPin, Plus, Save, Share2, Trash2, X } from 'lucide-react'
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
@@ -210,12 +211,12 @@ export default function StaffZaloMiniAppSettings({ language, onStatus }: Props) 
     onStatus(text.settingsSaved)
   }
 
-  async function shareAccessLink() {
+  async function shareAccessLink(shareLanguage: ShareLanguage) {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: 'VRena Employee Attendance',
-          text: language === 'vi' ? 'Mở Zalo Mini App để chấm công tại VRena.' : 'Open the Zalo Mini App for VRena employee attendance.',
+          title: shareLanguage === 'vi' ? 'Chấm công VRena' : 'VRena Employee Attendance',
+          text: shareLanguage === 'vi' ? 'Mở Zalo Mini App để chấm công tại VRena.' : 'Open the Zalo Mini App for VRena employee attendance.',
           url: ZALO_MINI_APP_URL,
         })
         onStatus(text.shared)
@@ -433,9 +434,9 @@ export default function StaffZaloMiniAppSettings({ language, onStatus }: Props) 
             <strong><Share2 aria-hidden="true" size={18} />{text.share}</strong>
             <span>{text.shareHelp}</span>
           </div>
-          <button className="staff-zalo-share-button" type="button" onClick={() => void shareAccessLink()}>
+          <ShareLanguageButton className="staff-zalo-share-button" language={language} onShare={shareAccessLink}>
             <Copy aria-hidden="true" size={16} />{text.shareButton}
-          </button>
+          </ShareLanguageButton>
         </div>
 
         <div className="staff-zalo-permissions">

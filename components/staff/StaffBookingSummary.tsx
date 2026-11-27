@@ -11,7 +11,7 @@ import type { BookingSummaryDetails, BookingSummaryQuote } from '../../lib/staff
 import { vatSplit } from '../../lib/staff/vat'
 
 type Props = {
-  contentRef: RefObject<HTMLDivElement | null>
+  contentRef?: RefObject<HTMLDivElement | null>
   booking: BookingSummaryDetails
   venueName: string
   language: StaffConsoleLanguage
