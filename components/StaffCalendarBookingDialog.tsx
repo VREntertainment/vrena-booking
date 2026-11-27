@@ -253,7 +253,12 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         })}
       </fieldset>
       <p className="field-help">{text.savedPrice}</p>
-      <div className="calendar-dialog-actions"><StaffSavedBookingShare sessionId={sessionId} language={language} disabled={saving || session?.status === 'cancelled'} /><button className="calendar-delete-action" disabled={saving} type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />{text.remove}</button><button className="secondary" disabled={saving} onClick={onClose} type="button">{text.close}</button><button className="primary" disabled={saving} type="submit">{text.save}</button></div>
+      <div className="calendar-dialog-actions">
+        <button className="calendar-delete-action" disabled={saving} type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={16} aria-hidden="true" />{text.remove}</button>
+        <button className="secondary" disabled={saving} onClick={onClose} type="button">{text.close}</button>
+        <StaffSavedBookingShare sessionId={sessionId} language={language} disabled={saving || session?.status === 'cancelled'} />
+        <button className="primary" disabled={saving} type="submit">{text.save}</button>
+      </div>
     </form>)}
   </dialog>
 }

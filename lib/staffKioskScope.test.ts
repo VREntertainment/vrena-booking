@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { canConfigureStaffKioskPin, canEnterStaffConsole, canRevealStaffKioskPin, canStaffKioskOperatorAccessHr, canStaffKioskOperatorAccessStaff, isCompleteStaffKioskPin, normalizedStaffKioskPin, requiresStaffKioskPin, shouldAutoUnlockStaffKioskPin, STAFF_KIOSK_EMAIL } from './staffKioskScope.ts'
+import { canConfigureStaffKioskPin, canEnterStaffConsole, canRevealStaffKioskPin, canStaffKioskOperatorAccessHr, canStaffKioskOperatorAccessStaff, isCompleteStaffKioskPin, normalizedStaffKioskPin, requiresStaffKioskPin, shouldAutoUnlockStaffKioskPin, staffKioskCalendarLanding, STAFF_KIOSK_EMAIL } from './staffKioskScope.ts'
 
 test('the shared store login requires an employee PIN', () => {
   assert.equal(requiresStaffKioskPin(STAFF_KIOSK_EMAIL), true)
@@ -14,6 +14,16 @@ test('the sixth PIN digit completes the automatic unlock value', () => {
   assert.equal(isCompleteStaffKioskPin('123456'), true)
   assert.equal(shouldAutoUnlockStaffKioskPin('123456', false), false)
   assert.equal(shouldAutoUnlockStaffKioskPin('123456', true), true)
+})
+
+test('employee PIN landing opens the venue calendar on the current Vietnam date', () => {
+  assert.deepEqual(staffKioskCalendarLanding('cafe-des-stagiaires', new Date('2026-11-29T17:01:00Z')), {
+    mode: 'calendar',
+    date: '2026-11-30',
+    time: '',
+    venue: 'cafe-des-stagiaires',
+  })
+  assert.equal(staffKioskCalendarLanding('ha-do-centrosa', new Date('2026-11-29T16:59:00Z')).date, '2026-11-29')
 })
 
 test('Staff and HR navigation follow the unlocked employee role', () => {

@@ -103,6 +103,14 @@ for (const venue of ['ha-do-centrosa', 'cafe-des-stagiaires']) {
       expect(box!.x).toBeGreaterThanOrEqual(0)
       expect(box!.x + box!.width).toBeLessThanOrEqual(page.viewportSize()!.width + 1)
       expect(box!.height).toBeLessThanOrEqual(page.viewportSize()!.height)
+      if (page.viewportSize()!.width <= 600) {
+        const share = (await dialog.getByRole('button', { name: 'Share', exact: true }).boundingBox())!
+        const save = (await dialog.getByRole('button', { name: 'Save changes', exact: true }).boundingBox())!
+        expect(Math.abs(share.y - save.y)).toBeLessThan(1)
+        expect(share.x + share.width).toBeLessThanOrEqual(save.x)
+        expect(save.x + save.width).toBeLessThanOrEqual(box!.x + box!.width)
+        expect(Math.min(share.height, save.height)).toBeGreaterThanOrEqual(44)
+      }
       await dialog.getByRole('checkbox', { name: 'Confirmed with client', exact: true }).check()
       await dialog.getByRole('button', { name: 'Close', exact: true }).last().click()
       // Unsaved dialog edits must not silently persist.
