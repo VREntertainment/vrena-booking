@@ -136,8 +136,8 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
       setStatus(bookingText.invalidBooking)
       return
     }
-    if (!validStaffBookingTime(booking.venueKey, quote.duration, booking.time, booking.bookingKind === 'event' && booking.allowOutsideHours)) {
-      setStatus(bookingText.outsideHours)
+    if (!validStaffBookingTime(booking.venueKey, quote.duration, booking.time, booking.allowOutsideHours)) {
+      setStatus(booking.allowOutsideHours ? bookingText.invalidDuration : bookingText.outsideHours)
       return
     }
     const normalizedCustomerPhone = booking.customerPhone.trim() ? reservationPhone(booking.customerPhone) : null
@@ -172,7 +172,7 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
           p_session_count: booking.sessionCount,
           p_session_length_minutes: booking.bookingKind === 'standard' ? quote.sessionMinutes : null,
           p_duration_minutes: booking.bookingKind === 'event' ? booking.reservedMinutes : null,
-          p_allow_outside_hours: booking.bookingKind === 'event' && booking.allowOutsideHours,
+          p_allow_outside_hours: booking.allowOutsideHours,
           p_contact_name: booking.contactName.trim() || null,
           p_total_override: booking.overrideTotalEnabled ? Number(booking.overrideTotal) : null,
           p_override_reason: booking.overrideTotalEnabled ? booking.overrideReason.trim() : null,

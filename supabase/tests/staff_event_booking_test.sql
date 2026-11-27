@@ -30,7 +30,7 @@ select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('23
 insert into booking_results values ('midnight',public.staff_create_booking(pg_temp.event_payload('23:00',60),'phone'));
 select is(public.staff_booking_availability(current_date+213,'23:59','cafe:arena-1',1),false,'Midnight boundary remains unavailable');
 select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('16:00',0),'phone')$q$,'P0001','Invalid reserved duration.','Zero duration rejected');
-select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('16:00',60)||'{"p_booking_kind":"standard"}'::jsonb,'phone')$q$,'P0001','Custom duration and outside-hours booking require event type.','Standard bookings cannot bypass opening hours');
+select throws_ok($q$select public.staff_create_booking(pg_temp.event_payload('16:00',60)||'{"p_booking_kind":"standard"}'::jsonb,'phone')$q$,'P0001','Custom duration requires event type.','Standard bookings cannot set a custom duration');
 select is(public.staff_booking_availability_for_arenas(current_date+214,'10:00','arena-1',127,2),true,'Two arenas available initially');
 insert into booking_results values ('no-game',public.staff_create_booking(pg_temp.event_payload('10:00',127)||jsonb_build_object('p_game_id',null,'p_booking_date',current_date+214,'p_arena_id','arena-1','p_arena_count',2),'phone'));
 select is((select game_id from public.staff_orders where id=(select (result->>'order_id')::uuid from booking_results where label='no-game')),null::uuid,'No game persists without substituting a game');
@@ -54,6 +54,15 @@ select is(public.staff_booking_availability(current_date+216,'10:00','arena-1',3
 select throws_ok($q$select public.staff_create_booking(pg_temp.standard_payload('11:00',0),'phone')$q$,'P0001','Invalid session count.','Zero sessions rejected');
 select throws_ok($q$select public.staff_create_booking(pg_temp.standard_payload('11:00',1)||'{"p_session_count":1.5}'::jsonb,'phone')$q$,'P0001','Invalid session count.','Fractional sessions rejected');
 select throws_ok($q$select public.staff_create_booking(pg_temp.standard_payload('21:01',2),'phone')$q$,'P0001','Selected time is outside opening hours.','Multiple sessions must fit opening hours');
+insert into booking_results values ('standard-outside',public.staff_create_booking(pg_temp.standard_payload('08:00',2)||'{"p_allow_outside_hours":true}'::jsonb,'phone'));
+select is((select duration_minutes from public.sessions where id=(select (result->>'session_id')::uuid from booking_results where label='standard-outside')),60,'Outside-hours standard booking retains tariff duration');
+select ok((select internal_note like '%Staff authorized booking outside opening hours%' from public.staff_orders where id=(select (result->>'order_id')::uuid from booking_results where label='standard-outside')),'Standard outside-hours authorization is recorded');
+select is(public.staff_booking_availability(current_date+216,'08:30','arena-1',30),false,'Outside-hours reservation blocks arena capacity');
+select throws_ok($q$select public.staff_create_booking(pg_temp.standard_payload('23:40',1)||'{"p_allow_outside_hours":true}'::jsonb,'phone')$q$,'P0001','Booking must finish by midnight.','Standard override cannot cross midnight');
+insert into booking_results values ('guest-outside',public.staff_create_booking_with_metadata(pg_temp.standard_payload('07:00',1)||'{"p_allow_outside_hours":true,"p_booking_category":"standard","p_customer_id":null,"p_customer_name":null,"p_customer_email":null,"p_customer_phone":null}'::jsonb,'walk_in'));
+select is((select booking_category from public.sessions where id=(select (result->>'session_id')::uuid from booking_results where label='guest-outside')),'standard','A guest outside-hours reservation stays standard');
+insert into booking_results values ('birthday-outside',public.staff_create_booking_with_metadata(pg_temp.event_payload('13:00',30)||'{"p_booking_category":"birthday"}'::jsonb,'phone'));
+select is((select booking_category from public.sessions where id=(select (result->>'session_id')::uuid from booking_results where label='birthday-outside')),'birthday','Birthday category persists outside opening hours');
 -- Simulate a future change to the authoritative session setting inside this rolled-back test.
 reset role;
 create or replace function public.ticket_tariff_price_block_minutes(p_booking_date date) returns integer language sql immutable as $$ select 60; $$;
