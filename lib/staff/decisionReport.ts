@@ -21,7 +21,8 @@ const dayNumber = (date: string) => Date.parse(`${date}T00:00:00Z`) / dayMs
 const dateString = (days: number) => new Date(days * dayMs).toISOString().slice(0, 10)
 export const reportDayCount = (start: string, end: string) => Math.max(1, dayNumber(end) - dayNumber(start) + 1)
 
-export function decisionPeriod(start: string, end: string, orders: ReportOrderFact[], played: ReportPlayedFact[], venue: ReportVenueFilter, binDays: number) {
+export function decisionPeriod(start: string, end: string, orders: ReportOrderFact[], played: ReportPlayedFact[], venue: ReportVenueFilter | ReadonlySet<ReportVenue>, binDays: number) {
+  const includesVenue = (key: ReportVenue) => typeof venue === 'string' ? venue === 'all' || venue === key : venue.has(key)
   const days = reportDayCount(start, end)
   const first = dayNumber(start)
   const buckets = Array.from({ length: Math.ceil(days / binDays) }, (_, i) => ({
@@ -43,7 +44,7 @@ export function decisionPeriod(start: string, end: string, orders: ReportOrderFa
     const date = dayNumber(order.booking_date)
     const orderVenue = reportVenue(order.sessions?.venue_key, order.arena_id)
     if (!Number.isFinite(date) || date < first || date > dayNumber(end)) continue
-    const selected = venue === 'all' || orderVenue === venue
+    const selected = includesVenue(orderVenue)
     if (selected && order.order_status === 'cancelled') cancelled++
     if (excluded.has(order.order_status) || order.payment_status === 'refunded') continue
     const count = Number(order.players_count) || 0
@@ -78,7 +79,7 @@ export function decisionPeriod(start: string, end: string, orders: ReportOrderFa
 
   for (const record of played) {
     const gameVenue = reportVenue(record.sessions.venue_key)
-    if ((venue !== 'all' && venue !== gameVenue) || record.sessions.date < start || record.sessions.date > end
+    if (!includesVenue(gameVenue) || record.sessions.date < start || record.sessions.date > end
       || record.sessions.status === 'cancelled' || !record.game_ids.length) continue
     recordedSessions.add(record.session_id)
     for (const id of new Set(record.game_ids)) {

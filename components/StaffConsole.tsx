@@ -57,8 +57,6 @@ import {
 } from '../lib/staff/catalog'
 import {
   normalizeTime,
-  previousPeriodRange,
-  reportPresetRange,
   shortDateLabel,
   staffDateLabel
 } from '../lib/staff/dates'
@@ -119,7 +117,6 @@ import type {
   StaffDataKey,
   StaffOrder,
   StaffPriceRule,
-  StaffReportRangePreset,
   StaffTab
 } from '../lib/staff/types'
 export type { StaffProfile } from '../lib/staff/types'
@@ -560,18 +557,6 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
   }, [profiles, roleFilter, roleSearch, roleSort, text])
 
   const emptyReport = useMemo(() => emptyStaffReport(text), [text])
-  const [todayReportStart, todayReportEnd] = reportPresetRange('today')
-  const secondaryReportPreset: StaffReportRangePreset = 'last_30'
-  const [secondaryReportStart, secondaryReportEnd] = reportPresetRange(secondaryReportPreset)
-  const activeReportPreset = reportStart === todayReportStart && reportEnd === todayReportEnd
-    ? 'today'
-    : reportStart === secondaryReportStart && reportEnd === secondaryReportEnd
-      ? secondaryReportPreset
-      : 'custom'
-  const [previousReportStart, previousReportEnd] = previousPeriodRange(reportStart, reportEnd)
-  const isPreviousPeriodComparison = compareEnabled
-    && compareStart === previousReportStart
-    && compareEnd === previousReportEnd
   const reportOrders = reportSnapshot?.orders ?? emptyStaffOrders
   const reportPayments = reportSnapshot?.payments ?? emptyStaffPayments
   const reportPaymentsByOrderId = useMemo(() => paymentMapFromRows(reportPayments), [reportPayments])
@@ -1336,20 +1321,12 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
         text={text}
         reportStart={reportStart}
         reportEnd={reportEnd}
-        activeReportPreset={activeReportPreset}
-        setReportStart={setReportStart}
-        todayReportStart={todayReportStart}
-        setReportEnd={setReportEnd}
-        todayReportEnd={todayReportEnd}
-        secondaryReportPreset={secondaryReportPreset}
-        secondaryReportStart={secondaryReportStart}
-        secondaryReportEnd={secondaryReportEnd}
         setReportDatePickerTarget={setReportDatePickerTarget}
         setReportDatePickerOpen={setReportDatePickerOpen}
         compareEnabled={compareEnabled}
         compareStart={compareStart}
         compareEnd={compareEnd}
-        isPreviousPeriodComparison={isPreviousPeriodComparison}
+        applyReportDateRange={applyReportDateRange}
         applyPreviousPeriodComparison={applyPreviousPeriodComparison}
         setCompareEnabled={setCompareEnabled}
         reportExporting={reportExporting}

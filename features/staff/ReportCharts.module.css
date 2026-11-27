@@ -39,9 +39,7 @@
 .panelHead { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .dashboard .panelHead h4 { margin: 0; font-size: clamp(1rem, 1.45vw, 1.27rem); font-weight: 750; line-height: 1.22; }
 .dashboard .panelHead p { margin: 5px 0 0; color: var(--report-muted); font-size: .8rem; line-height: 1.45; }
-.header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 18px; margin: 0 0 12px; }
-.dashboard .header h3 { margin: 0; font-size: clamp(1.45rem, 3vw, 2rem); letter-spacing: -.035em; color: var(--report-ink); }
-.header > span, .note { font-size: .8rem; color: var(--report-muted); }
+.note { font-size: .8rem; color: var(--report-muted); }
 .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .controls label { display: flex; align-items: center; gap: 8px; color: var(--report-muted); font-size: .8rem; }
 .dashboard .controls button, .dashboard .controls select { min-height: 40px; font: inherit; padding: 6px 10px; }
@@ -173,4 +171,130 @@
   .dashboard .venueTable .venueMetric { padding-inline: 0; }
   .venueMetric > span:last-child { font-weight: 650; }
   .mobileMetricLabel { display: block; margin-bottom: 2px; color: var(--report-muted); font-size: .7rem; }
+}
+
+.reportTabs {
+  display: flex;
+  gap: clamp(8px, 2vw, 24px);
+  border-bottom: 1px solid var(--report-rule);
+}
+.dashboard .reportTabs > button[role='tab'] {
+  flex: 0 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 8px 3px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--report-muted);
+  font: inherit;
+  font-size: .87rem;
+  font-weight: 650;
+  white-space: normal;
+}
+.dashboard .reportTabs > button[aria-selected='true'] {
+  color: var(--toolbar-accent);
+  border-bottom-color: var(--toolbar-accent);
+  font-weight: 750;
+}
+.reportTabs, .reportToolbar {
+  --toolbar-accent: var(--vrena-purple-700);
+}
+@media (prefers-color-scheme: dark) {
+  .reportTabs, .reportToolbar { --toolbar-accent: var(--vrena-purple-300); }
+}
+.reportTabPanel { min-width: 0; }
+.reportToolbar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 6px 0 11px;
+  margin-bottom: 8px;
+}
+.toolbarControl { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.toolbarLabel { color: var(--report-muted); font-size: .73rem; font-weight: 630; white-space: nowrap; }
+.toolbarMenu { position: relative; min-width: 0; }
+.toolbarMenu > summary::-webkit-details-marker { display: none; }
+.dashboard .toolbarMenu > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 8px;
+  min-height: 40px;
+  list-style: none;
+  border-radius: 7px;
+  border: 1px solid var(--report-rule);
+  color: var(--report-ink);
+  background: var(--report-surface);
+  cursor: pointer;
+  font-size: .79rem;
+  font-weight: 640;
+  line-height: 1.35;
+}
+.toolbarMenu > summary svg { flex: 0 0 auto; }
+.toolbarMenu > summary svg:last-child { margin-inline-start: auto; color: var(--report-muted); }
+.toolbarValue { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 4px; min-width: 0; }
+.toolbarValue > span { overflow-wrap: anywhere; }
+.toolbarDetail { color: var(--report-muted); font-size: .73rem; font-weight: 520; }
+.toolbarMenu[open] > summary, .toolbarMenu > summary:hover { border-color: var(--toolbar-accent); }
+.toolbarMenu > summary:focus-visible, .reportTabs > button:focus-visible { outline: 2px solid var(--toolbar-accent); outline-offset: 2px; }
+.toolbarOptions {
+  position: absolute;
+  z-index: 69;
+  inset-block-start: calc(100% + 4px);
+  inset-inline-start: 0;
+  width: max-content;
+  min-width: 100%;
+  max-width: calc(100vw - 34px);
+  padding: 4px;
+  border: 1px solid var(--report-rule);
+  border-radius: 8px;
+  color: var(--report-ink);
+  background: var(--report-surface);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--vrena-neutral-950) 18%, transparent);
+}
+.dashboard .toolbarOptions > :is(button, label) {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  text-align: start;
+  gap: 8px;
+  width: 100%;
+  min-height: 38px;
+  white-space: normal;
+  margin: 0;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--report-ink);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: .8rem;
+}
+.dashboard .toolbarOptions > :is(button, label):hover { background: var(--report-grid); }
+.dashboard .toolbarOptions > button[aria-pressed='true'] { color: var(--toolbar-accent); font-weight: 700; }
+.toolbarOptions input[type='checkbox'] { flex: 0 0 16px; width: 16px; height: 16px; margin: 0; accent-color: var(--toolbar-accent); }
+.exportControl { margin-inline-start: auto; }
+.exportControl .toolbarOptions { inset-inline-start: auto; inset-inline-end: 0; }
+.reportToolbar > :global(.staff-accountant-export-panel) { max-width: 100%; z-index: 68; }
+.reportToolbar > :global(.staff-report-export-feedback) { flex-basis: 100%; }
+@media (max-width: 650px) {
+  .reportTabs { gap: 6px; }
+  .dashboard .reportTabs > button[role='tab'] { flex: 1 1 0; font-size: .77rem; line-height: 1.25; }
+  .reportToolbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; }
+  .toolbarControl { display: grid; grid-template-columns: 75px minmax(0, 1fr); }
+  .dashboard .toolbarMenu > summary, .dashboard .toolbarOptions > :is(button, label) { min-height: 44px; }
+  .toolbarOptions { max-width: 100%; }
+  .exportControl { margin-inline-start: 0; }
+  .exportControl .toolbarControl { display: block; }
+  .exportControl .toolbarOptions { inset-inline-start: 0; inset-inline-end: auto; }
 }

@@ -45,3 +45,17 @@ test('played games count each game once per recorded session and respect date an
     ['2026-11-23', '2026-11-24', 1], ['2026-11-25', '2026-11-25', 0],
   ])
 })
+
+test('venue checkboxes filter aggregate metrics while preserving per-venue comparison totals', () => {
+  const date = '2026-11-23'
+  const orders = [
+    order('ha-do'),
+    order('thao-dien', { session_id: null, sessions: null, arena_id: 'cafe:arena-1' }),
+    order('unassigned', { session_id: null, sessions: null, arena_id: null }),
+  ]
+  const result = decisionPeriod(date, date, orders, [], new Set(['ha-do-centrosa', 'cafe-des-stagiaires']), 1)
+  assert.equal(result.bookings, 2)
+  assert.equal(result.sales, 400_000)
+  assert.equal(result.byVenue.other.bookings, 1)
+  assert.equal(decisionPeriod(date, date, orders, [], new Set(), 1).bookings, 0)
+})

@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { MapPin } from 'lucide-react'
+import { ReportToolbarMenu } from './ReportToolbarMenu'
 import { brandedGameName } from '../../lib/anvio'
-import { orderedRange, rangeLabel } from '../../lib/staff/dates'
+import { orderedRange } from '../../lib/staff/dates'
 import { decisionPeriod, reportDayCount, reportVenue, reportVenueKeys, type ReportVenue, type ReportVenueFilter } from '../../lib/staff/decisionReport'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import type { StaffReportSummary } from '../../lib/staff/types'
@@ -15,6 +17,7 @@ import styles from './ReportCharts.module.css'
 type Props = {
   start: string; end: string; compareStart: string; compareEnd: string; compare: boolean
   language: 'en' | 'vi'; text: StaffConsoleCopy; financial: StaffReportSummary | null
+  toolbar: (venueControl: ReactNode) => ReactNode
 }
 type Facts = Awaited<ReturnType<typeof loadDecisionReport>>
 type CatalogEntry = { id: string; title: string; parent_slug: string; kind: string }
@@ -27,7 +30,7 @@ const labelDate = (date: string, language: string) => new Intl.DateTimeFormat(la
 
 const labels = {
   en: {
-    title: 'Business performance', venue: 'Venue', all: 'All accessible venues', other: 'Unassigned venue',
+    venue: 'Venue', all: 'All accessible venues', other: 'Unassigned venue',
     sales: 'Booked sales', bookings: 'Bookings', players: 'Booked players', paid: 'Paid players',
     perDay: 'Players per day', perSession: 'Players per session',
     trend: 'Booking trend', trendDescription: 'Compare the same day or interval within each selected period.',
@@ -44,10 +47,10 @@ const labels = {
     receipts: 'Cash and bank amounts follow original receipts. Voucher redemption is not cash received.',
     peak: 'Busiest', cancelled: 'Cancelled', noShows: 'No-shows', retry: 'Retry', metric: 'Metric', period: 'Period',
     mix: 'Payment mix',
-    more: 'More games', less: 'Show fewer games', reportingZone: 'Vietnam time',
+    more: 'More games', less: 'Show fewer games',
   },
   vi: {
-    title: 'Hiệu quả kinh doanh', venue: 'Địa điểm', all: 'Tất cả địa điểm được phép', other: 'Chưa xác định địa điểm',
+    venue: 'Địa điểm', all: 'Tất cả địa điểm được phép', other: 'Chưa xác định địa điểm',
     sales: 'Doanh số đặt chỗ', bookings: 'Lượt đặt', players: 'Người chơi đã đặt', paid: 'Người chơi đã thanh toán',
     perDay: 'Người chơi mỗi ngày', perSession: 'Người chơi mỗi phiên',
     trend: 'Xu hướng đặt chỗ', trendDescription: 'So sánh theo cùng vị trí ngày hoặc khoảng thời gian trong mỗi kỳ.',
@@ -64,7 +67,7 @@ const labels = {
     receipts: 'Tiền mặt và chuyển khoản theo biên nhận gốc. Sử dụng voucher không tạo tiền thu mới.',
     peak: 'Cao nhất', cancelled: 'Đã hủy', noShows: 'Không đến', retry: 'Thử lại', metric: 'Chỉ số', period: 'Kỳ',
     mix: 'Cơ cấu thanh toán',
-    more: 'Thêm trò chơi', less: 'Thu gọn', reportingZone: 'Giờ Việt Nam',
+    more: 'Thêm trò chơi', less: 'Thu gọn',
   },
 }
 
@@ -75,8 +78,8 @@ function gameLabel(id: string, catalog: Map<string, CatalogEntry>) {
   return `${catalog.get(game.parent_slug)?.title || game.parent_slug} — ${game.title}`
 }
 
-export default function BusinessReport({ start, end, compareStart, compareEnd, compare, language, text, financial }: Props) {
-  const [venue, setVenue] = useState<ReportVenueFilter>('all')
+export default function BusinessReport({ start, end, compareStart, compareEnd, compare, language, text, financial, toolbar }: Props) {
+  const [selectedVenues, setSelectedVenues] = useState<ReadonlySet<ReportVenue> | null>(null)
   const [metric, setMetric] = useState<'sales' | 'bookings' | 'players' | 'paidPlayers'>('sales')
   const [showGames, setShowGames] = useState(false)
   const [heatComparison, setHeatComparison] = useState(false)
@@ -114,17 +117,34 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
 
   const loaded = snapshot?.key === key ? snapshot : null
   const venueNames = { 'ha-do-centrosa': 'Hà Đô Centrosa', 'cafe-des-stagiaires': 'Thảo Điền', other: t.other }
-  const locations = reportVenueKeys.filter((item) => loaded?.locations.includes(item) || loaded?.current.orders.some((order) =>
+  const locations = reportVenueKeys.filter((item) => snapshot?.locations.includes(item) || snapshot?.current.orders.some((order) =>
     item === reportVenue(order.sessions?.venue_key, order.arena_id)))
-  const activeVenue = venue !== 'all' && locations.includes(venue) ? venue : 'all'
+  const selected = selectedVenues ? locations.filter((item) => selectedVenues.has(item)) : locations
+  const filter = selectedVenues === null ? 'all' : new Set(selected)
+  const allSelected = selectedVenues === null || selected.length === locations.length && locations.length > 0
+  const venueControl = <ReportToolbarMenu label={t.venue} icon={<MapPin size={15} aria-hidden="true" />}
+    value={allSelected ? t.all : selected.length ? selected.map((item) => venueNames[item]).join(', ') : language === 'vi' ? 'Chưa chọn địa điểm' : 'No venues selected'}>
+    <label><input type="checkbox" checked={allSelected} disabled={!locations.length}
+      ref={(node) => { if (node) node.indeterminate = !allSelected && selected.length > 0 }}
+      onChange={(event) => setSelectedVenues(event.target.checked ? null : new Set())} />{t.all}</label>
+    {locations.map((item) => <label key={item}>
+      <input type="checkbox" checked={selected.includes(item)} onChange={(event) => {
+        const next = new Set(selected)
+        if (event.target.checked) next.add(item)
+        else next.delete(item)
+        setSelectedVenues(next.size === locations.length ? null : next)
+      }} />
+      <span className="venue-indicator" data-venue={item}>{venueNames[item]}</span>
+    </label>)}
+  </ReportToolbarMenu>
 
   const days = Math.max(reportDayCount(from, to), compare ? reportDayCount(compareFrom, compareTo) : 0)
   const binDays = days > 62 ? Math.ceil(days / (62 * 7)) * 7 : 1
   const periods = loaded ? {
-    current: decisionPeriod(from, to, loaded.current.orders, loaded.current.played ?? [], activeVenue, binDays),
-    previous: loaded.previous ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, loaded.previous.played ?? [], activeVenue, binDays) : null,
+    current: decisionPeriod(from, to, loaded.current.orders, loaded.current.played ?? [], filter, binDays),
+    previous: loaded.previous ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, loaded.previous.played ?? [], filter, binDays) : null,
   } : null
-  const byLocation = periods && loaded && activeVenue === 'all' ? reportVenueKeys.flatMap((item) =>
+  const byLocation = periods && loaded ? selected.flatMap((item) =>
     periods.current.byVenue[item].bookings || periods.previous?.byVenue[item].bookings ? [{
       item,
       current: decisionPeriod(from, to, loaded.current.orders, [], item, binDays).buckets,
@@ -139,22 +159,22 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
       : absolute >= 1e6 ? `${reportNumber(language, value / 1e6, 1)}M`
         : absolute >= 1e3 ? `${reportNumber(language, value / 1e3, 1)}k` : count(value)
   }
-  if (!periods || !loaded) return <div className={styles.dashboard}>
+  if (!periods || !loaded) return <>{toolbar(venueControl)}<div className={styles.dashboard}>
     {failed === key
       ? <p role="alert">{t.missing} <button type="button" onClick={() => setRetry((value) => value + 1)}>{t.retry}</button></p>
       : <p role="status" className={styles.note}>{t.load}</p>}
-  </div>
+  </div></>
 
   const { current, previous } = periods
   const metrics = { sales: t.revenue, bookings: t.bookings, players: t.players, paidPlayers: t.paid }
   const displayMetric = metric === 'sales' ? money : count
-  const dotColor = activeVenue === 'all' ? 'primary' : colors[activeVenue]
+  const dotColor = selected.length === 1 ? colors[selected[0]] : 'primary'
   const describeBin = (point: typeof current.buckets[number]) => point.from === point.to
     ? labelDate(point.from, language) : `${labelDate(point.from, language)}–${labelDate(point.to, language)}`
   const axis = Array.from({ length: Math.max(current.buckets.length, previous?.buckets.length ?? 0) }, (_, i) =>
     current.buckets[i] ? labelDate(current.buckets[i].from, language) : previous?.buckets[i] ? labelDate(previous.buckets[i].from, language) : '')
   const trendVenues: { item: ReportVenueFilter; current: typeof current.buckets; previous: typeof current.buckets }[] = byLocation.length
-    ? byLocation : [{ item: activeVenue, current: current.buckets, previous: previous?.buckets ?? [] }]
+    ? byLocation : [{ item: selected.length === 1 ? selected[0] : 'all', current: current.buckets, previous: previous?.buckets ?? [] }]
   const trendSeries = trendVenues
     .flatMap(({ item, current: primary, previous: secondary }) => {
       const color = item === 'all' ? dotColor : colors[item]
@@ -201,16 +221,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
     { label: text.paymentMethods.vnpay, value: financial.vnpayTotal },
     { label: text.unpaid, value: financial.unpaidAmount },
   ].sort((a, b) => b.value - a.value) : []
-  return <div className={styles.dashboard}>
-    <div className={styles.header}><h3>{t.title}</h3><span>{rangeLabel(from, to)} · {t.reportingZone}</span></div>
-    <div className={styles.controls}>
-      <label>{t.venue}
-        <select value={activeVenue} onChange={(event) => setVenue(event.target.value as ReportVenueFilter)}>
-          <option value="all">{t.all}</option>{locations.map((item) => <option value={item} key={item}>{venueNames[item]}</option>)}
-        </select>
-      </label>
-      {previous && <small className={styles.note}>{t.previous} · {rangeLabel(compareFrom, compareTo)}</small>}
-    </div>
+  return <>{toolbar(venueControl)}<div className={styles.dashboard}>
     <dl className={styles.metrics}>{summary.map((item) => <div key={item.label}>
       <dt>{item.label}</dt><dd>{item.value == null ? '—' : item.format(item.value)}</dd>
       {previous && <small>{t.previous} · {item.previous == null ? '—' : item.format(item.previous)}</small>}
@@ -279,5 +290,5 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
       </ReportPanel>
       </>}
     </div>
-  </div>
+  </div></>
 }

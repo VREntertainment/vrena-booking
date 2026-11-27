@@ -1,7 +1,7 @@
 'use client'
 
+import { type ReactNode } from 'react'
 import {
-  CalendarDays,
   CalendarRange,
   Download,
   FileSpreadsheet,
@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import {
-  rangeLabel
+  previousPeriodRange, rangeLabel, reportPresetRange
 } from '../../lib/staff/dates'
 import {
   accountantExportFormats,
@@ -21,9 +21,10 @@ import {
 } from '../../lib/staff/options'
 import type {
   AccountantExportFormat,
-  StaffConsoleLanguage
+  StaffConsoleLanguage, StaffReportRangePreset
 } from '../../lib/staff/types'
 import BusinessReport from './BusinessReport'
+import { ReportToolbarMenu } from './ReportToolbarMenu'
 import styles from './ReportCharts.module.css'
 import { ButtonIconText, StaffPlayerInsights, StaffQrAnalytics } from './shared'
 
@@ -34,20 +35,12 @@ export type ReportSectionProps = {
   text: StaffConsoleCopy
   reportStart: string
   reportEnd: string
-  activeReportPreset: "custom" | "today" | "yesterday" | "last_30"
-  setReportStart: React.Dispatch<React.SetStateAction<string>>
-  todayReportStart: string
-  setReportEnd: React.Dispatch<React.SetStateAction<string>>
-  todayReportEnd: string
-  secondaryReportPreset: import("../../lib/staff/types").StaffReportRangePreset
-  secondaryReportStart: string
-  secondaryReportEnd: string
   setReportDatePickerTarget: React.Dispatch<React.SetStateAction<"report" | "compare">>
   setReportDatePickerOpen: React.Dispatch<React.SetStateAction<boolean>>
   compareEnabled: boolean
   compareStart: string
   compareEnd: string
-  isPreviousPeriodComparison: boolean
+  applyReportDateRange: (start: string, end: string, compare: boolean, compareStart: string, compareEnd: string) => void
   applyPreviousPeriodComparison: () => void
   setCompareEnabled: React.Dispatch<React.SetStateAction<boolean>>
   reportExporting: "excel" | "pdf" | "accountant" | null
@@ -86,20 +79,12 @@ export default function ReportSection({
   text,
   reportStart,
   reportEnd,
-  activeReportPreset,
-  setReportStart,
-  todayReportStart,
-  setReportEnd,
-  todayReportEnd,
-  secondaryReportPreset,
-  secondaryReportStart,
-  secondaryReportEnd,
   setReportDatePickerTarget,
   setReportDatePickerOpen,
   compareEnabled,
   compareStart,
   compareEnd,
-  isPreviousPeriodComparison,
+  applyReportDateRange,
   applyPreviousPeriodComparison,
   setCompareEnabled,
   reportExporting,
@@ -130,252 +115,181 @@ export default function ReportSection({
   qrAnalyticsSnapshot,
   qrAnalyticsError,
 }: ReportSectionProps) {
-  return (
-    <div className={`staff-card staff-report-workspace ${styles.dashboard}`}>
-      <div className="staff-report-head">
-        <div className="staff-report-view-tabs" role="tablist" aria-label={resolvedLanguage === 'vi' ? 'Chế độ báo cáo' : 'Report view'}>
-          <button
-            aria-selected={reportView === 'business'}
-            className={reportView === 'business' ? 'active' : ''}
-            role="tab"
-            type="button"
-            onClick={() => selectReportView('business')}
-          >
-            {resolvedLanguage === 'vi' ? 'Kinh doanh' : 'Business performance'}
-          </button>
-          <button
-            aria-selected={reportView === 'players'}
-            className={reportView === 'players' ? 'active' : ''}
-            role="tab"
-            type="button"
-            onClick={() => selectReportView('players')}
-          >
-            {resolvedLanguage === 'vi' ? 'Hành vi người chơi' : 'Player behavior'}
-          </button>
-          <button
-            aria-selected={reportView === 'qr'}
-            className={reportView === 'qr' ? 'active' : ''}
-            role="tab"
-            type="button"
-            onClick={() => selectReportView('qr')}
-          >
-            {resolvedLanguage === 'vi' ? 'Phân tích QR' : 'QR analytics'}
-          </button>
+  const vi = resolvedLanguage === 'vi'
+  const [previousStart, previousEnd] = previousPeriodRange(reportStart, reportEnd)
+  const isPrevious = compareEnabled && compareStart === previousStart && compareEnd === previousEnd
+  const datePresets = ['today', 'this_week', 'last_week', 'this_month', 'last_30'] as const satisfies readonly StaffReportRangePreset[]
+  const activePreset = datePresets.find((preset) => {
+    const [start, end] = reportPresetRange(preset)
+    return reportStart === start && reportEnd === end
+  })
+  const customLabel = vi ? 'Khoảng ngày tùy chọn' : 'Custom range'
+  const presetLabel = (preset: StaffReportRangePreset) => preset === 'today' ? text.actions.today : text.reportRangePresets[preset]
+  const periodLabel = (start: string, end: string) => rangeLabel(start, end).replace(' - ', '–')
+  const openCustomRange = () => {
+    setReportDatePickerTarget('report')
+    setReportDatePickerOpen(true)
+  }
+  const selectPreset = (preset: StaffReportRangePreset) => {
+    const [start, end] = reportPresetRange(preset)
+    const [priorStart, priorEnd] = isPrevious ? previousPeriodRange(start, end) : [compareStart, compareEnd]
+    applyReportDateRange(start, end, compareEnabled, priorStart, priorEnd)
+  }
+  const off = vi ? 'Tắt' : 'Off'
+  const exportLabel = vi ? 'Xuất báo cáo' : 'Export'
+  const toolbar = (venueControl?: ReactNode) => (
+    <div className={styles.reportToolbar} role="group" aria-label={vi ? 'Bộ lọc báo cáo' : 'Report controls'}>
+      <ReportToolbarMenu label={text.labels.dateRange} icon={<CalendarRange size={15} aria-hidden="true" />}
+        value={activePreset ? presetLabel(activePreset) : customLabel} detail={periodLabel(reportStart, reportEnd)}>
+        {datePresets.map((preset) => <button key={preset} type="button" aria-pressed={activePreset === preset}
+          onClick={() => selectPreset(preset)}>{presetLabel(preset)}</button>)}
+        <button type="button" aria-pressed={!activePreset} onClick={openCustomRange}>{customLabel}</button>
+      </ReportToolbarMenu>
+      {venueControl}
+      <ReportToolbarMenu label={vi ? 'So sánh' : 'Comparison'} icon={<RotateCcw size={15} aria-hidden="true" />}
+        value={compareEnabled ? (isPrevious ? text.actions.previousPeriod : customLabel) : off}
+        detail={compareEnabled ? periodLabel(compareStart, compareEnd) : undefined}>
+        <button type="button" aria-pressed={!compareEnabled} onClick={() => setCompareEnabled(false)}>{off}</button>
+        <button type="button" aria-pressed={isPrevious} onClick={applyPreviousPeriodComparison}>{text.actions.previousPeriod}</button>
+      </ReportToolbarMenu>
+      {reportView === 'business' && <>
+        <div className={styles.exportControl}>
+          <ReportToolbarMenu label={exportLabel} icon={<Download size={15} aria-hidden="true" />}>
+            <button type="button" aria-busy={reportExporting === 'excel'} disabled={reportExporting !== null}
+              onClick={() => { void runReportExport('excel', exportExcelReport) }}>
+              <ButtonIconText icon={<FileSpreadsheet aria-hidden="true" size={14} />}>{text.actions.excel}</ButtonIconText>
+            </button>
+            <button type="button" aria-busy={reportExporting === 'pdf'} disabled={reportExporting !== null}
+              onClick={() => { void runReportExport('pdf', exportPdfReport) }}>
+              <ButtonIconText icon={<FileText aria-hidden="true" size={14} />}>{text.actions.pdf}</ButtonIconText>
+            </button>
+            <button type="button" onClick={() => setAccountantExportOpen((open) => !open)}>{text.labels.accountantExports}</button>
+          </ReportToolbarMenu>
         </div>
-        <div className="staff-report-filters">
-          <div className="staff-report-filter-row">
-            <section className="staff-report-control-group staff-report-range-group" aria-label={text.labels.reportRange}>
-              <header className="staff-report-control-head">
-                <span className="staff-report-control-title">
-                  <CalendarRange aria-hidden="true" size={15} />
-                  {text.labels.reportRange}
-                </span>
-                <strong>{rangeLabel(reportStart, reportEnd)}</strong>
-              </header>
-              <div className="staff-report-date-actions">
-                <button
-                  aria-pressed={activeReportPreset === 'today'}
-                  className={activeReportPreset === 'today' ? 'active' : ''}
-                  type="button"
-                  onClick={() => {
-                    setReportStart(todayReportStart)
-                    setReportEnd(todayReportEnd)
-                  }}
-                >
-                  <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
-                </button>
-                <button
-                  aria-pressed={activeReportPreset === secondaryReportPreset}
-                  className={activeReportPreset === secondaryReportPreset ? 'active' : ''}
-                  type="button"
-                  onClick={() => {
-                    setReportStart(secondaryReportStart)
-                    setReportEnd(secondaryReportEnd)
-                  }}
-                >
-                  <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>
-                    {text.reportRangePresets.last_30}
-                  </ButtonIconText>
-                </button>
-                <button
-                  aria-pressed={activeReportPreset === 'custom'}
-                  className={activeReportPreset === 'custom' ? 'staff-report-range-button active' : 'staff-report-range-button'}
-                  type="button"
-                  onClick={() => {
-                    setReportDatePickerTarget('report')
-                    setReportDatePickerOpen(true)
-                  }}
-                >
-                  <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
-                  <strong>{rangeLabel(reportStart, reportEnd)}</strong>
-                </button>
+        {accountantExportOpen && (
+          <div className="staff-accountant-export-panel">
+            <div className="staff-accountant-export-head">
+              <div>
+                <strong>{text.labels.accountantExports}</strong>
+                <span>{text.messages.accountantExportHelp}</span>
               </div>
-            </section>
-            <section className={compareEnabled ? 'staff-report-control-group staff-report-comparison-group active' : 'staff-report-control-group staff-report-comparison-group'} aria-label={text.labels.compareRange}>
-              <header className="staff-report-control-head">
-                <span className="staff-report-control-title">
-                  <RotateCcw aria-hidden="true" size={15} />
-                  {text.labels.compare}
-                </span>
-                <strong>{compareEnabled ? rangeLabel(compareStart, compareEnd) : text.compareOff}</strong>
-              </header>
-              <div className="staff-report-compare-actions">
-                <button
-                  aria-pressed={isPreviousPeriodComparison}
-                  className={isPreviousPeriodComparison ? 'active' : ''}
-                  type="button"
-                  onClick={applyPreviousPeriodComparison}
-                >
-                  <ButtonIconText icon={<RotateCcw aria-hidden="true" size={14} />}>{text.actions.previousPeriod}</ButtonIconText>
-                </button>
-                <label className={compareEnabled ? 'staff-compare-toggle active' : 'staff-compare-toggle'}>
-                  <input type="checkbox" checked={compareEnabled} onChange={(event) => setCompareEnabled(event.target.checked)} />
-                  <span className="staff-compare-switch" aria-hidden="true" />
-                  <span>{text.labels.compare}</span>
-                </label>
-              </div>
-            </section>
-            {reportView === 'business' && <div className="staff-report-export-actions">
-              <button
-                aria-busy={reportExporting === 'excel'}
-                disabled={reportExporting !== null}
-                type="button"
-                onClick={() => { void runReportExport('excel', exportExcelReport) }}
-              >
-                <ButtonIconText icon={<FileSpreadsheet aria-hidden="true" size={14} />}>{reportExporting === 'excel' ? text.actions.preparingDownload : text.actions.excel}</ButtonIconText>
-              </button>
-              <button
-                aria-busy={reportExporting === 'pdf'}
-                disabled={reportExporting !== null}
-                type="button"
-                onClick={() => { void runReportExport('pdf', exportPdfReport) }}
-              >
-                <ButtonIconText icon={<FileText aria-hidden="true" size={14} />}>{reportExporting === 'pdf' ? text.actions.preparingDownload : text.actions.pdf}</ButtonIconText>
-              </button>
-              <div className="staff-accountant-export">
-                <button
-                  className={accountantExportOpen ? 'active' : ''}
-                  type="button"
-                  onClick={() => setAccountantExportOpen((open) => !open)}
-                >
-                  <ButtonIconText icon={<Download aria-hidden="true" size={14} />}>{text.labels.accountantExports}</ButtonIconText>
-                </button>
-                {accountantExportOpen && (
-                  <div className="staff-accountant-export-panel">
-                    <div className="staff-accountant-export-head">
-                      <div>
-                        <strong>{text.labels.accountantExports}</strong>
-                        <span>{text.messages.accountantExportHelp}</span>
-                      </div>
-                      <button className="staff-accountant-export-close" type="button" aria-label={text.actions.cancel} onClick={() => setAccountantExportOpen(false)}>
-                        <X aria-hidden="true" size={16} />
-                      </button>
-                    </div>
-                    <div className="staff-accountant-export-grid">
-                      <button className="staff-report-range-button compact" type="button" onClick={() => {
-                        setReportDatePickerTarget('report')
-                        setReportDatePickerOpen(true)
-                      }}>
-                        <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
-                        <strong>{rangeLabel(reportStart, reportEnd)}</strong>
-                      </button>
-                      <label>
-                        {text.labels.exportStore}
-                        <select value={accountantExportStore} onChange={(event) => setAccountantExportStore(event.target.value)}>
-                          {accountantExportStores.map((store) => (
-                            <option key={store.id} value={store.id}>{store.label[accountantExportLanguage]}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        {text.labels.exportFormat}
-                        <select value={accountantExportFormat} onChange={(event) => {
-                          const nextFormat = event.target.value as AccountantExportFormat
-                          setAccountantExportFormat(nextFormat)
-                          if (nextFormat === 'csv') setAccountantIncludeAttachments(false)
-                        }}>
-                          {accountantExportFormats.map((format) => (
-                            <option key={format} value={format}>{format === 'excel' ? text.actions.excel : 'CSV'}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        {text.labels.exportLanguage}
-                        <select value={accountantExportLanguage} onChange={(event) => setAccountantExportLanguage(event.target.value as StaffConsoleLanguage)}>
-                          {accountantExportLanguages.map((item) => (
-                            <option key={item} value={item}>{item === 'vi' ? 'Tiếng Việt' : 'English'}</option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="staff-accountant-export-check">
-                        <input
-                          type="checkbox"
-                          checked={accountantIncludeAttachments}
-                          disabled={accountantExportFormat === 'csv'}
-                          onChange={(event) => setAccountantIncludeAttachments(event.target.checked)}
-                        />
-                        <span>
-                          {text.labels.includeAttachments}
-                          {accountantExportFormat === 'csv' && <small>{text.messages.accountantAttachmentsExcelOnly}</small>}
-                        </span>
-                      </label>
-                    </div>
-                    <div className="staff-accountant-report-heading">
-                      <strong>{text.labels.exportReport}</strong>
-                      <span>{accountantExportFormat === 'excel' ? '.xlsx' : '.csv'}</span>
-                    </div>
-                    <div className="staff-accountant-report-list" role="radiogroup" aria-label={text.labels.exportReport}>
-                      {accountantExportReports.map((reportOption) => (
-                        <button
-                          aria-checked={accountantReportId === reportOption.id}
-                          className={accountantReportId === reportOption.id ? 'active' : ''}
-                          key={reportOption.id}
-                          role="radio"
-                          type="button"
-                          onClick={() => setAccountantReportId(reportOption.id)}
-                        >
-                          <strong>{reportOption.label[accountantExportLanguage]}</strong>
-                          <span>{reportOption.fileBase}.{accountantExportFormat === 'excel' ? 'xlsx' : 'csv'}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      aria-busy={reportExporting === 'accountant'}
-                      className="primary staff-accountant-download"
-                      disabled={reportExporting !== null}
-                      type="button"
-                      onClick={() => { void runReportExport('accountant', downloadAccountantExport) }}
-                    >
-                      <ButtonIconText icon={<Download aria-hidden="true" size={15} />}>{reportExporting === 'accountant' ? text.actions.preparingDownload : text.actions.download}</ButtonIconText>
-                    </button>
-                  </div>
-                )}
-              </div>
-              {reportExportFeedback && (
-                <span className={`staff-report-export-feedback ${reportExportFeedback.tone}`} role="status">
-                  {reportExportFeedback.message}
-                </span>
-              )}
-            </div>}
-          </div>
-          {compareEnabled && (
-            <div className="staff-report-compare-row">
-              <span>{text.compareWith}</span>
-              <button className="staff-report-range-button compact" type="button" onClick={() => {
-                setReportDatePickerTarget('compare')
-                setReportDatePickerOpen(true)
-              }}>
-                <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.compareRange}</span>
-                <strong>{rangeLabel(compareStart, compareEnd)}</strong>
+              <button className="staff-accountant-export-close" type="button" aria-label={text.actions.cancel} onClick={() => setAccountantExportOpen(false)}>
+                <X aria-hidden="true" size={16} />
               </button>
             </div>
-          )}
-        </div>
+            <div className="staff-accountant-export-grid">
+              <button className="staff-report-range-button compact" type="button" onClick={() => {
+                setReportDatePickerTarget('report')
+                setReportDatePickerOpen(true)
+              }}>
+                <span><CalendarRange aria-hidden="true" size={14} /> {text.labels.dateRange}</span>
+                <strong>{rangeLabel(reportStart, reportEnd)}</strong>
+              </button>
+              <label>
+                {text.labels.exportStore}
+                <select value={accountantExportStore} onChange={(event) => setAccountantExportStore(event.target.value)}>
+                  {accountantExportStores.map((store) => (
+                    <option key={store.id} value={store.id}>{store.label[accountantExportLanguage]}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {text.labels.exportFormat}
+                <select value={accountantExportFormat} onChange={(event) => {
+                  const nextFormat = event.target.value as AccountantExportFormat
+                  setAccountantExportFormat(nextFormat)
+                  if (nextFormat === 'csv') setAccountantIncludeAttachments(false)
+                }}>
+                  {accountantExportFormats.map((format) => (
+                    <option key={format} value={format}>{format === 'excel' ? text.actions.excel : 'CSV'}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                {text.labels.exportLanguage}
+                <select value={accountantExportLanguage} onChange={(event) => setAccountantExportLanguage(event.target.value as StaffConsoleLanguage)}>
+                  {accountantExportLanguages.map((item) => (
+                    <option key={item} value={item}>{item === 'vi' ? 'Tiếng Việt' : 'English'}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="staff-accountant-export-check">
+                <input
+                  type="checkbox"
+                  checked={accountantIncludeAttachments}
+                  disabled={accountantExportFormat === 'csv'}
+                  onChange={(event) => setAccountantIncludeAttachments(event.target.checked)}
+                />
+                <span>
+                  {text.labels.includeAttachments}
+                  {accountantExportFormat === 'csv' && <small>{text.messages.accountantAttachmentsExcelOnly}</small>}
+                </span>
+              </label>
+            </div>
+            <div className="staff-accountant-report-heading">
+              <strong>{text.labels.exportReport}</strong>
+              <span>{accountantExportFormat === 'excel' ? '.xlsx' : '.csv'}</span>
+            </div>
+            <div className="staff-accountant-report-list" role="radiogroup" aria-label={text.labels.exportReport}>
+              {accountantExportReports.map((reportOption) => (
+                <button
+                  aria-checked={accountantReportId === reportOption.id}
+                  className={accountantReportId === reportOption.id ? 'active' : ''}
+                  key={reportOption.id}
+                  role="radio"
+                  type="button"
+                  onClick={() => setAccountantReportId(reportOption.id)}
+                >
+                  <strong>{reportOption.label[accountantExportLanguage]}</strong>
+                  <span>{reportOption.fileBase}.{accountantExportFormat === 'excel' ? 'xlsx' : 'csv'}</span>
+                </button>
+              ))}
+            </div>
+            <button
+              aria-busy={reportExporting === 'accountant'}
+              className="primary staff-accountant-download"
+              disabled={reportExporting !== null}
+              type="button"
+              onClick={() => { void runReportExport('accountant', downloadAccountantExport) }}
+            >
+              <ButtonIconText icon={<Download aria-hidden="true" size={15} />}>{reportExporting === 'accountant' ? text.actions.preparingDownload : text.actions.download}</ButtonIconText>
+            </button>
+          </div>
+        )}
+        {reportExportFeedback && <span className={`staff-report-export-feedback ${reportExportFeedback.tone}`} role="status">
+          {reportExportFeedback.message}
+        </span>}
+      </>}
+    </div>
+  )
+  const tabs = [
+    ['business', vi ? 'Kinh doanh' : 'Business performance'],
+    ['players', vi ? 'Hành vi người chơi' : 'Player behavior'],
+    ['qr', vi ? 'Phân tích QR' : 'QR analytics'],
+  ] as const
+  return (
+    <div className={`staff-card staff-report-workspace ${styles.dashboard}`}>
+      <div className={styles.reportTabs} role="tablist" aria-label={vi ? 'Chế độ báo cáo' : 'Report view'}>
+        {tabs.map(([view, title], index) => <button key={view} role="tab" type="button"
+          id={`report-tab-${view}`} aria-controls="staff-report-panel" aria-selected={reportView === view}
+          tabIndex={reportView === view ? 0 : -1} onClick={() => selectReportView(view)}
+          onKeyDown={(event) => {
+            const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length
+              : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length
+                : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : -1
+            if (next < 0) return
+            event.preventDefault()
+            const target = tabs[next][0]
+            selectReportView(target)
+            document.getElementById(`report-tab-${target}`)?.focus()
+          }}>{title}</button>)}
       </div>
+      <div className={styles.reportTabPanel} id="staff-report-panel" role="tabpanel" aria-labelledby={`report-tab-${reportView}`}>
+      {reportView !== 'business' && toolbar()}
       {reportView === 'business' ? (
         <>
           <BusinessReport start={reportStart} end={reportEnd} compareStart={compareStart} compareEnd={compareEnd}
-            compare={compareEnabled} language={resolvedLanguage} text={text} financial={reportReady ? report : null} />
+            compare={compareEnabled} language={resolvedLanguage} text={text} financial={reportReady ? report : null} toolbar={toolbar} />
           {reportReady && orderRows(reportOrders, reportPaymentsByOrderId)}
         </>
       ) : reportView === 'players' ? (
@@ -398,6 +312,7 @@ export default function ReportSection({
           rangeLabel={rangeLabel(reportStart, reportEnd)}
         />
       )}
+      </div>
     </div>
   )
 }
