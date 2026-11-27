@@ -224,12 +224,13 @@
   text-align: left;
 }
 
-.app .calendar-slot:not(:disabled):hover {
+.app .calendar-slot:not(:disabled):not(.unavailable):hover {
   background: color-mix(in srgb, var(--vrena-cyan-700) 8%, transparent);
 }
 
+.app .calendar-slot.unavailable:disabled { cursor: not-allowed; }
+
 .app .calendar-slot.unavailable {
-  cursor: not-allowed;
   background: repeating-linear-gradient(
     -45deg,
     color-mix(in srgb, var(--vrena-neutral-600) 8%, transparent),
@@ -237,6 +238,10 @@
     color-mix(in srgb, var(--vrena-neutral-600) 3%, transparent) 6px,
     color-mix(in srgb, var(--vrena-neutral-600) 3%, transparent) 12px
   );
+}
+
+.app .calendar-slot.unavailable:not(:disabled):is(:hover, :focus-visible) {
+  box-shadow: inset 0 0 0 1px var(--vrena-focus-halo);
 }
 
 .app .calendar-session-block {
