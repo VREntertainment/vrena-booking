@@ -81,7 +81,7 @@ export default function PaymentVoucherCard({ voucher, language = 'en', managemen
   return <article className="payment-voucher-card" style={{ border: '1px solid var(--vrena-purple-300)', borderRadius: 16, padding: 16, marginBlock: 12, overflowWrap: 'anywhere' }}>
     <header className="payment-voucher-heading"><strong>{vi ? 'Voucher giá trị' : 'Value voucher'} · {formatVnd(voucher.amount)}</strong><code>{voucher.code}</code></header>
     <p className="payment-voucher-balance">{vi ? 'Số dư hiện tại' : 'Current balance'}: <strong>{formatVnd(voucher.balance)}</strong></p>
-    <div className="payment-voucher-venues">{venueNames.map((name, index) => <span className="venue-indicator" data-venue={venueKeys[index]} key={name}>{name}</span>)}</div>
+    <div className="payment-voucher-venues">{venueNames.map((name, index) => <span className={management ? "venue-indicator" : undefined} data-venue={management ? venueKeys[index] : undefined} key={name}>{name}</span>)}</div>
     <p className="payment-voucher-expiry">{voucherExpiryLabel(voucher.expires_at, vi)}</p>
     <div className="payment-voucher-footer">
       <button type="button" className="primary" onClick={() => { setError(''); shareDialog.current?.showModal() }}>{vi ? 'Chia sẻ ảnh' : 'Share image'}</button>
