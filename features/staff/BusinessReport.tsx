@@ -31,7 +31,7 @@ const labelDate = (date: string, language: string) => new Intl.DateTimeFormat(la
 const labels = {
   en: {
     venue: 'Venue', all: 'All accessible venues', other: 'Unassigned venue',
-    sales: 'Booked sales', revenue: 'Net sales', posThrough: 'Thảo Điền KiotViet data through', bookings: 'Bookings', players: 'Booked players', paid: 'Paid players',
+    sales: 'Booked sales', revenue: 'Net sales', posThrough: 'KiotViet data through', bookings: 'Bookings', players: 'Booked players', paid: 'Paid players',
     perDay: 'Players per day', perSession: 'Players per session',
     trend: 'Booking trend', trendDescription: 'Compare the same day or interval within each selected period.',
     day: 'Bookings by weekday', time: 'Bookings by start hour', heat: 'Peak booking slots',
@@ -49,7 +49,7 @@ const labels = {
   },
   vi: {
     venue: 'Địa điểm', all: 'Tất cả địa điểm được phép', other: 'Chưa xác định địa điểm',
-    sales: 'Doanh số đặt chỗ', revenue: 'Doanh thu thuần', posThrough: 'Dữ liệu KiotViet Thảo Điền đến', bookings: 'Lượt đặt', players: 'Người chơi đã đặt', paid: 'Người chơi đã thanh toán',
+    sales: 'Doanh số đặt chỗ', revenue: 'Doanh thu thuần', posThrough: 'Dữ liệu KiotViet đến', bookings: 'Lượt đặt', players: 'Người chơi đã đặt', paid: 'Người chơi đã thanh toán',
     perDay: 'Người chơi mỗi ngày', perSession: 'Người chơi mỗi phiên',
     trend: 'Xu hướng đặt chỗ', trendDescription: 'So sánh theo cùng vị trí ngày hoặc khoảng thời gian trong mỗi kỳ.',
     day: 'Lượt đặt theo ngày trong tuần', time: 'Lượt đặt theo giờ bắt đầu', heat: 'Khung giờ được đặt nhiều nhất',
@@ -225,7 +225,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
       <dt>{item.label}</dt><dd>{item.value == null ? '—' : item.format(item.value)}</dd>
       {previous && <small>{t.previous} · {item.previous == null ? '—' : item.format(item.previous)}</small>}
     </div>)}</dl>
-    {selected.includes('cafe-des-stagiaires') && loaded.current.posThrough &&
+    {selected.some((venue) => venue !== 'other') && loaded.current.posThrough &&
       <p className={styles.note}>{t.posThrough} {labelDate(loaded.current.posThrough, language)} {loaded.current.posThrough.slice(0, 4)}</p>}
     <div className={styles.grid}>
       <ReportPanel title={t.trend} description={t.trendDescription} wide actions={<div className={styles.controls}>
