@@ -42,8 +42,6 @@ const labels = {
     gameEmpty: 'No recorded games are available for this selection.', gameCoverage: 'sessions with recorded gameplay',
     venueComparison: 'Venue comparison', venueDescription: 'Compare booked sales, bookings, players and paid players side by side.',
     revenue: 'Sales', businessScope: 'Payments and booking sources · all accessible venues',
-    paidDefinition: 'Players on fully paid orders. Partially paid orders have no player-level allocation.',
-    averageDefinition: 'Daily averages include days with zero bookings. Session averages count a linked session once and each standalone order once.',
     receipts: 'Cash and bank amounts follow original receipts. Voucher redemption is not cash received.',
     peak: 'Busiest', cancelled: 'Cancelled', noShows: 'No-shows', retry: 'Retry', metric: 'Metric', period: 'Period',
     mix: 'Payment mix',
@@ -62,8 +60,6 @@ const labels = {
     gameEmpty: 'Chưa ghi nhận trò chơi nào cho lựa chọn này.', gameCoverage: 'phiên đã ghi nhận trò chơi',
     venueComparison: 'So sánh địa điểm', venueDescription: 'So sánh doanh số, lượt đặt, người chơi và người chơi đã thanh toán.',
     revenue: 'Doanh số', businessScope: 'Thanh toán và nguồn đặt · tất cả địa điểm được phép',
-    paidDefinition: 'Người chơi trong đơn đã thanh toán đủ. Đơn trả một phần không phân bổ tiền theo người chơi.',
-    averageDefinition: 'Trung bình ngày tính cả ngày không có đơn. Trung bình phiên tính mỗi phiên liên kết hoặc đơn lẻ một lần.',
     receipts: 'Tiền mặt và chuyển khoản theo biên nhận gốc. Sử dụng voucher không tạo tiền thu mới.',
     peak: 'Cao nhất', cancelled: 'Đã hủy', noShows: 'Không đến', retry: 'Thử lại', metric: 'Chỉ số', period: 'Kỳ',
     mix: 'Cơ cấu thanh toán',
@@ -226,7 +222,6 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
       <dt>{item.label}</dt><dd>{item.value == null ? '—' : item.format(item.value)}</dd>
       {previous && <small>{t.previous} · {item.previous == null ? '—' : item.format(item.previous)}</small>}
     </div>)}</dl>
-    <p className={styles.note}>{t.paidDefinition} {t.averageDefinition}</p>
     <div className={styles.grid}>
       <ReportPanel title={t.trend} description={t.trendDescription} wide actions={<div className={styles.controls}>
         <label>{t.metric}<select value={metric} onChange={(event) => setMetric(event.target.value as typeof metric)}>
