@@ -95,7 +95,7 @@ import {
   registerReminderServiceWorker,
   shareBookingLink
 } from '../lib/bookingBrowserActions'
-import { calendarLanes } from '../lib/bookingCalendar'
+import { calendarLanes, type CalendarNavigation } from '../lib/bookingCalendar'
 import {
   OPTIONAL_SESSION_METADATA_COLUMNS,
   SESSION_CARD_PARTICIPANT_SELECT,
@@ -205,7 +205,7 @@ import { cleanMessageText, equivalentMessageText } from '../lib/messageText'
 import { buildPlayerStatsShareSummary, hasShareablePlayerStats } from '../lib/playerStatsShare'
 import type { RateLimitAction } from '../lib/security/rateLimit'
 import type { BookingForm } from '../lib/staff/types'
-import { canEnterStaffConsole, canRevealStaffKioskPin, canStaffKioskOperatorAccessStaff, requiresStaffKioskPin } from '../lib/staffKioskScope'
+import { canEnterStaffConsole, canRevealStaffKioskPin, canStaffKioskOperatorAccessStaff, requiresStaffKioskPin, staffKioskCalendarLanding } from '../lib/staffKioskScope'
 import { isStaffAdminEmail as isAdminEmail, isStaffAdminRole as isAdminRole, staffRoleRank as staffConsoleRank } from '../lib/staffRoles'
 import { setStaffKioskOperatorToken } from '../lib/supabase/client'
 import { ticketPriceBlockMinutesForDate } from '../lib/ticketTariffs'
@@ -239,7 +239,7 @@ import DocumentLanguage from './DocumentLanguage'
 import type { LeaderboardCriterion, LeaderboardPlayer } from './LeaderboardPanel'
 import { type MessageTranslationState } from './MessageBodyText'
 import type { StaffProfile } from './StaffConsole'
-import StaffKioskGate from './StaffKioskGate'
+import StaffKioskGate, { type StaffKioskOperator } from './StaffKioskGate'
 
 const ChallengeControls = dynamic(() => import('../features/booking/ChallengeControls'), { ssr: false })
 const ClubDetail = dynamic(() => import('../features/booking/ClubDetail'), { ssr: false })
@@ -247,13 +247,19 @@ const ClubDetail = dynamic(() => import('../features/booking/ClubDetail'), { ssr
 // A new operator gets a fresh component tree, including all calendar/customer
 // caches. Requests belonging to the unmounted employee cannot populate it.
 export default function WidgetPage(props: BookingWidgetProps = {}) {
-  const [operatorGeneration, setOperatorGeneration] = useState(0)
-  const resetOperatorWorkspace = useCallback(() => setOperatorGeneration((value) => value + 1), [])
-  return <BookingWorkspace key={operatorGeneration} {...props} onOperatorWorkspaceChange={resetOperatorWorkspace} />
+  const [operatorWorkspace, setOperatorWorkspace] = useState<{ generation: number; calendarLanding: CalendarNavigation | null }>({
+    generation: 0,
+    calendarLanding: null,
+  })
+  const resetOperatorWorkspace = useCallback((calendarLanding: CalendarNavigation | null) => {
+    setOperatorWorkspace((current) => ({ generation: current.generation + 1, calendarLanding }))
+  }, [])
+  return <BookingWorkspace key={operatorWorkspace.generation} {...props} operatorCalendarLanding={operatorWorkspace.calendarLanding} onOperatorWorkspaceChange={resetOperatorWorkspace} />
 }
 
 function BookingWorkspace({
   onOperatorWorkspaceChange,
+  operatorCalendarLanding,
   embedded = false,
   externalLanguage,
   initialText,
@@ -266,9 +272,12 @@ function BookingWorkspace({
   onActiveViewChange,
   onProfileChange,
   restoreStoredView = true,
-}: BookingWidgetProps & { onOperatorWorkspaceChange: () => void }) {
-
-  const [incomingCalendar] = useState(initialCalendarNavigation)
+}: BookingWidgetProps & {
+  onOperatorWorkspaceChange: (calendarLanding: CalendarNavigation | null) => void
+  operatorCalendarLanding: CalendarNavigation | null
+}) {
+  const entryView = operatorCalendarLanding ? 'create' : initialView
+  const [incomingCalendar] = useState(() => operatorCalendarLanding ?? initialCalendarNavigation)
   const {
     calendarTicketDraft,
     setCalendarTicketDraft,
@@ -305,7 +314,7 @@ function BookingWorkspace({
     ticketAvailabilitySearchTick,
     setTicketAvailabilitySearchTick,
     ticketAvailabilitySearchLoadingRef,
-  } = useBookingTicketsState({ incomingCalendar, initialView, initialBirthdayPackageId, initialBookingVenue })
+  } = useBookingTicketsState({ incomingCalendar, initialView: entryView, initialBirthdayPackageId, initialBookingVenue })
   const activeBirthdayPackage = selectedBirthdayPackage(ticketType, ticketPlayers, ticketDuration, ticketSpecialNote)
   const applyIncomingBirthdayPackage = useEffectEvent((id: string | undefined) => {
     if (id && id !== (activeBirthdayPackage?.id ?? 'custom')) handleBirthdayPackageChange(id)
@@ -313,7 +322,7 @@ function BookingWorkspace({
   useEffect(() => {
     return schedulePostEffectStateUpdate(() => applyIncomingBirthdayPackage(initialBirthdayPackageId))
   }, [initialBirthdayPackageId])
-  const [activeView, setActiveViewState] = useState<AppView>(() => customerView(initialView))
+  const [activeView, setActiveViewState] = useState<AppView>(() => customerView(entryView))
   const setActiveView = useCallback((next: AppView | ((current: AppView) => AppView)) => {
     setActiveViewState(current => customerView(typeof next === 'function' ? next(current) : next))
   }, [])
@@ -755,7 +764,7 @@ function BookingWorkspace({
     setEditTicketStatus,
     isUpdatingSession,
     setIsUpdatingSession,
-  } = useBookingSessionEditorState({ incomingCalendar, initialView })
+  } = useBookingSessionEditorState({ incomingCalendar, initialView: entryView })
   const [bookingVenue, setBookingVenue] = useState<BookingVenueId>(incomingCalendar?.venue || initialBookingVenue || 'ha-do-centrosa')
   const isHaDoBookingVenue = bookingVenue === 'ha-do-centrosa'
   const [simRacingSelected, setSimRacingSelected] = useState(false)
@@ -860,7 +869,7 @@ function BookingWorkspace({
     openCreateSessionCalendar,
     startSessionFromCalendar,
   } = useCreateSessionCalendar({
-    initialCalendarDate: incomingCalendar?.mode === 'calendar' && initialView === 'create' ? incomingCalendar.date : undefined,
+    initialCalendarDate: incomingCalendar?.mode === 'calendar' && entryView === 'create' ? incomingCalendar.date : undefined,
     addDaysToDateValue,
     getLocalDateString: localDateString,
     loadCalendarRange: async (startDate, endDate, request) => {
@@ -2515,7 +2524,7 @@ function BookingWorkspace({
   }, [initialView, setActiveView])
 
   useEffect(() => {
-    if (!restoreStoredView) return undefined
+    if (!restoreStoredView || operatorCalendarLanding) return undefined
 
     let storedView: AppView | null = null
 
@@ -2531,7 +2540,7 @@ function BookingWorkspace({
     return schedulePostEffectStateUpdate(() => {
       setActiveView((currentView) => currentView === storedView ? currentView : storedView)
     })
-  }, [restoreStoredView, setActiveView])
+  }, [operatorCalendarLanding, restoreStoredView, setActiveView])
 
   useEffect(() => {
     if (!externalLanguage) return
@@ -4024,6 +4033,9 @@ function BookingWorkspace({
     && !hasVerifiedTotpFactor
   )
   const sharedKioskAccount = requiresStaffKioskPin(staffAccountEmail)
+  const handleKioskOperatorChange = useCallback((operator: StaffKioskOperator | null) => {
+    onOperatorWorkspaceChange(operator ? staffKioskCalendarLanding(bookingVenue) : null)
+  }, [bookingVenue, onOperatorWorkspaceChange])
   const handleKioskLockChange = useCallback((lock: (() => void) | null) => {
     setKioskLock(() => lock)
   }, [setKioskLock])
@@ -4041,6 +4053,13 @@ function BookingWorkspace({
     && canRevealStaffKioskPin(staffAccountEmail, profile.role, staffAccessRank))
   const { locations: staffLocations } = useStaffLocations(canAccessStaffConsole, kioskOperator?.profileId || profile?.id || '')
   const staffLocationAllowed = !canAccessStaffConsole || staffLocations.some((location) => location.venue_key === bookingVenue)
+  const applyStaffCalendarVenue = useEffectEvent(handleBookingVenueChange)
+  useEffect(() => {
+    if (!sharedKioskAccount || activeView !== 'create' || createSessionMode !== 'calendar' || staffLocationAllowed) return
+    const venue = staffLocations.map((location) => location.venue_key)
+      .find((key) => key === 'ha-do-centrosa' || key === 'cafe-des-stagiaires')
+    if (venue) return schedulePostEffectStateUpdate(() => applyStaffCalendarVenue(venue))
+  }, [activeView, createSessionMode, sharedKioskAccount, staffLocationAllowed, staffLocations])
   const canManageCalendarBookings = staffLocationAllowed && canAccessStaffConsole && (sharedKioskAccount ? ['staff', 'manager'].includes(kioskOperator?.accessRole || '') : staffAccessRank >= 50)
   const venueOpenMinutes = isHaDoBookingVenue ? OPEN_MINUTES : CAFE_OPEN_MINUTES
   const venueCloseMinutes = isHaDoBookingVenue ? CLOSE_MINUTES : CAFE_CLOSE_MINUTES
@@ -6370,7 +6389,7 @@ function BookingWorkspace({
       language={language}
       onLockChange={handleKioskLockChange}
       onLogout={logoutStaffKiosk}
-      onOperatorChange={onOperatorWorkspaceChange}
+      onOperatorChange={handleKioskOperatorChange}
     >
       {() => appShell}
     </StaffKioskGate>
