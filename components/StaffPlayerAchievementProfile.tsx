@@ -499,7 +499,7 @@ export default function StaffPlayerAchievementProfile({
           )}
         </div>
         <div className="staff-achievement-save-row">
-          <span aria-live="polite">{status}</span>
+          {status && <span className="staff-client-feedback" data-tone={saved ? 'success' : status.startsWith('Session queued.') ? 'info' : 'error'} role={saved || status.startsWith('Session queued.') ? 'status' : 'alert'}>{status}</span>}
           <button
             className={saved ? 'primary staff-save-success' : saving ? 'primary loading' : 'primary'}
             disabled={!dirty || !statsDraft || statsLoading || saving}
@@ -511,8 +511,8 @@ export default function StaffPlayerAchievementProfile({
         </div>
       </div>
 
-      {selectedProfile && <CustomerPaymentVouchers key={selectedProfile.id} customerId={selectedProfile.id} language={language} />}
       {selectedProfile && detailsDraft && <StaffClientDetailsEditor value={detailsDraft} onChange={setDetailsDraft} disabled={saving} language={language} />}
+      {selectedProfile && <CustomerPaymentVouchers key={selectedProfile.id} customerId={selectedProfile.id} language={language} />}
 
       {!selectedProfile ? (
         <div className="staff-achievement-profile-empty">
