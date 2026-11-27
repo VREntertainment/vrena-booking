@@ -14,20 +14,23 @@ begin
   where p.pronamespace = 'private'::regnamespace and p.proname = 'create_staff_reserved_order_v3';
 
   definition := pg_get_functiondef(routine);
-  if strpos(definition, duration_guard) = 0 then
-    raise exception 'Expected staff order outside-hours guard is missing.';
+  if strpos(definition, duration_guard) > 0 then
+    execute replace(definition, duration_guard || E'\n', '');
+  elsif strpos(definition, 'if not p_outside_hours and') = 0
+        or strpos(definition, 'Booking must finish by midnight.') = 0 then
+    raise exception 'Expected staff order outside-hours logic is missing.';
   end if;
-  execute replace(definition, duration_guard || E'\n', '');
 
   definition := pg_get_functiondef('private.staff_create_booking(jsonb,text)'::regprocedure);
-  if strpos(definition, wrapper_guard) = 0 then
-    raise exception 'Expected staff booking outside-hours guard is missing.';
-  end if;
-  execute replace(definition, wrapper_guard, $new$  elsif p_booking->>'p_duration_minutes' is not null then
+  if strpos(definition, wrapper_guard) > 0 then
+    execute replace(definition, wrapper_guard, $new$  elsif p_booking->>'p_duration_minutes' is not null then
     raise exception 'Custom duration requires event type.';
   elsif coalesce((p_booking->>'p_allow_outside_hours')::boolean,false) then
     p_booking := jsonb_set(p_booking, '{p_internal_note}', to_jsonb(concat_ws(E'\n',
       nullif(p_booking->>'p_internal_note',''), 'Staff authorized booking outside opening hours.')));
   end if;$new$);
+  elsif strpos(definition, 'Custom duration requires event type.') = 0 then
+    raise exception 'Expected staff booking outside-hours logic is missing.';
+  end if;
 end
 $migration$;
