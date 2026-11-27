@@ -32,10 +32,12 @@ import type {
   StaffLoyaltyRule
 } from '../../lib/staff/types'
 import { ButtonIconText } from './shared'
+import { SetupFeedback } from './SetupFeedback'
 
 export type DiscountsSectionProps = {
   canEditCommerceTab: boolean
   text: StaffConsoleCopy
+  status: string
   commerceTab: import("../../lib/staff/types").StaffCommerceTab
   loyaltyForm: { id: string; rule_name: string; game_id: string; calculation_type: "per_vnd_spent" | "per_booking" | "per_player" | "per_visit"; points_value: number; spend_amount: number; min_order_total: number; redeem_value_vnd_per_point: number; earn_trigger: "session_payment_confirmed"; rounding_rule: "floor_whole_points"; point_expiry_days: string; valid_from: string; valid_until: string; active: boolean; notes: string }
   setLoyaltyForm: React.Dispatch<React.SetStateAction<{ id: string; rule_name: string; game_id: string; calculation_type: "per_vnd_spent" | "per_booking" | "per_player" | "per_visit"; points_value: number; spend_amount: number; min_order_total: number; redeem_value_vnd_per_point: number; earn_trigger: "session_payment_confirmed"; rounding_rule: "floor_whole_points"; point_expiry_days: string; valid_from: string; valid_until: string; active: boolean; notes: string }>>
@@ -64,6 +66,7 @@ export type DiscountsSectionProps = {
 export default function DiscountsSection({
   canEditCommerceTab,
   text,
+  status,
   commerceTab,
   loyaltyForm,
   setLoyaltyForm,
@@ -88,24 +91,41 @@ export default function DiscountsSection({
   gameNameById,
   priceRuleNameById,
 }: DiscountsSectionProps) {
+  const missingVoucherCode = commerceTab === 'vouchers' && !discountForm.code.trim() && status === text.messages.voucherCodeRequired
   return (
-    <div className="staff-grid">
-      <div className="staff-card">
+    <div className="staff-grid staff-setup-grid">
+      <div className="staff-commerce-switcher staff-setup-switcher" role="tablist" aria-label={text.tabs.discounts}>
+        {staffCommerceTabs.map((item) => (
+          <button
+            aria-selected={commerceTab === item}
+            className={commerceTab === item ? 'active' : ''}
+            key={item}
+            role="tab"
+            type="button"
+            onClick={() => openCommerceTab(item)}
+          >
+            {text.commerceTabs[item]}
+          </button>
+        ))}
+      </div>
+      <section className="staff-card staff-setup-editor" aria-labelledby="staff-setup-editor-title">
         {!canEditCommerceTab && <p className="staff-readonly-note">{text.messages.readOnlyCommerce}</p>}
         {commerceTab === 'loyalty' ? (
           <>
-            <h3>{loyaltyForm.id ? text.editLoyaltyRule : text.labels.createLoyaltyRule}</h3>
+            <h3 id="staff-setup-editor-title">{loyaltyForm.id ? text.editLoyaltyRule : text.labels.createLoyaltyRule}</h3>
             <p className="muted">{text.messages.loyaltyIntro}</p>
             <fieldset className="staff-readonly-fieldset" disabled={!canEditCommerceTab}>
               <div className="form-grid compact-form-grid">
-                <label>{text.labels.ruleName}<input value={loyaltyForm.rule_name} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, rule_name: event.target.value })} /></label>
+                <label>{text.labels.ruleName}<input aria-required="true" value={loyaltyForm.rule_name} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, rule_name: event.target.value })} /></label>
                 <label>{text.labels.game}<select value={loyaltyForm.game_id} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, game_id: event.target.value })}><option value="">{text.allGames}</option>{games.map((game) => <option key={game.id} value={game.id}>{brandedGameName(game.slug, game.name)}</option>)}</select></label>
+                <h4 className="full staff-setup-group-title">{text.setupSections.points}</h4>
                 <label>{text.labels.calculation}<select value={loyaltyForm.calculation_type} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, calculation_type: event.target.value as StaffLoyaltyRule['calculation_type'] })}>{loyaltyCalculationTypes.map((type) => <option key={type} value={type}>{loyaltyCalculationLabel(type, text)}</option>)}</select></label>
                 <label>{text.labels.pointsEarned}<input min={0} step="0.01" type="number" value={loyaltyForm.points_value} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, points_value: Number(event.target.value) })} /></label>
                 <label>{text.labels.perVndSpent}<input disabled={loyaltyForm.calculation_type !== 'per_vnd_spent'} min={0} type="number" value={loyaltyForm.spend_amount} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, spend_amount: Number(event.target.value) })} /></label>
                 <label>{text.labels.minimumSpend}<input min={0} type="number" value={loyaltyForm.min_order_total} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, min_order_total: Number(event.target.value) })} /></label>
                 <label>{text.labels.redeemValue}<input min={0} type="number" value={loyaltyForm.redeem_value_vnd_per_point} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, redeem_value_vnd_per_point: Number(event.target.value) })} /></label>
                 <label>{text.labels.pointsExpireAfterDays}<input min={1} type="number" value={loyaltyForm.point_expiry_days} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, point_expiry_days: event.target.value })} /></label>
+                <h4 className="full staff-setup-group-title">{text.setupSections.ruleDates}</h4>
                 <label>{text.labels.validFrom}<StaffPickerField ariaLabel={text.aria.loyaltyValidFrom} placeholder={text.chooseDate} type="date" value={loyaltyForm.valid_from} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_from: value })} /></label>
                 <label>{text.labels.validUntil}<StaffPickerField ariaLabel={text.aria.loyaltyValidUntil} placeholder={text.chooseDate} type="date" value={loyaltyForm.valid_until} onChange={(value) => setLoyaltyForm({ ...loyaltyForm, valid_until: value })} /></label>
                 <label className="full">{text.labels.notes}<textarea value={loyaltyForm.notes} onChange={(event) => setLoyaltyForm({ ...loyaltyForm, notes: event.target.value })} /></label>
@@ -114,11 +134,12 @@ export default function DiscountsSection({
               <button className="primary" type="button" disabled={saving || !loyaltyForm.rule_name.trim()} onClick={saveLoyaltyRule}>
                 <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveLoyaltyRule}</ButtonIconText>
               </button>
+              <SetupFeedback status={status} text={text} />
             </fieldset>
           </>
         ) : (
           <>
-            <h3>
+            <h3 id="staff-setup-editor-title">
               {discountForm.id
                 ? (commerceTab === 'vouchers' ? text.editVoucher : text.editDiscount)
                 : (commerceTab === 'vouchers' ? text.labels.createVoucher : text.labels.createDiscount)}
@@ -126,8 +147,11 @@ export default function DiscountsSection({
             <p className="muted">{text.labels.discountRuleHelp}</p>
             <fieldset className="staff-readonly-fieldset" disabled={!canEditCommerceTab}>
               <div className="form-grid compact-form-grid">
-                <label>{commerceTab === 'vouchers' ? text.labels.voucherCodeRequired : text.labels.codeOptional}<input value={discountForm.code} onChange={(event) => setDiscountForm({ ...discountForm, code: event.target.value.toUpperCase() })} /></label>
-                <label>{text.labels.name}<input value={discountForm.name} onChange={(event) => setDiscountForm({ ...discountForm, name: event.target.value })} /></label>
+                <h4 className="full staff-setup-group-title">{text.setupSections.offerDetails}</h4>
+                <label>{commerceTab === 'vouchers' ? text.labels.voucherCodeRequired : text.labels.codeOptional}<input aria-required={commerceTab === 'vouchers'} aria-invalid={missingVoucherCode || undefined} aria-describedby={missingVoucherCode ? 'staff-setup-voucher-code-error' : undefined} value={discountForm.code} onChange={(event) => setDiscountForm({ ...discountForm, code: event.target.value.toUpperCase() })} />
+                  {missingVoucherCode && <span className="staff-setup-inline-error" id="staff-setup-voucher-code-error" role="alert">{status}</span>}
+                </label>
+                <label>{text.labels.name}<input aria-required="true" value={discountForm.name} onChange={(event) => setDiscountForm({ ...discountForm, name: event.target.value })} /></label>
                 <label>{text.labels.game}<select value={discountForm.game_id} onChange={(event) => setDiscountForm({ ...discountForm, game_id: event.target.value })}><option value="">{text.allGames}</option>{games.map((game) => <option key={game.id} value={game.id}>{brandedGameName(game.slug, game.name)}</option>)}</select></label>
                 <label>{text.labels.priceRule}<select value={discountForm.price_rule_id} onChange={(event) => setDiscountForm({ ...discountForm, price_rule_id: event.target.value })}><option value="">{text.allPriceRules}</option>{prices.map((rule) => <option key={rule.id} value={rule.id}>{rule.rule_name}</option>)}</select></label>
                 <label>{text.labels.type}<select value={discountForm.discount_type} onChange={(event) => updateDiscountType(event.target.value as StaffDiscount['discount_type'])}>{discountTypes.map((type) => <option key={type} value={type}>{text.discountTypes[type]}</option>)}</select></label>
@@ -161,7 +185,7 @@ export default function DiscountsSection({
                     </select>
                   </span>
                 </label>
-                <div className="full staff-form-section-label">{text.labels.discountConditions}</div>
+                <h4 className="full staff-setup-group-title">{text.labels.discountConditions}</h4>
                 <label>{text.labels.minPlayers}<input min={1} type="number" value={discountForm.min_players} onChange={(event) => setDiscountForm({ ...discountForm, min_players: event.target.value })} /></label>
                 <label>{text.labels.maxPlayers}<input min={1} type="number" value={discountForm.max_players} onChange={(event) => setDiscountForm({ ...discountForm, max_players: event.target.value })} /></label>
                 <label>{text.labels.dayType}<select value={discountForm.day_scope} onChange={(event) => setDiscountForm({ ...discountForm, day_scope: event.target.value as StaffDiscountDayScope })}>{staffDiscountDayScopes.map((scope) => <option key={scope} value={scope}>{text.discountDayScopes[scope]}</option>)}</select></label>
@@ -187,6 +211,7 @@ export default function DiscountsSection({
                 <label>{text.labels.minimumSpend}<input min={0} type="number" value={discountForm.min_order_total} onChange={(event) => setDiscountForm({ ...discountForm, min_order_total: Number(event.target.value) || 0 })} /></label>
                 <label>{text.labels.maxDiscountAmount}<input min={0} type="number" value={discountForm.max_discount_amount} onChange={(event) => setDiscountForm({ ...discountForm, max_discount_amount: event.target.value })} /></label>
                 <label>{text.labels.perCustomerLimit}<input min={1} type="number" value={discountForm.per_customer_limit} onChange={(event) => setDiscountForm({ ...discountForm, per_customer_limit: event.target.value })} /></label>
+                <h4 className="full staff-setup-group-title">{text.setupSections.ruleDates}</h4>
                 <label>{text.labels.validFrom}<StaffPickerField ariaLabel={text.aria.discountValidFrom} placeholder={text.chooseDate} type="date" value={discountForm.valid_from} onChange={(value) => setDiscountForm({ ...discountForm, valid_from: value })} /></label>
                 <label>{text.labels.validUntil}<StaffPickerField ariaLabel={text.aria.discountValidUntil} placeholder={text.chooseDate} type="date" value={discountForm.valid_until} onChange={(value) => setDiscountForm({ ...discountForm, valid_until: value })} /></label>
                 <label>{text.labels.maxUses}<input type="number" value={discountForm.max_uses} onChange={(event) => setDiscountForm({ ...discountForm, max_uses: event.target.value })} /></label>
@@ -195,31 +220,17 @@ export default function DiscountsSection({
               <button className="primary" type="button" disabled={saving || !discountForm.name.trim()} onClick={saveDiscount}>
                 <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{commerceTab === 'vouchers' ? text.actions.saveVoucher : text.actions.saveDiscount}</ButtonIconText>
               </button>
+              {status !== text.messages.voucherCodeRequired && <SetupFeedback status={status} text={text} />}
             </fieldset>
           </>
         )}
-      </div>
-      <div className="staff-card">
-        <div className="staff-commerce-switcher" role="tablist" aria-label={text.tabs.discounts}>
-          {staffCommerceTabs.map((item) => (
-            <button
-              aria-selected={commerceTab === item}
-              className={commerceTab === item ? 'active' : ''}
-              key={item}
-              role="tab"
-              type="button"
-              onClick={() => openCommerceTab(item)}
-            >
-              {text.commerceTabs[item]}
-            </button>
-          ))}
-        </div>
-
+      </section>
+      <section className="staff-card staff-setup-library" aria-labelledby="staff-setup-library-title">
         {commerceTab === 'loyalty' ? (
           <>
-            <h3>{text.commerceTabs.loyalty}</h3>
+            <h3 id="staff-setup-library-title">{text.commerceTabs.loyalty}</h3>
             {loyaltyRules.map((rule) => (
-              <button className="staff-list-item" key={rule.id} type="button" onClick={() => editLoyaltyRule(rule)}>
+              <button className="staff-list-item" aria-pressed={loyaltyForm.id === rule.id} key={rule.id} type="button" onClick={() => editLoyaltyRule(rule)}>
                 <strong>{rule.rule_name}</strong>
                 <span>
                   {loyaltyCalculationLabel(rule.calculation_type, text)}
@@ -239,9 +250,9 @@ export default function DiscountsSection({
           </>
         ) : (
           <>
-            <h3>{commerceTab === 'vouchers' ? text.labels.vouchers : text.labels.discounts}</h3>
+            <h3 id="staff-setup-library-title">{commerceTab === 'vouchers' ? text.labels.vouchers : text.labels.discounts}</h3>
             {(commerceTab === 'vouchers' ? voucherRules : discountRules).map((discount) => (
-              <button className="staff-list-item" key={discount.id} type="button" onClick={() => editDiscount(discount)}>
+              <button className="staff-list-item" aria-pressed={discountForm.id === discount.id} key={discount.id} type="button" onClick={() => editDiscount(discount)}>
                 <strong>{discount.code ? `${discount.code} · ${discount.name}` : discount.name}</strong>
                 <span>{text.discountTypes[discount.discount_type]} · {formatDiscountRuleValue(discount, text)} · {formatDiscountRuleConditions(discount, discount.game_id ? gameNameById.get(discount.game_id) || text.gameFallback : text.allGames, discount.price_rule_id ? priceRuleNameById.get(discount.price_rule_id) || text.labels.priceRule : text.allPriceRules, text)} · {text.labels.used} {discount.used_count}{discount.max_uses ? `/${discount.max_uses}` : ''}</span>
               </button>
@@ -250,7 +261,7 @@ export default function DiscountsSection({
             {commerceTab === 'discounts' && discountRules.length === 0 && <p className="notice">{text.messages.noDiscounts}</p>}
           </>
         )}
-      </div>
+      </section>
     </div>
   )
 }

@@ -337,6 +337,11 @@ export const staffConsoleText = {
       beginner_friendly: 'Beginner friendly',
       competitive: 'Competitive',
     } satisfies Record<StaffAudience, string>,
+    setupSections: {
+      gameDetails: 'Game details', mediaAndAvailability: 'Photo and availability',
+      priceDetails: 'Rule details', ruleSchedule: 'Schedule', priceAmounts: 'Prices',
+      ruleDates: 'Validity', points: 'Points and redemption', offerDetails: 'Offer details',
+    },
     labels: {
       actions: 'Actions',
       active: 'Active',
@@ -1158,6 +1163,11 @@ export const staffConsoleText = {
       beginner_friendly: 'Dễ cho người mới',
       competitive: 'Thi đấu',
     } satisfies Record<StaffAudience, string>,
+    setupSections: {
+      gameDetails: 'Thông tin trò chơi', mediaAndAvailability: 'Ảnh và khu chơi',
+      priceDetails: 'Thông tin quy tắc', ruleSchedule: 'Khung giờ', priceAmounts: 'Mức giá',
+      ruleDates: 'Hiệu lực', points: 'Tích và đổi điểm', offerDetails: 'Thông tin ưu đãi',
+    },
     labels: {
       actions: 'Thao tác',
       active: 'Đang bật',
