@@ -160,7 +160,7 @@ export default function StaffEmployeeAccess({ language }: { language: 'en' | 'vi
         </div>
         {directory?.canEdit && (
           <button type="button" className="secondary" disabled={busy} onClick={() => {
-            if (employee.id) selectEmployee(emptyEmployee)
+            selectEmployee(emptyEmployee)
             requestAnimationFrame(() => document.getElementById('hr-full-name')?.focus())
           }}>
             {vi ? 'Thêm nhân viên' : 'Add employee'}
@@ -173,7 +173,7 @@ export default function StaffEmployeeAccess({ language }: { language: 'en' | 'vi
 
       {directory && (
         <div className="hr-access-layout">
-          <aside className="hr-access-panel hr-access-directory" aria-labelledby="hr-directory-title">
+          <section className="hr-access-panel hr-access-directory" aria-labelledby="hr-directory-title">
             <h3 id="hr-directory-title">{vi ? 'Nhân viên theo cửa hàng' : 'Employees by venue'}</h3>
             {groups.length === 0 ? (
               <p>{vi ? 'Chưa có nhân viên.' : 'No employees yet.'}</p>
@@ -214,7 +214,7 @@ export default function StaffEmployeeAccess({ language }: { language: 'en' | 'vi
                 </label>
               </>
             )}
-          </aside>
+          </section>
 
           {(employee.id || directory.canEdit) && (
             <form className="hr-access-panel hr-access-editor" onSubmit={save} aria-labelledby="hr-record-title" aria-busy={busy}>
@@ -256,7 +256,7 @@ export default function StaffEmployeeAccess({ language }: { language: 'en' | 'vi
                     {employee.staffOnly && <span className="hr-access-help" id="hr-role-help">{vi ? 'Nhân viên này chỉ có quyền Nhân viên.' : 'This employee is limited to Staff access.'}</span>}
                   </label>
                   <fieldset className="hr-access-venues">
-                    <legend>{vi ? 'Cửa hàng được truy cập' : 'Assigned venues'}</legend>
+                    <legend>{vi ? 'Cửa hàng được truy cập' : 'Store access'}</legend>
                     <div className="hr-access-grid">
                       {locations.map((venue) => (
                         <label key={venue.venue_key} className="hr-access-venue">
