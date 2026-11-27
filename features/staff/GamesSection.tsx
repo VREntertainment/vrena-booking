@@ -23,10 +23,12 @@ import type {
   StaffGame
 } from '../../lib/staff/types'
 import { ButtonIconText } from './shared'
+import { SetupFeedback } from './SetupFeedback'
 
 export type GamesSectionProps = {
   gameForm: { id: string; slug: string; name: string; game_type: "other" | "shooting" | "escape" | "tournament"; duration_minutes: number; max_players_per_arena: number; number_of_rounds: number; escape_chapter_count: number; description: string; audience: import("../../lib/staff/types").StaffAudience[]; guide_language: import("../../lib/i18n/languages").LanguageCode; guide_summary: Partial<Record<import("../../lib/i18n/languages").LanguageCode, string>>; guide_rules: Partial<Record<import("../../lib/i18n/languages").LanguageCode, string>>; guide_tips: Partial<Record<import("../../lib/i18n/languages").LanguageCode, string>>; image_url: string; active: boolean; available_arena_ids: string }
   text: StaffConsoleCopy
+  status: string
   canManageConfig: boolean
   setGameForm: React.Dispatch<React.SetStateAction<{ id: string; slug: string; name: string; game_type: "other" | "shooting" | "escape" | "tournament"; duration_minutes: number; max_players_per_arena: number; number_of_rounds: number; escape_chapter_count: number; description: string; audience: import("../../lib/staff/types").StaffAudience[]; guide_language: import("../../lib/i18n/languages").LanguageCode; guide_summary: Partial<Record<import("../../lib/i18n/languages").LanguageCode, string>>; guide_rules: Partial<Record<import("../../lib/i18n/languages").LanguageCode, string>>; guide_tips: Partial<Record<import("../../lib/i18n/languages").LanguageCode, string>>; image_url: string; active: boolean; available_arena_ids: string }>>
   gameImageUploading: boolean
@@ -46,6 +48,7 @@ export type GamesSectionProps = {
 export default function GamesSection({
   gameForm,
   text,
+  status,
   canManageConfig,
   setGameForm,
   gameImageUploading,
@@ -62,13 +65,14 @@ export default function GamesSection({
   editGame,
 }: GamesSectionProps) {
   return (
-    <div className="staff-grid">
-      <div className="staff-card">
-        <h3>{gameForm.id ? text.editGame : text.labels.createGame}</h3>
+    <div className="staff-grid staff-setup-grid">
+      <section className="staff-card staff-setup-editor" aria-labelledby="staff-setup-editor-title">
+        <h3 id="staff-setup-editor-title">{gameForm.id ? text.editGame : text.labels.createGame}</h3>
         {!canManageConfig && <p className="staff-readonly-note">{text.messages.readOnlyGames}</p>}
         <fieldset className="staff-readonly-fieldset" disabled={!canManageConfig}>
           <div className="form-grid compact-form-grid">
-            <label>{text.labels.name}<input value={gameForm.name} onChange={(event) => setGameForm({ ...gameForm, name: event.target.value })} /></label>
+            <h4 className="full staff-setup-group-title">{text.setupSections.gameDetails}</h4>
+            <label>{text.labels.name}<input aria-required="true" value={gameForm.name} onChange={(event) => setGameForm({ ...gameForm, name: event.target.value })} /></label>
             <label>{text.labels.slug}<input value={gameForm.slug} onChange={(event) => setGameForm({ ...gameForm, slug: event.target.value })} /></label>
             <label>{text.labels.type}<select value={gameForm.game_type} onChange={(event) => setGameForm({ ...gameForm, game_type: event.target.value as StaffGame['game_type'] })}>{gameTypes.map((type) => <option key={type} value={type}>{text.gameTypes[type]}</option>)}</select></label>
             <label>{text.labels.duration}<input type="number" value={gameForm.duration_minutes} onChange={(event) => setGameForm({ ...gameForm, duration_minutes: Number(event.target.value) })} /></label>
@@ -77,6 +81,7 @@ export default function GamesSection({
             {gameForm.game_type === 'escape' && (
               <label>{text.labels.escapeChapters}<input min={1} max={50} type="number" value={gameForm.escape_chapter_count} onChange={(event) => setGameForm({ ...gameForm, escape_chapter_count: Number(event.target.value) })} /></label>
             )}
+            <h4 className="full staff-setup-group-title">{text.setupSections.mediaAndAvailability}</h4>
             <div className="full staff-game-media-row">
               <div className="staff-game-photo-field">
                 <span className="staff-field-label">{text.labels.gamePhoto}</span>
@@ -205,15 +210,16 @@ export default function GamesSection({
           <button className="primary" type="button" disabled={saving || !gameForm.name.trim()} onClick={saveGame}>
             <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.saveGame}</ButtonIconText>
           </button>
+          <SetupFeedback status={status} text={text} />
         </fieldset>
-      </div>
-      <div className="staff-card">
+      </section>
+      <section className="staff-card staff-setup-library" aria-labelledby="staff-setup-library-title">
         <div className="staff-list-head">
-          <h3>{text.labels.games}</h3>
-          {canManageConfig && <button type="button" onClick={startNewGame}>{text.actions.newGame}</button>}
+          <h3 id="staff-setup-library-title">{text.labels.games}</h3>
+          {canManageConfig && <button className="secondary" type="button" onClick={startNewGame}>{text.actions.newGame}</button>}
         </div>
         {games.map((game) => (
-          <button className="staff-list-item" key={game.id} type="button" onClick={() => editGame(game)}>
+          <button className="staff-list-item" aria-pressed={gameForm.id === game.id} key={game.id} type="button" onClick={() => editGame(game)}>
             <strong>{game.name} <AnvioBadge gameId={game.slug} /></strong>
             <span>
               {[
@@ -225,7 +231,7 @@ export default function GamesSection({
             </span>
           </button>
         ))}
-      </div>
+      </section>
     </div>
   )
 }

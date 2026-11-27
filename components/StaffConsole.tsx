@@ -15,6 +15,7 @@ import dynamic from 'next/dynamic'
 const StaffOrderStatusConfirmation = dynamic(() => import('./staff/StaffOrderStatusConfirmation'), { ssr: false })
 const StaffSavedBookingShare = dynamic(() => import('./staff/StaffSavedBookingShare').then(module => module.StaffSavedBookingShare), { ssr: false })
 const StaffPaymentVouchers = dynamic(() => import('./StaffPaymentVouchers'), { ssr: false })
+import { SetupFeedback } from '../features/staff/SetupFeedback'
 import type { OrderStatusChange } from './staff/StaffOrderStatusConfirmation'
 
 const StaffCalendarBookingDialog = dynamic(() => import('./StaffCalendarBookingDialog'), { ssr: false })
@@ -651,6 +652,7 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
       && !window.confirm('You have unsaved customer profile changes. Discard them and leave this page?')
     ) return
     setClientProfileDirty(false)
+    if (['games', 'prices', 'discounts'].includes(tab) || currentTabGroup === 'setup') setStatus('')
     setActiveTab(tab)
   }
 
@@ -1003,7 +1005,7 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
           </button>
           <div className="staff-tabs" ref={staffTabsRef} role="tablist" aria-label={text.aria.staffConsole}>
             {visibleTabGroups.map((group) => (
-              <div className={currentTabGroup === group.id ? 'staff-tab-group active' : 'staff-tab-group'} key={group.id} role="presentation">
+              <div className={currentTabGroup === group.id ? 'staff-tab-group active' : 'staff-tab-group'} data-tab-group={group.id} key={group.id} role="presentation">
                 <span aria-hidden="true" className="staff-tab-group-label">{text.tabGroups[group.id]}</span>
                 <div className="staff-tab-group-buttons" role="presentation">
                   {group.tabs.map((tab) => (
@@ -1025,7 +1027,7 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
         </div>
       </div>
 
-      {status && <p className="sr-only" aria-live="polite">{status}</p>}
+      {status && (currentTabGroup !== 'setup' || !currentTabReady) && <p className="sr-only" aria-live="polite">{status}</p>}
       {currentTabLoading && <AppLoadingState compact label={text.loading} />}
       {currentTabError && <div className="notice" role="alert"><p>{resolvedLanguage === 'vi' ? 'Không thể tải dữ liệu. Vui lòng thử lại.' : 'Couldn’t load this data. Please try again.'}</p><button type="button" disabled={currentTabLoading} onClick={retryCurrentData}>{resolvedLanguage === 'vi' ? 'Thử lại' : 'Try again'}</button></div>}
 
@@ -1122,6 +1124,7 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
       {currentTabReady && currentTab === 'games' && (<GamesSection
         gameForm={gameForm}
         text={text}
+        status={status}
         canManageConfig={canManageConfig}
         setGameForm={setGameForm}
         gameImageUploading={gameImageUploading}
@@ -1139,19 +1142,23 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
       />)}
 
       {currentTabReady && currentTab === 'prices' && (
-        <div className="staff-grid">
-          <div className="staff-card">
-            <h3>{priceForm.id ? text.editPriceRule : text.labels.createPriceRule}</h3>
+        <div className="staff-grid staff-setup-grid">
+          <section className="staff-card staff-setup-editor" aria-labelledby="staff-setup-editor-title">
+            <h3 id="staff-setup-editor-title">{priceForm.id ? text.editPriceRule : text.labels.createPriceRule}</h3>
             {!canManageConfig && <p className="staff-readonly-note">{text.messages.readOnlyPrices}</p>}
             <fieldset className="staff-readonly-fieldset" disabled={!canManageConfig}>
               <div className="form-grid compact-form-grid">
-                <label>{text.labels.ruleName}<input value={priceForm.rule_name} onChange={(event) => setPriceForm({ ...priceForm, rule_name: event.target.value })} /></label>
+                <h4 className="full staff-setup-group-title">{text.setupSections.priceDetails}</h4>
+                <label>{text.labels.ruleName}<input aria-required="true" value={priceForm.rule_name} onChange={(event) => setPriceForm({ ...priceForm, rule_name: event.target.value })} /></label>
                 <label>{text.labels.game}<select value={priceForm.game_id} onChange={(event) => setPriceForm({ ...priceForm, game_id: event.target.value })}><option value="">{text.allGames}</option>{games.map((game) => <option key={game.id} value={game.id}>{brandedGameName(game.slug, game.name)}</option>)}</select></label>
-                <label>{text.labels.dayType}<select value={priceForm.day_type} onChange={(event) => setPriceForm({ ...priceForm, day_type: event.target.value as StaffPriceRule['day_type'] })}>{dayTypes.map((type) => <option key={type} value={type}>{text.dayTypes[type]}</option>)}</select></label>
+                <h4 className="full staff-setup-group-title">{text.setupSections.ruleSchedule}</h4>
+                <label className="full">{text.labels.dayType}<select value={priceForm.day_type} onChange={(event) => setPriceForm({ ...priceForm, day_type: event.target.value as StaffPriceRule['day_type'] })}>{dayTypes.map((type) => <option key={type} value={type}>{text.dayTypes[type]}</option>)}</select></label>
                 <label>{text.labels.start}<StaffPickerField ariaLabel={text.aria.priceStartTime} placeholder={text.chooseTime} type="time" value={priceForm.time_start} onChange={(value) => setPriceForm({ ...priceForm, time_start: value })} /></label>
                 <label>{text.labels.end}<StaffPickerField ariaLabel={text.aria.priceEndTime} placeholder={text.chooseTime} type="time" value={priceForm.time_end} onChange={(value) => setPriceForm({ ...priceForm, time_end: value })} /></label>
+                <h4 className="full staff-setup-group-title">{text.setupSections.priceAmounts}</h4>
                 <label>{text.labels.pricePlayer}<input inputMode="numeric" value={formatDongInput(priceForm.price_per_player)} onChange={(event) => setPriceForm({ ...priceForm, price_per_player: dongDigits(event.target.value) })} /></label>
                 <label>{text.labels.priceArenaSlot}<input inputMode="numeric" value={formatDongInput(priceForm.price_per_arena_slot)} onChange={(event) => setPriceForm({ ...priceForm, price_per_arena_slot: dongDigits(event.target.value) })} /></label>
+                <h4 className="full staff-setup-group-title">{text.setupSections.ruleDates}</h4>
                 <label>{text.labels.validFrom}<StaffPickerField ariaLabel={text.aria.priceValidFrom} placeholder={text.chooseDate} type="date" value={priceForm.valid_from} onChange={(value) => setPriceForm({ ...priceForm, valid_from: value })} /></label>
                 <label className="staff-valid-until-field">
                   <span className="staff-label-line"><span>{text.labels.validUntil}</span><small>{text.labels.validUntilHelp}</small></span>
@@ -1162,23 +1169,25 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
               <button className="primary" type="button" disabled={saving || !priceForm.rule_name.trim()} onClick={savePrice}>
                 <ButtonIconText icon={<Save aria-hidden="true" size={15} />}>{text.actions.savePrice}</ButtonIconText>
               </button>
+              <SetupFeedback status={status} text={text} />
             </fieldset>
-          </div>
-          <div className="staff-card">
-            <h3>{text.labels.priceRules}</h3>
+          </section>
+          <section className="staff-card staff-setup-library" aria-labelledby="staff-setup-library-title">
+            <h3 id="staff-setup-library-title">{text.labels.priceRules}</h3>
             {prices.map((rule) => (
-              <button className="staff-list-item" key={rule.id} type="button" onClick={() => editPrice(rule)}>
+              <button className="staff-list-item" aria-pressed={priceForm.id === rule.id} key={rule.id} type="button" onClick={() => editPrice(rule)}>
                 <strong>{rule.rule_name}</strong>
                 <span>{text.dayTypes[rule.day_type]} · {normalizeTime(rule.time_start) || text.any}-{normalizeTime(rule.time_end) || text.any} · {formatVnd(rule.price_per_player)}</span>
               </button>
             ))}
-          </div>
+          </section>
         </div>
       )}
 
       {currentTabReady && currentTab === 'discounts' && (<DiscountsSection
         canEditCommerceTab={canEditCommerceTab}
         text={text}
+        status={status}
         commerceTab={commerceTab}
         loyaltyForm={loyaltyForm}
         setLoyaltyForm={setLoyaltyForm}

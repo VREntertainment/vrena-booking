@@ -1,0 +1,210 @@
+/* Staff configuration forms and lists. Shared inputs retain their existing behavior. */
+.app .staff-tab-group[data-tab-group="setup"].active {
+  border-color: var(--vrena-selection-border);
+  background: var(--vrena-selection-bg);
+}
+.app .staff-tab-group[data-tab-group="setup"].active .staff-tab-group-label {
+  color: var(--vrena-selection-ink);
+}
+.app .staff-console .staff-setup-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.app .staff-console .staff-setup-grid > .staff-card {
+  --staff-control-height: 44px;
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  padding: 20px;
+  gap: 14px;
+  border: 1px solid var(--player-border);
+  border-radius: 14px;
+  background: var(--player-surface-raised);
+  box-shadow: var(--player-shadow-soft);
+}
+.app .staff-console .staff-setup-grid > .staff-setup-editor {
+  border-block-start: 3px solid var(--vrena-selection-indicator);
+}
+.app .staff-console .staff-setup-grid > .staff-card h3 {
+  margin: 0;
+  color: var(--player-text);
+  font-size: clamp(19px, 2vw, 24px);
+  font-weight: 760;
+  line-height: 1.2;
+  letter-spacing: -.025em;
+}
+.app .staff-console .staff-setup-editor > .muted,
+.app .staff-console .staff-setup-editor > .staff-readonly-note {
+  margin: 0;
+}
+.app .staff-console .staff-setup-editor .staff-readonly-fieldset {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.app .staff-console .staff-setup-editor .compact-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px 16px;
+}
+.app .staff-console .staff-setup-editor .compact-form-grid > .full {
+  grid-column: 1 / -1;
+}
+.app .staff-console .staff-setup-group-title {
+  margin: 4px 0 0;
+  padding-block-start: 12px;
+  border-block-start: 1px solid var(--player-border);
+  color: var(--player-text);
+  font-size: 14px;
+  font-weight: 720;
+}
+.app .staff-console .staff-setup-group-title:first-child {
+  margin-block-start: 0;
+  padding-block-start: 0;
+  border-block-start: 0;
+}
+.app .staff-console .staff-setup-editor .compact-form-grid > label,
+.app .staff-console .staff-setup-editor .staff-game-guide-fields > label {
+  min-width: 0;
+  gap: 6px;
+  color: var(--player-text);
+  font-size: 13px;
+  font-weight: 620;
+}
+.app .staff-console .staff-setup-editor :is(input:not([type="checkbox"]):not([type="file"]), select, textarea, .staff-picker-shell, .staff-time-trigger, .staff-audience-summary) {
+  min-width: 0;
+  min-height: 44px;
+  border-color: var(--player-field-border-strong);
+  background-color: var(--player-field-bg);
+  color: var(--player-field-text);
+  font-size: 16px;
+  font-weight: 450;
+}
+.app .staff-console .staff-setup-editor .staff-picker-shell {
+  overflow: visible;
+}
+.app .staff-console .staff-setup-editor .staff-time-panel {
+  max-width: min(250px, calc(100vw - 48px));
+}
+.app .staff-console .staff-setup-editor .checkbox-row {
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--player-field-border);
+  border-radius: 8px;
+}
+.app .staff-console .staff-setup-editor .staff-discount-value-control {
+  grid-template-columns: minmax(0, 1fr) minmax(66px, auto);
+}
+.app .staff-console .staff-setup-editor .staff-game-guide-editor {
+  padding: 14px;
+  background: var(--player-surface-soft);
+}
+.app .staff-console .staff-setup-editor .staff-readonly-fieldset > button.primary {
+  justify-self: start;
+  min-height: 44px;
+  padding-inline: 16px;
+}
+.app .staff-console .staff-setup-grid :is(button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--vrena-focus-halo);
+  outline-offset: 2px;
+}
+.app .staff-console .staff-setup-grid .staff-setup-editor [aria-invalid="true"] {
+  border-color: var(--vrena-status-danger-ink);
+}
+.app .staff-console .staff-setup-inline-error {
+  color: var(--vrena-status-danger-ink);
+  font-size: 12px;
+}
+.app .staff-console .staff-setup-feedback {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--vrena-status-danger-border);
+  border-radius: 8px;
+  background: var(--vrena-status-danger-bg);
+  color: var(--vrena-status-danger-ink);
+  overflow-wrap: anywhere;
+}
+.app .staff-console .staff-setup-feedback[data-tone="success"] {
+  border-color: var(--vrena-status-success-border);
+  background: var(--vrena-status-success-bg);
+  color: var(--vrena-status-success-ink);
+}
+.app .staff-console .staff-setup-feedback[data-tone="info"] {
+  border-color: var(--vrena-status-info-border);
+  background: var(--vrena-status-info-bg);
+  color: var(--vrena-status-info-ink);
+}
+.app .staff-console .staff-setup-grid > .staff-setup-library {
+  gap: 8px;
+}
+.app .staff-console .staff-setup-library > h3,
+.app .staff-console .staff-setup-library > .staff-list-head {
+  margin-block-end: 5px;
+}
+.app .staff-console .staff-setup-library .staff-list-item {
+  min-height: 48px;
+  padding: 11px 13px;
+  border: 1px solid var(--player-border);
+  border-radius: 8px;
+  background: var(--player-surface-soft);
+  color: var(--player-text);
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+.app .staff-console .staff-setup-library .staff-list-item span {
+  color: var(--player-text-muted);
+}
+.app .staff-console .staff-setup-library .staff-list-item:is(:hover, [aria-pressed="true"]) {
+  border-color: var(--vrena-selection-border);
+  background: var(--vrena-selection-bg);
+  color: var(--vrena-selection-ink);
+}
+.app .staff-console .staff-setup-library .staff-list-item[aria-pressed="true"] {
+  box-shadow: inset 3px 0 var(--vrena-selection-indicator);
+}
+.app .staff-console .staff-setup-switcher {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--player-border);
+  border-radius: 10px;
+  background: var(--player-surface-raised);
+}
+.app .staff-console .staff-setup-switcher [role="tab"] {
+  min-height: 44px;
+}
+@media (max-width: 960px) {
+  .app .staff-console .staff-setup-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .app .staff-console .staff-setup-grid {
+    gap: 10px;
+  }
+  .app .staff-console .staff-setup-grid > .staff-card {
+    padding: 13px;
+  }
+  .app .staff-console .staff-setup-editor .compact-form-grid,
+  .app .staff-console .staff-setup-editor .staff-game-media-row,
+  .app .staff-console .staff-setup-editor .staff-game-guide-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app .staff-console .staff-setup-editor .staff-readonly-fieldset > button.primary {
+    justify-self: stretch;
+  }
+  .app .staff-console .staff-setup-switcher {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+  .app .staff-console .staff-setup-switcher [role="tab"] {
+    min-width: 0;
+    padding-inline: 5px;
+    white-space: normal;
+  }
+}
