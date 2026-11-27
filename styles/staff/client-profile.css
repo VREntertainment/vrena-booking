@@ -1,0 +1,157 @@
+/* Client Profile only, including its existing profile and achievement controls. */
+.app .staff-console .staff-client-profile-page {
+  gap: 16px;
+}
+.app .staff-console .staff-client-profile-page > .staff-card {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--player-border);
+  border-block-start: 3px solid var(--vrena-selection-indicator);
+  border-radius: 14px;
+  background: var(--player-surface-raised);
+  box-shadow: var(--player-shadow-soft);
+}
+.app .staff-console .staff-client-profile-page > .staff-card h3:is(#staff-invite-title, #staff-client-workspace-title) {
+  margin: 0;
+  color: var(--player-text);
+  font-size: clamp(19px, 2vw, 24px);
+  font-weight: 760;
+  line-height: 1.2;
+  letter-spacing: -.025em;
+}
+.app .staff-console .staff-client-profile-page .staff-customer-invite-copy {
+  display: grid;
+  gap: 6px;
+}
+.app .staff-console .staff-client-profile-page .staff-customer-invite-copy p {
+  max-width: 70ch;
+  margin: 0;
+  color: var(--player-text-muted);
+}
+.app .staff-console .staff-client-profile-page .staff-customer-invite-form {
+  --staff-invite-control-height: 44px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px 16px;
+}
+.app .staff-console .staff-client-profile-page :is(.staff-customer-invite-form, .staff-client-details .compact-form-grid) > label {
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 620;
+  color: var(--player-text);
+}
+.app .staff-console .staff-client-profile-page :is(.staff-field-label, .staff-profile-combobox > label) {
+  color: var(--player-text);
+  font-size: 13px;
+  font-weight: 620;
+}
+.app .staff-console .staff-client-profile-page :is(.staff-customer-invite-form, .staff-client-details, .staff-player-stats-editor) :is(input:not([type="checkbox"]), select, textarea),
+.app .staff-console .staff-client-profile-page .staff-profile-combobox-control {
+  min-width: 0;
+  min-height: 44px;
+  border-color: var(--player-field-border-strong);
+  background-color: var(--player-field-bg);
+  color: var(--player-field-text);
+  font-size: 16px;
+  font-weight: 450;
+}
+.app .staff-console .staff-client-profile-page .staff-profile-combobox-control {
+  grid-template-columns: 20px minmax(0, 1fr) 44px;
+}
+.app .staff-console .staff-client-profile-page .staff-profile-combobox-control input {
+  min-height: 44px;
+  min-width: 0;
+  color: var(--player-field-text);
+  font-size: 16px;
+  font-weight: 450;
+}
+.app .staff-console .staff-client-profile-page .staff-profile-combobox-menu {
+  border-color: var(--player-field-border);
+  background: var(--player-field-panel);
+}
+.app .staff-console .staff-client-profile-page .staff-profile-combobox-menu button:is(.active, [aria-selected="true"]) {
+  background: var(--vrena-selection-bg);
+  color: var(--vrena-selection-ink);
+}
+.app .staff-console .staff-client-profile-page .staff-profile-combobox-control:focus-within {
+  border-color: var(--vrena-focus-halo);
+  box-shadow: 0 0 0 1px var(--vrena-focus-halo);
+}
+.app .staff-console .staff-client-profile-page :is(button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--vrena-focus-halo);
+  outline-offset: 2px;
+}
+.app .staff-console .staff-client-profile-page .staff-profile-combobox-control input:focus-visible {
+  outline: 0;
+}
+.app .staff-console .staff-client-profile-page .staff-phone-control { height: auto; }
+.app .staff-console .staff-client-profile-page :is(.staff-customer-invite-form > button.primary, .staff-achievement-save-row button, .staff-customer-temporary-access button, .staff-profile-combobox-control button, .staff-session-add-actions > button) {
+  min-height: 44px;
+}
+.app .staff-console .staff-client-profile-page .staff-customer-invite-form > button.primary {
+  justify-self: start;
+  white-space: normal;
+  height: auto;
+}
+.app .staff-console .staff-client-profile-page .staff-customer-invite-form input[aria-invalid="true"] {
+  border-color: var(--vrena-status-danger-ink);
+}
+.app .staff-console .staff-client-profile-page .staff-client-field-error {
+  color: var(--vrena-status-danger-ink);
+  font-size: 12px;
+}
+.app .staff-console .staff-client-profile-page .staff-client-feedback {
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid var(--vrena-status-danger-border);
+  border-radius: 8px;
+  background: var(--vrena-status-danger-bg);
+  color: var(--vrena-status-danger-ink);
+  overflow-wrap: anywhere;
+}
+.app .staff-console .staff-client-profile-page .staff-client-feedback[data-tone="success"] {
+  border-color: var(--vrena-status-success-border);
+  background: var(--vrena-status-success-bg);
+  color: var(--vrena-status-success-ink);
+}
+.app .staff-console .staff-client-profile-page :is(.staff-client-feedback[data-tone="info"], .staff-customer-phone-account-setup) {
+  border-color: var(--vrena-status-info-border);
+  background: var(--vrena-status-info-bg);
+  color: var(--vrena-status-info-ink);
+}
+.app .staff-console .staff-client-profile-page .staff-customer-phone-account-setup p {
+  color: inherit;
+}
+.app .staff-console .staff-client-profile-page :is(.staff-achievement-editor-toolbar, .staff-client-details, .staff-achievement-profile-empty) {
+  min-width: 0;
+  border-color: var(--player-border);
+  background: var(--player-surface-soft);
+}
+.app .staff-console .staff-client-profile-page .staff-client-details .compact-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+.app .staff-console .staff-client-profile-page .staff-client-field-group {
+  grid-column: 1 / -1;
+  margin: 3px 0 0;
+  padding-block-start: 10px;
+  border-block-start: 1px solid var(--player-border);
+  color: var(--player-text);
+  font-size: 14px;
+  font-weight: 720;
+}
+.app .staff-console .staff-client-profile-page .staff-achievement-profile-empty :is(strong, span) {
+  color: var(--player-text);
+}
+@media (max-width: 600px) {
+  .app .staff-console .staff-client-profile-page > .staff-card { padding: 13px; }
+  .app .staff-console .staff-client-profile-page :is(.staff-customer-invite-form, .staff-client-details .compact-form-grid, .staff-profile-selector-row) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app .staff-console .staff-client-profile-page .staff-customer-invite-form > button.primary {
+    justify-self: stretch;
+  }
+}

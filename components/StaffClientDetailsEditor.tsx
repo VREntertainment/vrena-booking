@@ -1,5 +1,6 @@
 'use client'
 
+import { Fragment } from 'react'
 import type { ClientDetails } from '../lib/staff/clientDetails'
 
 export default function StaffClientDetailsEditor({ value, onChange, disabled, language }: {
@@ -18,13 +19,19 @@ export default function StaffClientDetailsEditor({ value, onChange, disabled, la
   return <fieldset className="staff-card staff-client-details" disabled={disabled}>
     <legend>{vi ? 'Thông tin khách hàng' : 'Client details'}</legend>
     <div className="form-grid compact-form-grid">
-      {fields.map(([key, en, vn, type]) => <label key={key}>{vi ? vn : en}<input type={type || 'text'} value={value[key]} maxLength={key === 'avatar_url' ? 2048 : 200} onChange={(event) => onChange({ ...value, [key]: event.target.value })} /></label>)}
+      {fields.map(([key, en, vn, type]) => (
+        <Fragment key={key}>
+          {key === 'avatar_url' && <h4 className="full staff-client-field-group">{vi ? 'Ảnh đại diện và màu sắc' : 'Avatar and colors'}</h4>}
+          <label>{vi ? vn : en}<input type={type || 'text'} value={value[key]} maxLength={key === 'avatar_url' ? 2048 : 200} onChange={(event) => onChange({ ...value, [key]: event.target.value })} /></label>
+        </Fragment>
+      ))}
+      <h4 className="full staff-client-field-group">{vi ? 'Thông tin và quyền riêng tư' : 'Profile and privacy'}</h4>
       <label>{vi ? 'Giới tính' : 'Gender'}<select value={value.gender} onChange={(event) => onChange({ ...value, gender: event.target.value })}>
         <option value="">{vi ? 'Chưa cung cấp' : 'Not specified'}</option>
         <option value="female">{vi ? 'Nữ' : 'Female'}</option><option value="male">{vi ? 'Nam' : 'Male'}</option>
         <option value="non_binary">{vi ? 'Phi nhị nguyên' : 'Non-binary'}</option><option value="prefer_not_to_say">{vi ? 'Không muốn tiết lộ' : 'Prefer not to say'}</option><option value="self_describe">{vi ? 'Tự mô tả' : 'Self-described'}</option>
       </select></label>
-      <label><input type="checkbox" checked={value.anonymous_mode} onChange={(event) => onChange({ ...value, anonymous_mode: event.target.checked })} />{vi ? 'Chế độ ẩn danh' : 'Anonymous mode'}</label>
+      <label className="checkbox-row"><input type="checkbox" checked={value.anonymous_mode} onChange={(event) => onChange({ ...value, anonymous_mode: event.target.checked })} />{vi ? 'Chế độ ẩn danh' : 'Anonymous mode'}</label>
     </div>
     <p className="muted">{vi ? 'Email liên hệ không thay đổi email đăng nhập. Lưu bằng nút Lưu thay đổi phía trên.' : 'Contact email does not change the sign-in email. Use Save changes above to save this profile.'}</p>
   </fieldset>
