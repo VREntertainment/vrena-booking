@@ -8,13 +8,15 @@ import {
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-const defaultContentStudioOrigin = 'https://vre-vietnam.com'
+// The public site forwards Content Studio and QR scans to this deployment.
+const defaultContentStudioOrigin = 'https://vrena-website-10hqzls75-vrentertainment.vercel.app'
 
 function contentStudioOrigin() {
   const configuredOrigin = process.env.VRENA_CONTENT_STUDIO_ORIGIN?.trim() || defaultContentStudioOrigin
 
   try {
-    return new URL(configuredOrigin).origin
+    const url = new URL(configuredOrigin)
+    return url.protocol === 'https:' ? url.origin : defaultContentStudioOrigin
   } catch {
     return defaultContentStudioOrigin
   }
@@ -43,10 +45,17 @@ export async function GET(request: NextRequest) {
 
     const response = await fetch(upstreamUrl, {
       cache: 'no-store',
+      redirect: 'error',
       headers: { authorization: `Bearer ${sharedSecret}` },
       signal: AbortSignal.timeout(10_000),
     })
-    const payload = await response.json().catch(() => ({ error: 'Content Studio returned an invalid response.' }))
+    const payload = await response.json().catch(() => null)
+    if (!payload || (response.ok && (
+      !Number.isFinite(payload.summary?.totalScans) || !payload.comparisonSummary
+      || !Array.isArray(payload.scanSeries) || !Array.isArray(payload.deviceMix) || !Array.isArray(payload.qrCodes)
+    ))) {
+      return staffKioskJsonError('Content Studio returned an invalid response.', 502)
+    }
 
     return Response.json(payload, {
       status: response.status,

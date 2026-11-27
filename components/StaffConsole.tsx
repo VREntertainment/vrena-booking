@@ -297,8 +297,6 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
     setReportExportFeedback,
     reportSnapshot,
     setReportSnapshot,
-    playerInsightsSnapshot,
-    setPlayerInsightsSnapshot,
     qrAnalyticsSnapshot,
     setQrAnalyticsSnapshot,
     qrAnalyticsError,
@@ -860,7 +858,6 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
     setReportSnapshot,
     text,
     runStaffLoader,
-    setPlayerInsightsSnapshot,
     setQrAnalyticsError,
     setQrAnalyticsSnapshot,
     setCompareStart,
@@ -1352,7 +1349,6 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
         orderRows={orderRows}
         reportOrders={reportOrders}
         reportPaymentsByOrderId={reportPaymentsByOrderId}
-        playerInsightsSnapshot={playerInsightsSnapshot}
         loadingData={loadingData}
         qrAnalyticsSnapshot={qrAnalyticsSnapshot}
         qrAnalyticsError={qrAnalyticsError}

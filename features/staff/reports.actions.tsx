@@ -21,7 +21,6 @@ export type ReportsActionContext = {
   setReportSnapshot: React.Dispatch<React.SetStateAction<import("../../lib/staff/types").StaffReportSnapshot | null>>
   text: StaffConsoleCopy
   runStaffLoader: (key: import("../../lib/staff/types").StaffDataKey, loader: () => Promise<void>, force?: boolean) => Promise<void>
-  setPlayerInsightsSnapshot: React.Dispatch<React.SetStateAction<import("../../components/StaffPlayerInsights").StaffPlayerInsightsSnapshot | null>>
   setQrAnalyticsError: React.Dispatch<React.SetStateAction<string>>
   setQrAnalyticsSnapshot: React.Dispatch<React.SetStateAction<import("../../components/StaffQrAnalytics").StaffQrAnalyticsSnapshot | null>>
   setCompareStart: React.Dispatch<React.SetStateAction<string>>

@@ -1,7 +1,6 @@
 'use client'
 
 import type { ReportsActionContext } from './reports.actions'
-import type { StaffPlayerInsightsSnapshot } from '../../components/StaffPlayerInsights'
 import type { StaffQrAnalyticsSnapshot } from '../../components/StaffQrAnalytics'
 import { orderedRange } from '../../lib/staff/dates'
 import { rpcFunctionMissing } from '../../lib/staff/errors'
@@ -60,33 +59,9 @@ export function createStaffReportLoadActions(getContext: () => ReportsActionCont
   }
 
   async function loadReportData(force = false) {
-    const { runStaffLoader, reportStart, reportEnd, compareEnabled, compareStart, compareEnd, setPlayerInsightsSnapshot, text, setReportSnapshot } = getContext()
+    const { runStaffLoader, reportStart, reportEnd, compareEnabled, compareStart, compareEnd, text, setReportSnapshot } = getContext()
 
     await runStaffLoader('report', async () => {
-      const playerInsightsPromise = supabase.rpc('staff_player_behavior_report', {
-        p_start_date: reportStart,
-        p_end_date: reportEnd,
-        p_compare_start: compareEnabled ? compareStart : null,
-        p_compare_end: compareEnabled ? compareEnd : null,
-        p_player_limit: 16,
-      })
-      const productAnalyticsPromise = supabase.rpc('staff_product_analytics_report', {
-        p_start_date: reportStart,
-        p_end_date: reportEnd,
-        p_compare_start: compareEnabled ? compareStart : null,
-        p_compare_end: compareEnabled ? compareEnd : null,
-      })
-      const updatePlayerInsights = async () => {
-        const [playerResult, productResult] = await Promise.all([playerInsightsPromise, productAnalyticsPromise])
-        if (!playerResult.error) {
-          setPlayerInsightsSnapshot({
-            ...(playerResult.data as StaffPlayerInsightsSnapshot),
-            productAnalytics: productResult.error ? null : productResult.data,
-          } as StaffPlayerInsightsSnapshot)
-        } else if (!rpcFunctionMissing(playerResult.error)) {
-          setPlayerInsightsSnapshot(null)
-        }
-      }
       const withComparisonOrders = async (snapshot: StaffReportSnapshot) => {
         if (!compareEnabled || snapshot.comparisonOrders.length > 0) return snapshot
 
@@ -115,23 +90,21 @@ export function createStaffReportLoadActions(getContext: () => ReportsActionCont
       if (!error) {
         const snapshot = await withComparisonOrders(staffReportSnapshotFromRpc(data, text))
         setReportSnapshot(snapshot)
-        await updatePlayerInsights()
         return
       }
 
       if (!rpcFunctionMissing(error)) {
-        await Promise.all([loadReportFallback(), updatePlayerInsights()])
+        await loadReportFallback()
         return
       }
 
       const legacyResult = await supabase.rpc('get_staff_daily_report', reportArgs)
       if (legacyResult.error) {
-        await Promise.all([loadReportFallback(), updatePlayerInsights()])
+        await loadReportFallback()
         return
       }
       const snapshot = await withComparisonOrders(staffReportSnapshotFromRpc(legacyResult.data, text))
       setReportSnapshot(snapshot)
-      await updatePlayerInsights()
     }, force)
   }
 

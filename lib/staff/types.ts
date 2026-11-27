@@ -23,7 +23,7 @@ export type StaffRoleSort = 'name_asc' | 'name_desc' | 'created_desc' | 'role_de
 
 export type StaffReportChartMode = 'columns' | 'curves' | 'cheese'
 
-export type StaffReportView = 'business' | 'players' | 'qr'
+export type StaffReportView = 'business' | 'qr'
 
 export type StaffReportRangePreset = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'last_30' | 'last_60' | 'last_90'
 

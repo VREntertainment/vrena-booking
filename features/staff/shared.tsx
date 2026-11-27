@@ -7,10 +7,6 @@ export const StaffReportDateRangeModal = dynamic(() => import('../../components/
   ssr: false,
 })
 
-export const StaffPlayerInsights = dynamic(() => import('../../components/StaffPlayerInsights'), {
-  ssr: false,
-})
-
 export const StaffQrAnalytics = dynamic(() => import('../../components/StaffQrAnalytics'), {
   ssr: false,
 })

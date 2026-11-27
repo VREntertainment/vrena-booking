@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import type { StaffPlayerInsightsSnapshot } from '../../components/StaffPlayerInsights'
 import type { StaffQrAnalyticsSnapshot } from '../../components/StaffQrAnalytics'
 import {
   addDays,
@@ -41,7 +40,6 @@ export function useStaffReportsState({ language }: { language: string | undefine
   const [reportExporting, setReportExporting] = useState<'excel' | 'pdf' | 'accountant' | null>(null)
   const [reportExportFeedback, setReportExportFeedback] = useState<{ message: string; tone: 'success' | 'error' } | null>(null)
   const [reportSnapshot, setReportSnapshot] = useState<StaffReportSnapshot | null>(null)
-  const [playerInsightsSnapshot, setPlayerInsightsSnapshot] = useState<StaffPlayerInsightsSnapshot | null>(null)
   const [qrAnalyticsSnapshot, setQrAnalyticsSnapshot] = useState<StaffQrAnalyticsSnapshot | null>(null)
   const [qrAnalyticsError, setQrAnalyticsError] = useState('')
   return {
@@ -79,8 +77,6 @@ export function useStaffReportsState({ language }: { language: string | undefine
     setReportExportFeedback,
     reportSnapshot,
     setReportSnapshot,
-    playerInsightsSnapshot,
-    setPlayerInsightsSnapshot,
     qrAnalyticsSnapshot,
     setQrAnalyticsSnapshot,
     qrAnalyticsError,

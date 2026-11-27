@@ -89,6 +89,7 @@ test.describe('admin flows', () => {
     const report = page.locator('.staff-report-workspace')
     await expect(report.getByRole('tab', { name: 'Business performance' })).toHaveAttribute('aria-selected', 'true')
     await expect(report.getByRole('heading', { name: 'Business performance' })).toHaveCount(0)
+    await expect(report.getByRole('tab', { name: 'Player behavior', exact: true })).toHaveCount(0)
     const dateMenu = report.getByLabel(/^Date range ·/)
     await dateMenu.click()
     for (const name of ['Today', 'This week', 'Last week', 'This month', 'Last 30 days', 'Custom range']) {
@@ -116,6 +117,13 @@ test.describe('admin flows', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
     if (desktop) await page.setViewportSize(desktop)
     await page.emulateMedia({ colorScheme: null })
+    const summary = { activeCodes: 0, latestScanAt: null, topQrCode: null, trackedCodes: 0, totalCodes: 0, totalScans: 0 }
+    await page.route('**/api/staff/reports/qr-analytics?*', route => route.fulfill({ json: {
+      summary, comparisonSummary: summary, qrCodes: [], scanSeries: [], deviceMix: [], timezone: 'Asia/Ho_Chi_Minh',
+    } }))
+    await report.getByRole('tab', { name: 'QR analytics', exact: true }).click()
+    await expect(report.getByRole('heading', { name: 'Scan trend', exact: true })).toBeVisible()
+    await expect(report.locator('.staff-qr-analytics:not(.loading)')).toBeVisible()
     await page.goto('/hr')
     await expect(page.getByTestId('staff-console')).toBeVisible()
     await expect(page.getByRole('heading', { name: 'Employee Access', exact: true })).toBeVisible()

@@ -26,7 +26,7 @@ import type {
 import BusinessReport from './BusinessReport'
 import { ReportToolbarMenu } from './ReportToolbarMenu'
 import styles from './ReportCharts.module.css'
-import { ButtonIconText, StaffPlayerInsights, StaffQrAnalytics } from './shared'
+import { ButtonIconText, StaffQrAnalytics } from './shared'
 
 export type ReportSectionProps = {
   resolvedLanguage: import("../../lib/staff/types").StaffConsoleLanguage
@@ -66,7 +66,6 @@ export type ReportSectionProps = {
   orderRows: (rows: import("../../lib/staff/types").StaffOrder[], paymentsByOrderId?: Map<string, import("../../lib/staff/types").StaffOrderPayment[]>) => React.JSX.Element
   reportOrders: import("../../lib/staff/types").StaffOrder[]
   reportPaymentsByOrderId: Map<string, import("../../lib/staff/types").StaffOrderPayment[]>
-  playerInsightsSnapshot: import("../../components/StaffPlayerInsights").StaffPlayerInsightsSnapshot | null
   loadingData: Partial<Record<import("../../lib/staff/types").StaffDataKey, boolean>>
   qrAnalyticsSnapshot: import("../../components/StaffQrAnalytics").StaffQrAnalyticsSnapshot | null
   qrAnalyticsError: string
@@ -110,7 +109,6 @@ export default function ReportSection({
   orderRows,
   reportOrders,
   reportPaymentsByOrderId,
-  playerInsightsSnapshot,
   loadingData,
   qrAnalyticsSnapshot,
   qrAnalyticsError,
@@ -264,7 +262,6 @@ export default function ReportSection({
   )
   const tabs = [
     ['business', vi ? 'Kinh doanh' : 'Business performance'],
-    ['players', vi ? 'Hành vi người chơi' : 'Player behavior'],
     ['qr', vi ? 'Phân tích QR' : 'QR analytics'],
   ] as const
   return (
@@ -292,15 +289,6 @@ export default function ReportSection({
             compare={compareEnabled} language={resolvedLanguage} text={text} financial={reportReady ? report : null} toolbar={toolbar} />
           {reportReady && orderRows(reportOrders, reportPaymentsByOrderId)}
         </>
-      ) : reportView === 'players' ? (
-        <StaffPlayerInsights
-          compareEnabled={compareEnabled}
-          compareLabel={rangeLabel(compareStart, compareEnd)}
-          data={reportReady ? playerInsightsSnapshot : null}
-          language={resolvedLanguage}
-          loading={Boolean(loadingData.report)}
-          rangeLabel={rangeLabel(reportStart, reportEnd)}
-        />
       ) : (
         <StaffQrAnalytics
           compareEnabled={compareEnabled}
