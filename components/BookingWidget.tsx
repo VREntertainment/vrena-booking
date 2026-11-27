@@ -5515,7 +5515,7 @@ function BookingWorkspace({
 
       {activeView === 'hr' && (
         isProfileAuthLoading ? <AppLoadingState label={language === 'vi' ? 'Đang kiểm tra đăng nhập…' : 'Checking sign-in…'} /> : canAccessHrConsole ? (
-          <StaffEmployeeAccess language={language === 'vi' ? 'vi' : 'en'} showZalo={staffAccessRank >= 100} />
+          <StaffEmployeeAccess language={language === 'vi' ? 'vi' : 'en'} />
         ) : (
           <section className="section staff-console">
             <h2>{language === 'vi' ? 'Quyền truy cập của nhân viên' : 'Employee Access'}</h2>
