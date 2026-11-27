@@ -1,3 +1,11 @@
+import type { CalendarNavigation } from './bookingCalendar'
+
+const staffCalendarDate = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' })
+
+export function staffKioskCalendarLanding(venue: CalendarNavigation['venue'], now = new Date()): CalendarNavigation {
+  return { mode: 'calendar', date: staffCalendarDate.format(now), time: '', venue }
+}
+
 export const STAFF_KIOSK_EMAIL = 'contact@vre-vietnam.com'
 
 export function normalizedStaffKioskEmail(email?: string | null) {
