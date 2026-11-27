@@ -41,6 +41,7 @@
 .badge { --badge: var(--orders-muted); display: inline-block; color: var(--badge); background: color-mix(in srgb, var(--badge) 10%, var(--orders-surface)); padding: 3px 6px; border-radius: 4px; font-size: .69rem; font-weight: 650; white-space: nowrap; }
 .badge[data-state='paid'], .badge[data-state='completed'] { --badge: var(--orders-positive); }
 .badge[data-state='unpaid'], .badge[data-state='partially_paid'] { --badge: var(--orders-due); }
+.frame [data-operation-session] .badge { white-space: normal; }
 .badge[data-state='confirmed'] { --badge: var(--vrena-status-info-ink); }
 .badge[data-state='no_show'], .badge[data-state='cancelled'] { --badge: var(--orders-negative); }
 .actionBar { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 3px; }

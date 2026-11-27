@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from 're
 import { ChevronDown, Ellipsis, Wallet } from 'lucide-react'
 import { staffDateLabel, normalizeTime } from '../../lib/staff/dates'
 import { formatVnd } from '../../lib/staff/formatting'
-import { reportVenue } from '../../lib/staff/decisionReport'
+import { reportVenue, type ReportVenue } from '../../lib/staff/decisionReport'
 import { paymentMethodLabel, paymentStatusLabel } from '../../lib/staff/payments'
 import { staffConsoleText } from '../../lib/staff/copy'
 import type { StaffOrder, StaffOrderPayment } from '../../lib/staff/types'
@@ -30,17 +30,26 @@ const copy = {
 
 export const compactOrderColumnCount = 9
 
-export function StaffOrderList({ language, children, empty }: { language: Language; children: ReactNode; empty: boolean }) {
+export function StaffOrderList({ language, children, empty, label, emptyMessage, grouped }: {
+  language: Language
+  children: ReactNode
+  empty: boolean
+  label?: string
+  emptyMessage?: string
+  grouped?: boolean
+}) {
   const labels = copy[language]
   const text = staffConsoleText[language]
   return <div className={styles.frame}>
-    <table className={styles.table} role="table" aria-label={text.tabs.orders}>
+    <table className={styles.table} role="table" aria-label={label || text.tabs.orders}>
       <thead role="rowgroup"><tr role="row">
         {[labels.order, labels.venue, labels.when, text.labels.players, labels.total, labels.balance, labels.payment, labels.booking, labels.actions].map((label, index) =>
           <th key={label} scope="col" className={index >= 3 && index <= 5 ? styles.number : undefined}>{label}</th>
         )}
       </tr></thead>
-      <tbody role="rowgroup">{empty ? <tr><td className={styles.empty} colSpan={compactOrderColumnCount}>{text.messages.noOrders}</td></tr> : children}</tbody>
+      {grouped && !empty ? children : <tbody role="rowgroup">
+        {empty ? <tr><td className={styles.empty} colSpan={compactOrderColumnCount}>{emptyMessage || text.messages.noOrders}</td></tr> : children}
+      </tbody>}
     </table>
   </div>
 }
@@ -56,62 +65,106 @@ export function StaffOrderListEntry({ order, language, payments, paid, balance, 
   const labels = copy[language]
   const [details, setDetails] = useState(false)
   const detailsId = useId()
-  const venue = reportVenue(null, order.arena_id)
-  const venueName = venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue === 'ha-do-centrosa' ? 'Hà Đô Centrosa' : labels.unspecified
-  const name = order.customer_name || order.customer_phone || order.customer_email || text.walkIn
-  const paymentLabel = paymentStatusLabel(order.payment_status, text)
-  const statusLabel = text.orderStatuses[order.order_status]
-  const hasBalance = balance !== null && balance > 0
   return <>
+    <StaffOrderTableRow language={language}
+      name={order.customer_name || order.customer_phone || order.customer_email || text.walkIn}
+      reference={order.order_number} venue={reportVenue(null, order.arena_id)}
+      date={order.booking_date} time={order.booking_time} players={order.players_count}
+      total={order.total} balance={balance}
+      payment={{ state: order.payment_status, label: paymentStatusLabel(order.payment_status, text) }}
+      status={{ state: order.order_status, label: text.orderStatuses[order.order_status] }}
+      recordPayment={recordPayment} actions={actions} disabled={disabled} highlighted={highlighted} rowRef={rowRef}
+      disclosure={{ label: labels.details, expanded: details, id: detailsId, toggle: () => setDetails((value) => !value) }}
+    />
+    <StaffOrderDetailRow hidden={!details} id={detailsId}>
+      <StaffOrderPaymentDetails order={order} language={language} payments={payments} paid={paid} balance={balance} gameName={gameName} />
+    </StaffOrderDetailRow>
+  </>
+}
+
+type TableRowProps = {
+  language: Language
+  name: string
+  reference?: string
+  venue: ReportVenue
+  date: string
+  time: string
+  endTime?: string
+  players: number
+  total: number | null
+  balance: number | null
+  payment: { state?: string; label: string }
+  status: { state: string; label: string }
+  disclosure?: { label: string; expanded: boolean; id: string; toggle: () => void }
+} & Pick<RowProps, 'recordPayment' | 'actions' | 'disabled' | 'highlighted' | 'rowRef'>
+
+export function StaffOrderTableRow({
+  language, name, reference, venue, date, time, endTime, players, total, balance, payment, status,
+  disclosure, recordPayment, actions, disabled, highlighted, rowRef,
+}: TableRowProps) {
+  const labels = copy[language]
+  const text = staffConsoleText[language]
+  const venueName = venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue === 'ha-do-centrosa' ? 'Hà Đô Centrosa' : labels.unspecified
+  const hasBalance = balance !== null && balance > 0
+  return (
     <tr role="row" className={`${styles.row}${highlighted ? ' staff-order-just-created' : ''}`}
-      data-order-status={order.order_status} tabIndex={highlighted ? -1 : undefined} ref={rowRef}>
-      <td role="cell" className={styles.identity}><strong>{name}</strong><small data-order-number>{order.order_number}</small></td>
+      data-order-status={status.state} tabIndex={highlighted ? -1 : undefined} ref={rowRef}>
+      <td role="cell" className={styles.identity}><strong>{name}</strong>{reference && <small data-order-number>{reference}</small>}</td>
       <td role="cell" className={styles.venue}><span className="venue-indicator" data-venue={venue}>{venueName}</span></td>
       <td role="cell" className={styles.when}>
         <span className={styles.mobileLabel} aria-hidden="true">{labels.when}</span>
-        <time dateTime={`${order.booking_date}T${normalizeTime(order.booking_time)}`}><strong>{normalizeTime(order.booking_time)}</strong><small>{staffDateLabel(order.booking_date)}</small></time>
+        <time dateTime={`${date}T${normalizeTime(time)}`}><strong>{normalizeTime(time)}</strong><small>{staffDateLabel(date)}{endTime && ` · ${endTime}`}</small></time>
       </td>
       <td role="cell" className={`${styles.players} ${styles.number}`}>
-        <span className={styles.mobileLabel} aria-hidden="true">{text.labels.players} </span>{order.players_count}
+        <span className={styles.mobileLabel} aria-hidden="true">{text.labels.players} </span>{players}
       </td>
       <td role="cell" className={`${styles.total} ${styles.number}`}>
-        <span className={styles.mobileLabel} aria-hidden="true">{labels.total} </span>{formatVnd(order.total)}
+        <span className={styles.mobileLabel} aria-hidden="true">{labels.total} </span>{total === null ? '—' : formatVnd(total)}
       </td>
       <td role="cell" className={`${styles.balance} ${styles.number}`} data-due={hasBalance || undefined}>
         <span className={styles.mobileLabel} aria-hidden="true">{labels.balance}</span>
         <strong>{balance === null ? '—' : formatVnd(balance)}</strong>
       </td>
-      <td role="cell" className={styles.payment}><span className={styles.badge} data-state={order.payment_status}>{paymentLabel}</span></td>
-      <td role="cell" className={styles.booking}><span className={styles.badge} data-state={order.order_status}>{statusLabel}</span></td>
+      <td role="cell" className={styles.payment}><span className={styles.badge} data-state={payment.state}>{payment.label}</span></td>
+      <td role="cell" className={styles.booking}><span className={styles.badge} data-state={status.state}>{status.label}</span></td>
       <td role="cell" className={styles.actions}>
         <div className={styles.actionBar}>
           {recordPayment && <button className={styles.record} type="button" disabled={disabled} onClick={recordPayment}>
             <Wallet size={14} aria-hidden="true" />{labels.record}
           </button>}
-          <button className={styles.disclosure} type="button" aria-label={labels.details} title={labels.details}
-            aria-expanded={details} aria-controls={detailsId} onClick={() => setDetails((value) => !value)}>
+          {disclosure && <button className={styles.disclosure} type="button" aria-label={disclosure.label} title={disclosure.label}
+            aria-expanded={disclosure.expanded} aria-controls={disclosure.id} onClick={disclosure.toggle}>
             <ChevronDown size={16} aria-hidden="true" />
-            <span className={styles.mobileOnly}>{labels.details}</span>
-          </button>
+            <span className={styles.mobileOnly}>{disclosure.label}</span>
+          </button>}
           {actions && <OrderActions label={labels.more}>{actions}</OrderActions>}
         </div>
       </td>
     </tr>
-    <tr className={styles.detailRow} hidden={!details} id={detailsId}>
-      <td colSpan={compactOrderColumnCount}>
-        <section className={styles.details} aria-label={`${labels.details} · ${order.order_number}`}>
-          <div><strong>{labels.paid}: {balance === null ? '—' : formatVnd(paid)}</strong>{gameName && <p>{text.labels.game}: {gameName}</p>}
-            {order.price_override_reason && <p>{labels.reason}: {order.price_override_reason}</p>}
-            {order.internal_note && <p>{text.labels.internalNote}: {order.internal_note}</p>}
-          </div>
-          <div><strong>{labels.history}</strong>{payments.length ? <ul>{payments.map((payment) => <li key={payment.id}>
-            <span>{paymentMethodLabel(payment.payment_method, text)} · {formatVnd(payment.amount)}</span>
-            <small>{new Date(payment.created_at).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-GB', { timeZone: 'Asia/Ho_Chi_Minh' })}</small>
-          </li>)}</ul> : <p>{order.payment_status === 'unpaid' ? labels.noReceipts : labels.missing}</p>}</div>
-        </section>
-      </td>
-    </tr>
-  </>
+  )
+}
+
+export function StaffOrderDetailRow({ children, id, hidden }: { children: ReactNode; id?: string; hidden?: boolean }) {
+  return <tr className={styles.detailRow} id={id} hidden={hidden}>
+    <td colSpan={compactOrderColumnCount}>{children}</td>
+  </tr>
+}
+
+export function StaffOrderPaymentDetails({ order, language, payments, paid, balance, gameName }: Pick<RowProps, 'order' | 'language' | 'payments' | 'paid' | 'balance' | 'gameName'>) {
+  const text = staffConsoleText[language]
+  const labels = copy[language]
+  return (
+    <section className={styles.details} aria-label={`${labels.details} · ${order.order_number}`}>
+      <div><strong>{labels.paid}: {balance === null ? '—' : formatVnd(paid)}</strong>{gameName && <p>{text.labels.game}: {gameName}</p>}
+        {order.price_override_reason && <p>{labels.reason}: {order.price_override_reason}</p>}
+        {order.internal_note && <p>{text.labels.internalNote}: {order.internal_note}</p>}
+      </div>
+      <div><strong>{labels.history}</strong>{payments.length ? <ul>{payments.map((payment) => <li key={payment.id}>
+        <span>{paymentMethodLabel(payment.payment_method, text)} · {formatVnd(payment.amount)}</span>
+        <small>{new Date(payment.created_at).toLocaleString(language === 'vi' ? 'vi-VN' : 'en-GB', { timeZone: 'Asia/Ho_Chi_Minh' })}</small>
+      </li>)}</ul> : <p>{order.payment_status === 'unpaid' ? labels.noReceipts : labels.missing}</p>}</div>
+    </section>
+  )
 }
 
 /** A disclosure keeps the existing modal launchers mounted and preserves their focus return. */

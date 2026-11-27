@@ -298,3 +298,32 @@
   .exportControl .toolbarControl { display: block; }
   .exportControl .toolbarOptions { inset-inline-start: 0; inset-inline-end: auto; }
 }
+
+.toolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-inline-start: auto;
+}
+.dashboard .toolbarActions > button {
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 1px solid var(--report-rule);
+  border-radius: 7px;
+  background: var(--report-surface);
+  color: var(--report-ink);
+  box-shadow: none;
+  font-size: .79rem;
+}
+.dashboard .toolbarControl > :global(.staff-picker-shell) {
+  min-width: 0;
+  min-height: 40px;
+  border-color: var(--report-rule);
+  border-radius: 7px;
+  background: var(--report-surface);
+  color: var(--report-ink);
+}
+@media (max-width: 650px) {
+  .toolbarActions { margin-inline-start: 0; }
+  .dashboard .toolbarActions > button, .dashboard .toolbarControl > :global(.staff-picker-shell) { min-height: 44px; }
+}

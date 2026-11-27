@@ -4,14 +4,18 @@ import { brandedGameName } from '../../lib/anvio'
 
 import StaffGamesPlayed from '../../components/staff/StaffGamesPlayed'
 
+import { StaffOrderDetailRow, StaffOrderList, StaffOrderPaymentDetails, StaffOrderTableRow } from '../../components/staff/StaffOrderList'
 import { StaffSavedBookingShare } from '../../components/staff/StaffSavedBookingShare'
 
 import { useState } from 'react'
+import { reportVenue } from '../../lib/staff/decisionReport'
+import { ReportToolbarMenu } from './ReportToolbarMenu'
+import reportStyles from './ReportCharts.module.css'
 import StaffOrderStatusConfirmation, { type OrderStatusChange } from '../../components/staff/StaffOrderStatusConfirmation'
 import {
   CalendarDays,
   Check,
-  CheckCircle2,
+  ListFilter,
   Plus,
   Trash2,
   UserX
@@ -45,13 +49,9 @@ import {
   isDemoProfile
 } from '../../lib/staff/profiles'
 import {
-  orderPaymentLabel
-} from '../../lib/staff/reportDisplay'
-import {
   orderPaidAmount
 } from '../../lib/staff/reporting'
 import type {
-  StaffOperationScope,
   StaffOperationSession
 } from '../../lib/staff/types'
 import { visitCopy, visitProgress } from '../../lib/staffVisit'
@@ -149,65 +149,33 @@ export default function TodaySection({
   orderRows,
 }: TodaySectionProps) {
   const [statusConfirmation, setStatusConfirmation] = useState<{ id: string; status: OrderStatusChange } | null>(null)
+  const vi = resolvedLanguage === 'vi'
   return (
-    <div className="staff-card staff-card-wide staff-operations-card">
-      <div className="staff-card-heading">
-        <div>
-          <h3>{text.labels.operationsCalendar}</h3>
-          <p>{text.messages.operationsIntro}</p>
+    <div className={`staff-card staff-card-wide staff-operations-card ${reportStyles.dashboard}`}>
+      <div className={reportStyles.reportToolbar} role="group" aria-label={text.labels.operationsCalendar}>
+        <label className={reportStyles.toolbarControl}>
+          <span className={reportStyles.toolbarLabel}>{text.labels.date}</span>
+          <StaffPickerField ariaLabel={text.labels.operationsDate} placeholder={text.chooseDate}
+            type="date" value={operationsDate} onChange={setOperationsDate} />
+        </label>
+        <ReportToolbarMenu label={text.labels.sessions} icon={<ListFilter aria-hidden="true" size={15} />}
+          value={operationSessionScope === 'past' ? text.actions.past : text.actions.today}>
+          <button type="button" aria-pressed={operationSessionScope === 'today'} onClick={() => {
+            setOperationsDate(todayString())
+            setOperationSessionScope('today')
+          }}>{text.actions.today}</button>
+          <button type="button" aria-pressed={operationSessionScope === 'past'} onClick={() => setOperationSessionScope('past')}>{text.actions.past}</button>
+        </ReportToolbarMenu>
+        <div className={reportStyles.toolbarActions}>
+          {onOpenSessionCalendar && <button aria-label={text.aria.openSessionCalendar} type="button"
+            onClick={() => onOpenSessionCalendar(operationsDate)}>
+            <ButtonIconText icon={<CalendarDays aria-hidden="true" size={15} />}>{text.actions.sessionCalendar}</ButtonIconText>
+          </button>}
+          {canCreateOrders && <button type="button" onClick={() => {
+            setBooking((current) => ({ ...current, date: operationsDate }))
+            setActiveTab('new')
+          }}><ButtonIconText icon={<Plus aria-hidden="true" size={15} />}>{text.tabs.new}</ButtonIconText></button>}
         </div>
-        <div className="staff-operations-actions">
-          <label>
-            <span className="staff-field-label">{text.labels.operationsDate}</span>
-            <StaffPickerField
-              ariaLabel={text.labels.operationsDate}
-              placeholder={text.chooseDate}
-              type="date"
-              value={operationsDate}
-              onChange={setOperationsDate}
-            />
-          </label>
-          {onOpenSessionCalendar && (
-            <button
-              aria-label={text.aria.openSessionCalendar}
-              className="staff-calendar-shortcut"
-              type="button"
-              onClick={() => onOpenSessionCalendar(operationsDate)}
-            >
-              <ButtonIconText icon={<CalendarDays aria-hidden="true" size={15} />}>{text.actions.sessionCalendar}</ButtonIconText>
-            </button>
-          )}
-          <button type="button" onClick={() => setOperationsDate(todayString())}>
-            <ButtonIconText icon={<CalendarDays aria-hidden="true" size={14} />}>{text.actions.today}</ButtonIconText>
-          </button>
-          {canCreateOrders && (
-            <button
-              className="staff-calendar-shortcut"
-              type="button"
-              onClick={() => {
-                setBooking((current) => ({ ...current, date: operationsDate }))
-                setActiveTab('new')
-              }}
-            >
-              <ButtonIconText icon={<Plus aria-hidden="true" size={15} />}>{text.tabs.new}</ButtonIconText>
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="staff-commerce-switcher staff-operation-scope-tabs" role="tablist" aria-label={text.labels.sessions}>
-        {(['today', 'past'] as StaffOperationScope[]).map((scope) => (
-          <button
-            aria-selected={operationSessionScope === scope}
-            className={operationSessionScope === scope ? 'active' : ''}
-            key={scope}
-            role="tab"
-            type="button"
-            onClick={() => setOperationSessionScope(scope)}
-          >
-            {scope === 'today' ? text.actions.today : text.actions.past}
-          </button>
-        ))}
       </div>
 
       <div className="staff-summary-grid staff-operations-summary">
@@ -234,7 +202,8 @@ export default function TodaySection({
         {operationSessionScope === 'past' && <p>{text.operationsMoney.past}</p>}
       </details>
 
-      <div className="staff-operations-list">
+      <StaffOrderList language={resolvedLanguage} grouped label={text.labels.sessions}
+        empty={operationSessions.length === 0} emptyMessage={text.messages.noOperationSessions}>
         {operationSessions.map((session) => {
           const order = operationOrderBySessionId.get(session.id)
           const progress = visitProgress(session, order)
@@ -244,92 +213,84 @@ export default function TodaySection({
           const isEscapeGame = staffGame?.game_type === 'escape'
           const chapterCount = Math.max(1, Math.min(50, Number(staffGame?.escape_chapter_count ?? 1) || 1))
           const addableProfiles = profiles.filter((item) => !isDemoProfile(item) && !participants.some((participant) => participant.profile_id === item.id))
+          const payments = order ? orderPaymentsByOrderId.get(order.id) || [] : []
           const paidAmount = order ? orderPaidAmount(order, orderPaymentsByOrderId) : 0
-          const totalAmount = order?.total ?? Number(session.ticket_total_price || 0)
-          const paymentLabel = order
-            ? `${paymentStatusLabel(order.payment_status, text)} · ${formatVnd(paidAmount)}/${formatVnd(order.total)}`
-            : totalAmount > 0
-              ? `${session.ticket_status || text.labels.noLinkedOrder} · ${formatVnd(totalAmount)}`
-              : text.labels.noLinkedOrder
+          const totalAmount = order?.total ?? session.ticket_total_price ?? null
+          const balance = order && !(order.payment_status === 'partially_paid' && payments.length === 0)
+            ? Math.max(0, order.total - paidAmount) : null
+          const canCollect = canCreateOrders && order && balance !== null && balance > 0
+            && order.payment_status !== 'refunded' && !['cancelled', 'refunded', 'no_show'].includes(order.order_status)
+          const terminal = order && ['cancelled', 'refunded', 'no_show', 'completed'].includes(order.order_status)
+          const detailsId = `visit-details-${session.id}`
+          const detailLabel = vi ? 'Chi tiết lượt chơi' : 'Visit details'
+          const gameName = sessionGameName(session, games, text)
+          const setExpanded = (expanded: boolean) => setExpandedOperationSessions((current) => ({ ...current, [session.id]: expanded }))
+          const showStatusConfirmation = order && statusConfirmation?.id === session.id
+          const showPayment = order && paymentOrderId === order.id
           return (
-            <article className="staff-operation-session" key={session.id}>
-              <div className="staff-operation-time">
-                <strong>{normalizeTime(session.start_time)}</strong>
-                <span>{addMinutesToTime(session.start_time, session.duration_minutes)}</span>
-              </div>
-              <div className="staff-operation-main">
-                <div className="staff-operation-title-row">
-                  <strong>{session.name}</strong>
-                  <span>{sessionKindLabel(session, text)}</span>
-                  {session.venue_key === 'ha-do-centrosa' && <span className="venue-indicator" data-venue={session.venue_key}>Hà Đô Centrosa</span>}
-                  {session.venue_key === 'cafe-des-stagiaires' && <span className="venue-indicator" data-venue={session.venue_key}>Vrena Thao Dien</span>}
-                </div>
-                <div className="staff-operation-meta">
-                  <span>{sessionGameName(session, games, text)}</span>
-                  <span>{session.duration_minutes} min</span>
-                  <span>{text.labels.capacity}: {sessionBookedPlayers(session, order)}/{sessionCapacity(session, order)}</span>
-                  <span>{text.labels.checkIns}: {sessionCheckedInCount(session)}/{Math.max(participants.length, sessionCheckedInCount(session))}</span>
-                  <span>{text.labels.payment}: {paymentLabel}</span>
-                  {!order && operationSummary.money.unlinkedSessionIds.includes(session.id) && (
-                    <strong className="staff-operation-reconcile">{text.operationsMoney.needsOrder}</strong>
-                  )}
-                  {!order && session.ticket_status === 'pending' && (
-                    <strong>{text.operationsMoney.pending}</strong>
-                  )}
-                </div>
-                <div className="staff-visit-checklist" aria-label={visitText.title}>
-                  <strong>{visitText.title}</strong>
-                  <span>{visitText.arrived}: {progress.arrived} / {progress.expected}</span>
-                  <span>{visitText.results}: {progress.withResults} / {progress.arrived}</span>
-                  <span>{visitText.payment}: {order ? paymentStatusLabel(order.payment_status, text) : text.labels.noLinkedOrder}</span>
-                  {progress.missingPlayers > 0 && <span>{visitText.missing}: {progress.missingPlayers}</span>}
-                </div>
-                {visitFeedback[session.id] && <p role="status">{visitFeedback[session.id]}</p>}
-                {order && (
-                  <div className="staff-operation-order">
-                    <span>{order.order_number}</span>
-                    <span>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</span>
-                    <span>{orderPaymentLabel(order, orderPaymentsByOrderId, text)}</span>
-                  </div>
-                )}
-              </div>
-              <div className="staff-row-actions staff-operation-actions">
-                {canCreateOrders && <button className="primary" type="button" onClick={() => setExpandedOperationSessions((current) => ({ ...current, [session.id]: true }))}>{visitText.record}</button>}
-                <button className="secondary" type="button" onClick={() => setExpandedOperationSessions((current) => ({ ...current, [session.id]: !current[session.id] }))}>
-                  {isExpanded ? text.actions.cancel : (resolvedLanguage === 'vi' ? 'Chi tiết lượt chơi' : 'Visit details')}
-                </button>
-                <StaffSavedBookingShare sessionId={session.id} language={resolvedLanguage} disabled={saving || session.status === 'cancelled'} />
-                {canCreateOrders && <button className="secondary" type="button" disabled={saving} onClick={() => onEditBooking(session.id)}>{resolvedLanguage === 'vi' ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button>}
-                {order && canCreateOrders && (
-                  <>
-                    <button className="secondary" type="button" disabled={saving || orderPaidAmount(order, orderPaymentsByOrderId) >= order.total || ['cancelled', 'refunded', 'no_show'].includes(order.order_status)} onClick={() => setPaymentOrderId(order.id)}>
-                      <ButtonIconText icon={<CheckCircle2 aria-hidden="true" size={14} />}>{text.labels.payment}</ButtonIconText>
-                    </button>
-                    <button className="staff-order-tertiary" disabled={saving || ['cancelled', 'refunded', 'no_show', 'completed'].includes(order.order_status)} type="button" onClick={() => {
+            <tbody key={session.id} role="rowgroup" data-operation-session>
+              <StaffOrderTableRow language={resolvedLanguage} name={session.name} reference={order?.order_number || session.ticket_reference || undefined}
+                venue={reportVenue(session.venue_key, order?.arena_id)} date={session.date} time={session.start_time}
+                endTime={addMinutesToTime(session.start_time, session.duration_minutes)}
+                players={sessionBookedPlayers(session, order)} total={totalAmount} balance={balance}
+                payment={{ state: order?.payment_status, label: order ? paymentStatusLabel(order.payment_status, text)
+                  : session.ticket_status === 'pending' ? text.operationsMoney.pending
+                    : operationSummary.money.unlinkedSessionIds.includes(session.id) ? text.operationsMoney.needsOrder : text.labels.noLinkedOrder }}
+                status={{ state: order?.order_status || session.status, label: order ? text.orderStatuses[order.order_status]
+                  : session.status === 'open' ? (vi ? 'Đang mở' : 'Open') : text.orderStatuses[session.status] }}
+                disclosure={{ label: detailLabel, expanded: isExpanded, id: detailsId, toggle: () => setExpanded(!isExpanded) }}
+                recordPayment={canCollect ? () => setPaymentOrderId(order.id) : undefined} disabled={saving}
+                actions={<>
+                  {canCreateOrders && <button type="button" data-close-order-menu onClick={() => setExpanded(true)}>{visitText.record}</button>}
+                  <StaffSavedBookingShare sessionId={session.id} language={resolvedLanguage} disabled={saving || session.status === 'cancelled'} />
+                  {canCreateOrders && <button type="button" data-close-order-menu disabled={saving} onClick={() => onEditBooking(session.id)}>{vi ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button>}
+                  {order && canCreateOrders && !terminal && <>
+                    <button type="button" data-close-order-menu disabled={saving} onClick={() => {
                       if (!progress.recorded) {
-                        setExpandedOperationSessions((current) => ({ ...current, [session.id]: true }))
+                        setExpanded(true)
                         setVisitFeedback((current) => ({ ...current, [session.id]: visitText.hint }))
                         return
                       }
                       setStatusConfirmation({ id: session.id, status: 'completed' })
-                    }}>
-                      <ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText>
-                    </button>
-                    <button className="staff-order-tertiary" disabled={saving || ['cancelled', 'refunded', 'no_show', 'completed'].includes(order.order_status)} type="button" onClick={() => setStatusConfirmation({ id: session.id, status: 'no_show' })}>
+                    }}><ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText></button>
+                    <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => setStatusConfirmation({ id: session.id, status: 'no_show' })}>
                       <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.noShow}</ButtonIconText>
                     </button>
-                  </>
-                )}
-                {canCreateOrders && (
-                  <button className="staff-order-tertiary danger" disabled={saving} type="button" onClick={() => openOperationDeleteDraft(session, order || null)}>
+                  </>}
+                  {canCreateOrders && <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => openOperationDeleteDraft(session, order || null)}>
                     <ButtonIconText icon={<Trash2 aria-hidden="true" size={14} />}>{text.actions.deleteSession}</ButtonIconText>
-                  </button>
-                )}
-              </div>
-              {order && statusConfirmation?.id === session.id && <StaffOrderStatusConfirmation order={order} status={statusConfirmation.status} balance={order.payment_status === 'partially_paid' && !orderPaymentsByOrderId.get(order.id)?.length ? null : Math.max(0, order.total - orderPaidAmount(order, orderPaymentsByOrderId))} language={resolvedLanguage} disabled={saving} onConfirm={async () => { await updateOrder(order, { order_status: statusConfirmation.status }); setStatusConfirmation(null) }} onCancel={() => setStatusConfirmation(null)} />}
-              {order && paymentOrderId === order.id && <div className="staff-operation-edit-panel">{orderPaymentForm(order)}</div>}
+                  </button>}
+                </>}
+              />
+              {showStatusConfirmation && <StaffOrderDetailRow>
+                <StaffOrderStatusConfirmation order={order} status={statusConfirmation.status} balance={balance} language={resolvedLanguage} disabled={saving}
+                  onConfirm={async () => { await updateOrder(order, { order_status: statusConfirmation.status }); setStatusConfirmation(null) }}
+                  onCancel={() => setStatusConfirmation(null)} />
+              </StaffOrderDetailRow>}
+              {showPayment && <StaffOrderDetailRow><div className="staff-operation-edit-panel">{orderPaymentForm(order)}</div></StaffOrderDetailRow>}
+              {visitFeedback[session.id] && !isExpanded && <StaffOrderDetailRow><p role="status">{visitFeedback[session.id]}</p></StaffOrderDetailRow>}
+              <StaffOrderDetailRow id={detailsId} hidden={!isExpanded}>
               {isExpanded && (
                 <div className="staff-operation-edit-panel">
+                  <div className="staff-operation-main">
+                    <strong>{gameName}</strong>
+                    <div className="staff-operation-meta">
+                      <span>{sessionKindLabel(session, text)}</span>
+                      <span>{session.duration_minutes} min</span>
+                      <span>{text.labels.capacity}: {sessionBookedPlayers(session, order)}/{sessionCapacity(session, order)}</span>
+                      <span>{text.labels.checkIns}: {sessionCheckedInCount(session)}/{Math.max(participants.length, sessionCheckedInCount(session))}</span>
+                    </div>
+                    <div className="staff-visit-checklist" aria-label={visitText.title}>
+                      <strong>{visitText.title}</strong>
+                      <span>{visitText.arrived}: {progress.arrived} / {progress.expected}</span>
+                      <span>{visitText.results}: {progress.withResults} / {progress.arrived}</span>
+                      <span>{visitText.payment}: {order ? paymentStatusLabel(order.payment_status, text) : text.labels.noLinkedOrder}</span>
+                      {progress.missingPlayers > 0 && <span>{visitText.missing}: {progress.missingPlayers}</span>}
+                    </div>
+                    {order && <p>{order.customer_name || order.customer_phone || order.customer_email || text.walkIn}</p>}
+                    {visitFeedback[session.id] && <p role="status">{visitFeedback[session.id]}</p>}
+                  </div>
+                  {order && <StaffOrderPaymentDetails order={order} language={resolvedLanguage} payments={payments} paid={paidAmount} balance={balance} />}
                   <p>{visitText.hint}</p>
                   {!order && <div className="staff-operation-edit-section">
                     <p>{visitText.noOrder}</p>
@@ -418,13 +379,11 @@ export default function TodaySection({
                   </div>
                 </div>
               )}
-            </article>
+              </StaffOrderDetailRow>
+            </tbody>
           )
         })}
-        {operationSessions.length === 0 && (
-          <p className="notice">{text.messages.noOperationSessions}</p>
-        )}
-      </div>
+      </StaffOrderList>
 
       {unlinkedOperationOrders.length > 0 && (
         <details className="staff-operations-orders">
