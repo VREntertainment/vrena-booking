@@ -3,7 +3,7 @@
 import type { StaffReportView } from '../../lib/staff/types'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import {
-  addDays,
+  reportPresetRange,
   orderedRange,
   previousPeriodRange,
   todayString
@@ -81,8 +81,9 @@ export function createStaffReportsActions(getContext: () => ReportsActionContext
 
     setReportView(nextView)
     if (nextView !== 'business' && reportStart === todayString() && reportEnd === todayString()) {
-      setReportStart(addDays(todayString(), -29))
-      setReportEnd(todayString())
+      const [start, end] = reportPresetRange('last_30')
+      setReportStart(start)
+      setReportEnd(end)
     }
   }
 

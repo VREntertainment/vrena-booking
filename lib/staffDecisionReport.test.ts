@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { reportPresetRange } from './staff/dates.ts'
 import { decisionPeriod, type ReportOrderFact } from './staff/decisionReport.ts'
 
 function order(id: string, overrides: Partial<ReportOrderFact> = {}): ReportOrderFact {
@@ -77,4 +78,8 @@ test('net sales follow receipt dates and the venue filter independently of booke
   assert.equal(result.netSales, 275_500)
   assert.deepEqual(result.buckets.map((bin) => bin.netSales), [0, 275_500])
   assert.equal(result.byVenue['ha-do-centrosa'].netSales, 240_000)
+})
+
+test('the default reporting window uses the last 30 completed days', () => {
+  assert.deepEqual(reportPresetRange('last_30', '2026-11-27'), ['2026-10-28', '2026-11-26'])
 })

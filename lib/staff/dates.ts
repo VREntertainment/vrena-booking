@@ -84,7 +84,7 @@ export function reportPresetRange(preset: StaffReportRangePreset, anchor = today
   }
   if (preset === 'last_60') return [addDays(anchor, -59), anchor] as const
   if (preset === 'last_90') return [addDays(anchor, -89), anchor] as const
-  return [addDays(anchor, -29), anchor] as const
+  return [addDays(anchor, -30), addDays(anchor, -1)] as const
 }
 
 export function shortDateLabel(value: string) {
