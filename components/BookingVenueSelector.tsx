@@ -82,7 +82,7 @@ export default function BookingVenueSelector({ allowedVenueKeys, gameGuideTrigge
             >
               <span className="booking-venue-map-placeholder" aria-hidden="true" />
               <span className="booking-venue-copy">
-                <strong className="venue-indicator" data-venue="ha-do-centrosa">{text.bookingVenueHaDoName}</strong>
+                <strong>{text.bookingVenueHaDoName}</strong>
                 <VenueHoursPill label={text.bookingVenueHaDoHours} />
                 <small>{text.bookingVenueHaDoAddress}</small>
               </span>
@@ -104,7 +104,7 @@ export default function BookingVenueSelector({ allowedVenueKeys, gameGuideTrigge
             >
               <span className="booking-venue-map-placeholder" aria-hidden="true" />
               <span className="booking-venue-copy">
-                <strong className="venue-indicator" data-venue="cafe-des-stagiaires">{text.bookingVenueCafeName}</strong>
+                <strong>{text.bookingVenueCafeName}</strong>
                 <VenueHoursPill label={text.bookingVenueCafeHours} />
                 <small>{text.bookingVenueCafeAddress}</small>
               </span>

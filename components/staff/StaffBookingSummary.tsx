@@ -50,7 +50,7 @@ export function StaffBookingSummary({ contentRef, booking, venueName, language, 
       </header>
       <div className="staff-client-summary-title">
         <p>{c.title}</p>
-        <h4 className="venue-indicator" data-venue={booking.venueKey}>{venueName}</h4>
+        <h4>{venueName}</h4>
         <p className="staff-client-summary-address">{booking.venueKey === 'cafe-des-stagiaires' ? uiText[language].bookingVenueCafeAddress : uiText[language].bookingVenueHaDoAddress}</p>
         <p className="staff-client-summary-contact">Zalo: {contact.phone}<br />WhatsApp: +{contact.international}</p>
       </div>
