@@ -261,7 +261,8 @@ export default function TodaySection({
                 <div className="staff-operation-title-row">
                   <strong>{session.name}</strong>
                   <span>{sessionKindLabel(session, text)}</span>
-                  {session.venue_key === 'cafe-des-stagiaires' && <span>Vrena Thao Dien</span>}
+                  {session.venue_key === 'ha-do-centrosa' && <span className="venue-indicator" data-venue={session.venue_key}>Hà Đô Centrosa</span>}
+                  {session.venue_key === 'cafe-des-stagiaires' && <span className="venue-indicator" data-venue={session.venue_key}>Vrena Thao Dien</span>}
                 </div>
                 <div className="staff-operation-meta">
                   <span>{sessionGameName(session, games, text)}</span>

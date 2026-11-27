@@ -157,6 +157,8 @@
   --vrena-bg: var(--vrena-neutral-50);
   --vrena-bg-soft: var(--vrena-neutral-100);
   --vrena-surface: var(--vrena-white);
+  --vrena-venue-hado: var(--vrena-blue-600);
+  --vrena-venue-thao-dien: var(--vrena-orange-500);
   --vrena-surface-warm: var(--vrena-neutral-100);
   --vrena-line-warm: rgb(var(--vrena-neutral-950-rgb) / 0.12);
 
@@ -260,6 +262,8 @@
     --vrena-bg: var(--vrena-neutral-950);
     --vrena-bg-soft: var(--vrena-neutral-900);
     --vrena-surface: var(--vrena-neutral-900);
+    --vrena-venue-hado: var(--vrena-blue-400);
+    --vrena-venue-thao-dien: var(--vrena-orange-400);
     --vrena-surface-warm: var(--vrena-neutral-800);
     --vrena-line-warm: rgb(var(--vrena-neutral-300-rgb) / 0.14);
 
@@ -346,4 +350,18 @@
     --player-shadow: 0 14px 34px rgb(var(--vrena-neutral-950-rgb) / 0.25);
     --player-shadow-soft: 0 8px 22px rgb(var(--vrena-neutral-950-rgb) / 0.18);
   }
+}
+
+:where([data-venue='ha-do-centrosa']) { --vrena-venue-accent: var(--vrena-venue-hado); }
+:where([data-venue='cafe-des-stagiaires']) { --vrena-venue-accent: var(--vrena-venue-thao-dien); }
+
+.venue-indicator:is([data-venue='ha-do-centrosa'], [data-venue='cafe-des-stagiaires'])::before {
+  content: '';
+  display: inline-block;
+  width: .55em;
+  height: .55em;
+  margin-inline-end: .45em;
+  border-radius: 50%;
+  vertical-align: .09em;
+  background: var(--vrena-venue-accent);
 }

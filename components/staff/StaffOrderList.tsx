@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode, type Ref } from 're
 import { ChevronDown, Ellipsis, Wallet } from 'lucide-react'
 import { staffDateLabel, normalizeTime } from '../../lib/staff/dates'
 import { formatVnd } from '../../lib/staff/formatting'
+import { reportVenue } from '../../lib/staff/decisionReport'
 import { paymentMethodLabel, paymentStatusLabel } from '../../lib/staff/payments'
 import { staffConsoleText } from '../../lib/staff/copy'
 import type { StaffOrder, StaffOrderPayment } from '../../lib/staff/types'
@@ -55,8 +56,8 @@ export function StaffOrderListEntry({ order, language, payments, paid, balance, 
   const labels = copy[language]
   const [details, setDetails] = useState(false)
   const detailsId = useId()
-  const venue = order.arena_id?.startsWith('cafe:') ? 'cafe' : order.arena_id ? 'hado' : undefined
-  const venueName = venue === 'cafe' ? 'Vrena Thao Dien' : venue === 'hado' ? 'Hà Đô Centrosa' : labels.unspecified
+  const venue = reportVenue(null, order.arena_id)
+  const venueName = venue === 'cafe-des-stagiaires' ? 'Vrena Thao Dien' : venue === 'ha-do-centrosa' ? 'Hà Đô Centrosa' : labels.unspecified
   const name = order.customer_name || order.customer_phone || order.customer_email || text.walkIn
   const paymentLabel = paymentStatusLabel(order.payment_status, text)
   const statusLabel = text.orderStatuses[order.order_status]
@@ -65,7 +66,7 @@ export function StaffOrderListEntry({ order, language, payments, paid, balance, 
     <tr role="row" className={`${styles.row}${highlighted ? ' staff-order-just-created' : ''}`}
       data-order-status={order.order_status} tabIndex={highlighted ? -1 : undefined} ref={rowRef}>
       <td role="cell" className={styles.identity}><strong>{name}</strong><small data-order-number>{order.order_number}</small></td>
-      <td role="cell" className={styles.venue}><span data-venue={venue}>{venueName}</span></td>
+      <td role="cell" className={styles.venue}><span className="venue-indicator" data-venue={venue}>{venueName}</span></td>
       <td role="cell" className={styles.when}>
         <span className={styles.mobileLabel} aria-hidden="true">{labels.when}</span>
         <time dateTime={`${order.booking_date}T${normalizeTime(order.booking_time)}`}><strong>{normalizeTime(order.booking_time)}</strong><small>{staffDateLabel(order.booking_date)}</small></time>

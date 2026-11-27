@@ -4,8 +4,6 @@
   --report-surface: var(--player-surface-raised, var(--vrena-white));
   --report-rule: color-mix(in srgb, var(--report-ink) 14%, transparent);
   --report-grid: color-mix(in srgb, var(--report-ink) 10%, transparent);
-  --report-hado: var(--vrena-blue-600);
-  --report-thao: var(--vrena-orange-500);
   --report-other: var(--vrena-neutral-500);
   --report-primary: var(--vrena-cyan-700);
   --report-secondary: var(--vrena-purple-600);
@@ -17,16 +15,14 @@
     --report-ink: var(--player-text, var(--vrena-neutral-100));
     --report-muted: var(--player-text-muted, var(--vrena-neutral-400));
     --report-surface: var(--player-surface-raised, var(--vrena-neutral-900));
-    --report-hado: var(--vrena-blue-400);
-    --report-thao: var(--vrena-orange-400);
     --report-other: var(--vrena-neutral-400);
     --report-primary: var(--vrena-cyan-400);
     --report-secondary: var(--vrena-purple-400);
   }
 }
 .dashboard [data-color] { --series: var(--report-primary); }
-.dashboard [data-color='hado'] { --series: var(--report-hado); }
-.dashboard [data-color='thao'] { --series: var(--report-thao); }
+.dashboard [data-color='hado'] { --series: var(--vrena-venue-hado); }
+.dashboard [data-color='thao'] { --series: var(--vrena-venue-thao-dien); }
 .dashboard [data-color='other'] { --series: var(--report-other); }
 .dashboard [data-color='secondary'] { --series: var(--report-secondary); }
 

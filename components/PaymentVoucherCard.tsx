@@ -21,7 +21,9 @@ export default function PaymentVoucherCard({ voucher, language = 'en', managemen
   const previewUrl = useRef<string | null>(null)
   const shareDialog = useRef<HTMLDialogElement>(null)
   const vi = language === 'vi'
-  const venue = voucherVenueNames(voucher).join(' · ')
+  const venueNames = voucherVenueNames(voucher)
+  const venueKeys = voucher.valid_venue_keys ?? [voucher.venue_key]
+  const venue = venueNames.join(' · ')
   const imageSignature = JSON.stringify([voucher.id, voucher.code, voucher.amount, voucher.expires_at, venue])
   const image = preparedImage?.signature === imageSignature ? preparedImage : null
   useEffect(() => () => { if (previewUrl.current) URL.revokeObjectURL(previewUrl.current) }, [])
@@ -46,7 +48,7 @@ export default function PaymentVoucherCard({ voucher, language = 'en', managemen
       ctx.font = '700 86px Inter'; ctx.fillText(formatVnd(voucher.amount), 60, 360)
       ctx.font = '400 28px Inter'; ctx.fillText(exportVi ? 'Sử dụng tại' : 'Valid at', 60, 440)
       ctx.font = '400 36px Inter'
-      voucherVenueNames(voucher).forEach((name, index) => ctx.fillText(name, 60, 495 + index * 50))
+      venueNames.forEach((name, index) => ctx.fillText(name, 60, 495 + index * 50))
       ctx.font = '700 74px Inter'; ctx.fillStyle = vrenaPalette.cyan[300]; ctx.fillText(voucher.code, 60, 670)
       function paragraph(text: string, y: number, lineHeight: number) {
         if (!ctx) return
@@ -79,7 +81,7 @@ export default function PaymentVoucherCard({ voucher, language = 'en', managemen
   return <article className="payment-voucher-card" style={{ border: '1px solid var(--vrena-purple-300)', borderRadius: 16, padding: 16, marginBlock: 12, overflowWrap: 'anywhere' }}>
     <header className="payment-voucher-heading"><strong>{vi ? 'Voucher giá trị' : 'Value voucher'} · {formatVnd(voucher.amount)}</strong><code>{voucher.code}</code></header>
     <p className="payment-voucher-balance">{vi ? 'Số dư hiện tại' : 'Current balance'}: <strong>{formatVnd(voucher.balance)}</strong></p>
-    <div className="payment-voucher-venues">{voucherVenueNames(voucher).map(name => <span key={name}>{name}</span>)}</div>
+    <div className="payment-voucher-venues">{venueNames.map((name, index) => <span className="venue-indicator" data-venue={venueKeys[index]} key={name}>{name}</span>)}</div>
     <p className="payment-voucher-expiry">{voucherExpiryLabel(voucher.expires_at, vi)}</p>
     <div className="payment-voucher-footer">
       <button type="button" className="primary" onClick={() => { setError(''); shareDialog.current?.showModal() }}>{vi ? 'Chia sẻ ảnh' : 'Share image'}</button>

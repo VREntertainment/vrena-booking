@@ -5605,7 +5605,7 @@ function BookingWorkspace({
             text={text}
           >
             {createSessionMode === 'calendar' ? (
-              <div className={`calendar-panel calendar-venue-${bookingVenue}`} aria-label={text.calendarAvailabilityTitle} aria-busy={isCalendarLoading}>
+              <div className="calendar-panel" data-venue={bookingVenue} aria-label={text.calendarAvailabilityTitle} aria-busy={isCalendarLoading}>
                 <div className="calendar-actions">
                   <label>{text.date}<input type="date" aria-label={text.date} value={calendarWeekStart} disabled={isCalendarLoading} onChange={(event) => { if (event.target.value) openCreateSessionCalendar(event.target.value) }} /></label>
                   <button className="secondary" disabled={isCalendarLoading} type="button" onClick={() => openCreateSessionCalendar(localDateString())}>{text.sessionCtaTodayAction}</button>

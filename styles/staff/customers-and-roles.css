@@ -865,10 +865,6 @@
   font-size: 12px;
 }
 
-.app .staff-order-row.editing {
-  background: color-mix(in srgb, var(--vrena-cyan-500) 7%, transparent);
-}
-
 .app .staff-order-editable-cell {
   min-width: 112px;
 }

@@ -3,10 +3,7 @@
 .app .calendar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .app .calendar-actions label { display: flex; align-items: center; gap: 8px; }
 .app .calendar-actions input { width: 150px; }
-.app .calendar-toolbar .calendar-shop-badge { color: var(--vrena-blue-700); font-weight: 800; }
-.app .calendar-venue-cafe-des-stagiaires .calendar-shop-badge { color: var(--vrena-orange-700); }
-.app .calendar-venue-cafe-des-stagiaires { border-top: 4px solid var(--vrena-orange-500); }
-.app .calendar-venue-ha-do-centrosa { border-top: 4px solid var(--vrena-blue-600); }
+.app .calendar-panel[data-venue] { border-block-start: 4px solid var(--vrena-venue-accent); }
 .app .calendar-booking-dialog { width: min(680px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); margin: auto; padding: 24px; border: 1px solid var(--player-border, var(--vrena-neutral-200)); border-radius: 18px; background: var(--player-surface-raised, var(--vrena-white)); color: var(--player-text, var(--vrena-neutral-950)); overflow: auto; }
 .app .calendar-booking-dialog::backdrop { background: color-mix(in srgb, var(--vrena-neutral-950) 45%, transparent); }
 .app .calendar-dialog-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }

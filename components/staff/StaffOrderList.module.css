@@ -6,8 +6,6 @@
   --orders-wash: color-mix(in srgb, var(--orders-ink) 4%, var(--orders-surface));
   --orders-accent: var(--vrena-mode-accent-ink);
   --orders-due: var(--vrena-orange-700);
-  --orders-cafe: var(--vrena-orange-700);
-  --orders-hado: var(--vrena-blue-700);
   --orders-positive: var(--vrena-green-700);
   --orders-negative: var(--vrena-red-700);
   border: 1px solid var(--orders-line);
@@ -19,8 +17,6 @@
 @media (prefers-color-scheme: dark) {
   .frame {
     --orders-due: var(--vrena-orange-300);
-    --orders-cafe: var(--vrena-orange-300);
-    --orders-hado: var(--vrena-blue-300);
     --orders-positive: var(--vrena-green-300);
     --orders-negative: var(--vrena-red-300);
   }
@@ -41,13 +37,11 @@
 .identity { max-width: 18ch; }
 .when time { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .venue span { font-size: .73rem; font-weight: 600; }
-.venue span[data-venue='hado'] { color: var(--orders-hado); }
-.venue span[data-venue='cafe'] { color: var(--orders-cafe); }
 .balance[data-due] strong { color: var(--orders-due); }
 .badge { --badge: var(--orders-muted); display: inline-block; color: var(--badge); background: color-mix(in srgb, var(--badge) 10%, var(--orders-surface)); padding: 3px 6px; border-radius: 4px; font-size: .69rem; font-weight: 650; white-space: nowrap; }
 .badge[data-state='paid'], .badge[data-state='completed'] { --badge: var(--orders-positive); }
 .badge[data-state='unpaid'], .badge[data-state='partially_paid'] { --badge: var(--orders-due); }
-.badge[data-state='confirmed'] { --badge: var(--orders-hado); }
+.badge[data-state='confirmed'] { --badge: var(--vrena-status-info-ink); }
 .badge[data-state='no_show'], .badge[data-state='cancelled'] { --badge: var(--orders-negative); }
 .actionBar { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-end; gap: 3px; }
 .frame button.record, .frame button.disclosure, .frame summary.more {
