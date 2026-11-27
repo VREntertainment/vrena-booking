@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import AppLoadingState from './AppLoadingState'
-import StaffZaloMiniAppSettings from './StaffZaloMiniAppSettings'
 import '../app/staff/staff.css'
 
 type Employee = {
@@ -40,7 +39,16 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return result
 }
 
-export default function StaffEmployeeAccess({ language, showZalo }: { language: 'en' | 'vi'; showZalo: boolean }) {
+function generateEmployeePin() {
+  const sample = new Uint32Array(1)
+  const limit = 4_294_000_000
+  do {
+    crypto.getRandomValues(sample)
+  } while (sample[0] >= limit)
+  return String(sample[0] % 1_000_000).padStart(6, '0')
+}
+
+export default function StaffEmployeeAccess({ language }: { language: 'en' | 'vi' }) {
   const vi = language === 'vi'
   const [directory, setDirectory] = useState<Directory>()
   const [employee, setEmployee] = useState<Employee>(emptyEmployee)
@@ -48,11 +56,12 @@ export default function StaffEmployeeAccess({ language, showZalo }: { language: 
   const [revealedPin, setRevealedPin] = useState('')
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
+  const [generatedPin, setGeneratedPin] = useState(false)
 
   const selectEmployee = useCallback((record: Employee) => {
     setEmployee(record)
-    setPin('')
+    setPin(record.id ? '' : generateEmployeePin())
+    setGeneratedPin(!record.id)
     setRevealedPin('')
     setStatus('')
   }, [])
@@ -85,6 +94,7 @@ export default function StaffEmployeeAccess({ language, showZalo }: { language: 
         body: JSON.stringify({ ...employee, pin }),
       })
       setPin('')
+      setGeneratedPin(false)
       setRevealedPin('')
       await load(saved.id)
       window.dispatchEvent(new Event('staff-locations-updated'))
@@ -113,10 +123,7 @@ export default function StaffEmployeeAccess({ language, showZalo }: { language: 
   return <section className="section staff-console" data-testid="staff-console">
     <h2>{vi ? 'Quyền truy cập của nhân viên' : 'Employee Access'}</h2>
     {!directory && !status && <AppLoadingState compact label={vi ? 'Đang tải nhân viên…' : 'Loading employees…'} />}
-    {showZalo && <button type="button" className="secondary" onClick={() => { setRevealedPin(''); setPin(''); setShowSettings(!showSettings) }}>
-      {showSettings ? (vi ? 'Quay lại' : 'Back to employees') : 'Zalo Mini App'}
-    </button>}
-    {showSettings && showZalo ? <StaffZaloMiniAppSettings language={language} onStatus={setStatus} /> : directory && <>
+    {directory && <>
       <div className="actions">
         <label>{vi ? 'Nhân viên' : 'Employee'}
           <select disabled={busy} value={employee.id || ''} onChange={(event) => {
@@ -156,9 +163,15 @@ export default function StaffEmployeeAccess({ language, showZalo }: { language: 
             </label>)}
           </fieldset>
           {directory.canEdit && <label>{employee.pinConfigured ? (vi ? 'Đổi PIN (không bắt buộc)' : 'Replace PIN (optional)') : 'PIN'}
-            <input type="password" inputMode="numeric" autoComplete="new-password" maxLength={6} pattern="[0-9]{6}" required={!employee.id}
-              value={pin} onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))} />
+            <input type={generatedPin ? 'text' : 'password'} inputMode="numeric" autoComplete="new-password" maxLength={6} pattern="[0-9]{6}" required={!employee.id}
+              value={pin} onChange={(event) => { setGeneratedPin(false); setPin(event.target.value.replace(/\D/g, '')) }} />
           </label>}
+          {directory.canEdit && <button type="button" className="secondary" onClick={() => {
+            setPin(generateEmployeePin())
+            setGeneratedPin(true)
+            setRevealedPin('')
+            setStatus(vi ? 'Đã tạo PIN mới. Lưu để áp dụng.' : 'New PIN generated. Save to apply it.')
+          }}>{vi ? 'Tạo PIN ngẫu nhiên' : 'Generate random PIN'}</button>}
           {employee.pinConfigured && <button type="button" className="secondary" onClick={() => revealedPin ? setRevealedPin('') : void reveal()}>
             {revealedPin ? (vi ? 'Ẩn PIN' : 'Hide PIN') : (vi ? 'Hiện PIN' : 'Show PIN')}
           </button>}
