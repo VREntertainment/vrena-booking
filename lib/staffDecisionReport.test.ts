@@ -59,3 +59,22 @@ test('venue checkboxes filter aggregate metrics while preserving per-venue compa
   assert.equal(result.byVenue.other.bookings, 1)
   assert.equal(decisionPeriod(date, date, orders, [], new Set(), 1).bookings, 0)
 })
+
+test('net sales follow receipt dates and the venue filter independently of booked sales', () => {
+  const start = '2026-11-23'
+  const end = '2026-11-26'
+  const venue = 'cafe-des-stagiaires'
+  const bookings = [
+    order('reservation', { sessions: { date: start, venue_key: venue }, payment_status: 'unpaid' }),
+    order('future', { booking_date: end, sessions: { date: end, venue_key: venue }, payment_status: 'unpaid' }),
+  ]
+  const result = decisionPeriod(start, end, bookings, [], venue, 2, [
+    { sale_date: '2026-11-25', venue_key: venue, net_sales: 275_500 },
+    { sale_date: '2026-11-25', venue_key: 'ha-do-centrosa', net_sales: 240_000 },
+    { sale_date: '2026-11-27', venue_key: venue, net_sales: 420_000 },
+  ])
+  assert.equal(result.sales, 400_000)
+  assert.equal(result.netSales, 275_500)
+  assert.deepEqual(result.buckets.map((bin) => bin.netSales), [0, 275_500])
+  assert.equal(result.byVenue['ha-do-centrosa'].netSales, 240_000)
+})

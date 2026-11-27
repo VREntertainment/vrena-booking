@@ -1,7 +1,7 @@
 'use client'
 
 import { supabase } from '../../lib/supabase/client'
-import type { ReportOrderFact, ReportPlayedFact } from '../../lib/staff/decisionReport'
+import type { ReportNetSale, ReportOrderFact, ReportPlayedFact } from '../../lib/staff/decisionReport'
 
 type Range = { start: string; end: string }
 const pageSize = 500
@@ -37,6 +37,12 @@ export async function loadDecisionReport(range: Range, signal: AbortSignal) {
     return query.abortSignal(signal).returns<ReportPlayedFact[]>()
   }, (row) => row.session_id).catch(() => null)
 
-  const [orderRows, playedRows] = await Promise.all([orders, played])
-  return { orders: orderRows, played: playedRows }
+  const netSales = supabase.rpc('staff_business_net_sales', {
+    p_start_date: range.start, p_end_date: range.end,
+  }).abortSignal(signal)
+
+  const [orderRows, playedRows, sales] = await Promise.all([orders, played, netSales])
+  const summary = sales.data as unknown as { days: ReportNetSale[]; posThrough: string | null } | null
+  if (sales.error || !Array.isArray(summary?.days)) throw new Error(sales.error?.message || 'Net sales are unavailable.')
+  return { orders: orderRows, played: playedRows, netSales: summary.days, posThrough: summary.posThrough }
 }

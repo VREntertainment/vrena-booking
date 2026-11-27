@@ -31,7 +31,7 @@ const labelDate = (date: string, language: string) => new Intl.DateTimeFormat(la
 const labels = {
   en: {
     venue: 'Venue', all: 'All accessible venues', other: 'Unassigned venue',
-    sales: 'Booked sales', bookings: 'Bookings', players: 'Booked players', paid: 'Paid players',
+    sales: 'Booked sales', revenue: 'Net sales', posThrough: 'Thảo Điền KiotViet data through', bookings: 'Bookings', players: 'Booked players', paid: 'Paid players',
     perDay: 'Players per day', perSession: 'Players per session',
     trend: 'Booking trend', trendDescription: 'Compare the same day or interval within each selected period.',
     day: 'Bookings by weekday', time: 'Bookings by start hour', heat: 'Peak booking slots',
@@ -40,8 +40,8 @@ const labels = {
     previous: 'Comparison', current: 'Selected period', noData: 'No data for this period.', load: 'Loading venue and booking metrics…',
     missing: 'The booking metrics could not load.', gameMissing: 'Recorded gameplay data could not load.',
     gameEmpty: 'No recorded games are available for this selection.', gameCoverage: 'sessions with recorded gameplay',
-    venueComparison: 'Venue comparison', venueDescription: 'Compare booked sales, bookings, players and paid players side by side.',
-    revenue: 'Sales', businessScope: 'Payments and booking sources · all accessible venues',
+    venueComparison: 'Venue comparison', venueDescription: 'Compare net sales, bookings, players and paid players side by side.',
+    businessScope: 'Payments and booking sources · all accessible venues',
     receipts: 'Cash and bank amounts follow original receipts. Voucher redemption is not cash received.',
     peak: 'Busiest', cancelled: 'Cancelled', noShows: 'No-shows', retry: 'Retry', metric: 'Metric', period: 'Period',
     mix: 'Payment mix',
@@ -49,7 +49,7 @@ const labels = {
   },
   vi: {
     venue: 'Địa điểm', all: 'Tất cả địa điểm được phép', other: 'Chưa xác định địa điểm',
-    sales: 'Doanh số đặt chỗ', bookings: 'Lượt đặt', players: 'Người chơi đã đặt', paid: 'Người chơi đã thanh toán',
+    sales: 'Doanh số đặt chỗ', revenue: 'Doanh thu thuần', posThrough: 'Dữ liệu KiotViet Thảo Điền đến', bookings: 'Lượt đặt', players: 'Người chơi đã đặt', paid: 'Người chơi đã thanh toán',
     perDay: 'Người chơi mỗi ngày', perSession: 'Người chơi mỗi phiên',
     trend: 'Xu hướng đặt chỗ', trendDescription: 'So sánh theo cùng vị trí ngày hoặc khoảng thời gian trong mỗi kỳ.',
     day: 'Lượt đặt theo ngày trong tuần', time: 'Lượt đặt theo giờ bắt đầu', heat: 'Khung giờ được đặt nhiều nhất',
@@ -58,8 +58,8 @@ const labels = {
     previous: 'Kỳ so sánh', current: 'Kỳ đã chọn', noData: 'Không có dữ liệu trong kỳ này.', load: 'Đang tải số liệu địa điểm và đặt chỗ…',
     missing: 'Không thể tải số liệu đặt chỗ.', gameMissing: 'Không thể tải dữ liệu trò chơi đã chơi.',
     gameEmpty: 'Chưa ghi nhận trò chơi nào cho lựa chọn này.', gameCoverage: 'phiên đã ghi nhận trò chơi',
-    venueComparison: 'So sánh địa điểm', venueDescription: 'So sánh doanh số, lượt đặt, người chơi và người chơi đã thanh toán.',
-    revenue: 'Doanh số', businessScope: 'Thanh toán và nguồn đặt · tất cả địa điểm được phép',
+    venueComparison: 'So sánh địa điểm', venueDescription: 'So sánh doanh thu thuần, lượt đặt, người chơi và người chơi đã thanh toán.',
+    businessScope: 'Thanh toán và nguồn đặt · tất cả địa điểm được phép',
     receipts: 'Tiền mặt và chuyển khoản theo biên nhận gốc. Sử dụng voucher không tạo tiền thu mới.',
     peak: 'Cao nhất', cancelled: 'Đã hủy', noShows: 'Không đến', retry: 'Thử lại', metric: 'Chỉ số', period: 'Kỳ',
     mix: 'Cơ cấu thanh toán',
@@ -76,7 +76,7 @@ function gameLabel(id: string, catalog: Map<string, CatalogEntry>) {
 
 export default function BusinessReport({ start, end, compareStart, compareEnd, compare, language, text, financial, toolbar }: Props) {
   const [selectedVenues, setSelectedVenues] = useState<ReadonlySet<ReportVenue> | null>(null)
-  const [metric, setMetric] = useState<'sales' | 'bookings' | 'players' | 'paidPlayers'>('sales')
+  const [metric, setMetric] = useState<'netSales' | 'sales' | 'bookings' | 'players' | 'paidPlayers'>('netSales')
   const [showGames, setShowGames] = useState(false)
   const [heatComparison, setHeatComparison] = useState(false)
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
@@ -137,14 +137,15 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   const days = Math.max(reportDayCount(from, to), compare ? reportDayCount(compareFrom, compareTo) : 0)
   const binDays = days > 62 ? Math.ceil(days / (62 * 7)) * 7 : 1
   const periods = loaded ? {
-    current: decisionPeriod(from, to, loaded.current.orders, loaded.current.played ?? [], filter, binDays),
-    previous: loaded.previous ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, loaded.previous.played ?? [], filter, binDays) : null,
+    current: decisionPeriod(from, to, loaded.current.orders, loaded.current.played ?? [], filter, binDays, loaded.current.netSales),
+    previous: loaded.previous ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, loaded.previous.played ?? [], filter, binDays, loaded.previous.netSales) : null,
   } : null
   const byLocation = periods && loaded ? selected.flatMap((item) =>
-    periods.current.byVenue[item].bookings || periods.previous?.byVenue[item].bookings ? [{
+    periods.current.byVenue[item].bookings || periods.previous?.byVenue[item].bookings ||
+    periods.current.byVenue[item].netSales || periods.previous?.byVenue[item].netSales ? [{
       item,
-      current: decisionPeriod(from, to, loaded.current.orders, [], item, binDays).buckets,
-      previous: loaded.previous ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, [], item, binDays).buckets : [],
+      current: decisionPeriod(from, to, loaded.current.orders, [], item, binDays, loaded.current.netSales).buckets,
+      previous: loaded.previous ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, [], item, binDays, loaded.previous.netSales).buckets : [],
     }] : []) : []
 
   const count = (value: number) => reportNumber(language, value)
@@ -162,8 +163,10 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   </div></>
 
   const { current, previous } = periods
-  const metrics = { sales: t.revenue, bookings: t.bookings, players: t.players, paidPlayers: t.paid }
-  const displayMetric = metric === 'sales' ? money : count
+  const venueMetrics = { netSales: t.revenue, bookings: t.bookings, players: t.players, paidPlayers: t.paid }
+  const metrics = { ...venueMetrics, sales: t.sales }
+  const moneyMetric = metric === 'sales' || metric === 'netSales'
+  const displayMetric = moneyMetric ? money : count
   const dotColor = selected.length === 1 ? colors[selected[0]] : 'primary'
   const describeBin = (point: typeof current.buckets[number]) => point.from === point.to
     ? labelDate(point.from, language) : `${labelDate(point.from, language)}–${labelDate(point.to, language)}`
@@ -200,7 +203,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   }).sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
   const venueTotals = reportVenueKeys.filter((item) => locations.includes(item) || current.byVenue[item].bookings || previous?.byVenue[item].bookings)
   const summary = [
-    { label: t.sales, value: current.sales, previous: previous?.sales, format: money },
+    { label: t.revenue, value: current.netSales, previous: previous?.netSales, format: money },
     { label: t.bookings, value: current.bookings, previous: previous?.bookings, format: count },
     { label: t.players, value: current.players, previous: previous?.players, format: count },
     { label: t.paid, value: current.paidPlayers, previous: previous?.paidPlayers, format: count },
@@ -222,6 +225,8 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
       <dt>{item.label}</dt><dd>{item.value == null ? '—' : item.format(item.value)}</dd>
       {previous && <small>{t.previous} · {item.previous == null ? '—' : item.format(item.previous)}</small>}
     </div>)}</dl>
+    {selected.includes('cafe-des-stagiaires') && loaded.current.posThrough &&
+      <p className={styles.note}>{t.posThrough} {labelDate(loaded.current.posThrough, language)} {loaded.current.posThrough.slice(0, 4)}</p>}
     <div className={styles.grid}>
       <ReportPanel title={t.trend} description={t.trendDescription} wide actions={<div className={styles.controls}>
         <label>{t.metric}<select value={metric} onChange={(event) => setMetric(event.target.value as typeof metric)}>
@@ -229,18 +234,18 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
         </select></label>
       </div>}>
         <ReportTrend label={metrics[metric]} labels={axis} series={trendSeries} valueLabel={displayMetric}
-          tickLabel={metric === 'sales' ? shortMoney : count} language={language} />
+          tickLabel={moneyMetric ? shortMoney : count} language={language} />
       </ReportPanel>
       {venueTotals.length > 1 && <ReportPanel title={t.venueComparison} description={t.venueDescription} wide>
         <div className={styles.tableWrap}><table className={styles.venueTable} role="table"><thead><tr><th scope="col">{t.venue}</th>{previous && <th scope="col">{t.period}</th>}
-          {Object.values(metrics).map((label) => <th scope="col" key={label}>{label}</th>)}</tr></thead>
+          {Object.values(venueMetrics).map((label) => <th scope="col" key={label}>{label}</th>)}</tr></thead>
           <tbody>{venueTotals.map((item) => [current, ...(previous ? [previous] : [])].map((period, index) => <tr key={`${item}-${index}`}>
             <th scope="row" className={styles.venueLabel} data-color={colors[item]}>{venueNames[item]}</th>
             {previous && <td className={styles.venuePeriod}>{index ? t.previous : t.current}</td>}
-            {(Object.keys(metrics) as Array<keyof typeof metrics>).map((key) => (
+            {(Object.keys(venueMetrics) as Array<keyof typeof venueMetrics>).map((key) => (
               <td key={key} className={styles.venueMetric}>
                 <span className={styles.mobileMetricLabel} aria-hidden="true">{metrics[key]}</span>
-                <span>{key === 'sales' ? money(period.byVenue[item][key]) : count(period.byVenue[item][key])}</span>
+                <span>{key === 'netSales' ? money(period.byVenue[item][key]) : count(period.byVenue[item][key])}</span>
               </td>
             ))}
           </tr>))}</tbody>
