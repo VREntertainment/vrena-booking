@@ -133,11 +133,11 @@ export default function NewSection({
   const locationAllowed = locations.some((location) => location.venue_key === booking.venueKey)
   const summaryRef = useRef<HTMLDivElement>(null)
   const hours = staffBookingHours(booking.venueKey, quote.duration)
-  const outsideHours = booking.bookingKind === 'event' && booking.allowOutsideHours
+  const outsideHours = booking.allowOutsideHours
   const validTime = validStaffBookingTime(booking.venueKey, quote.duration, booking.time, outsideHours)
   const selectionKey = JSON.stringify([booking.date, booking.venueKey, selectedBookingArena, quote.duration, booking.arenaCount, selectedGame?.id, outsideHours])
   const manualTimeSelection = useRef<string | null>(null)
-  const availabilityKey = JSON.stringify([booking.date, booking.time, selectedBookingArena, quote.duration, booking.arenaCount, selectedGame?.id])
+  const availabilityKey = JSON.stringify([booking.date, booking.time, selectedBookingArena, quote.duration, booking.arenaCount, selectedGame?.id, outsideHours])
   const [availability, setAvailability] = useState<{ key: string; state: 'available' | 'unavailable' | 'error' } | null>(null)
   const [slots, setSlots] = useState<{ key: string; values: Array<{ time: string; available: boolean; past?: boolean }> } | null>(null)
   const [retry, setRetry] = useState(0)
@@ -172,12 +172,16 @@ export default function NewSection({
   }, [locationAllowed, selectionKey, availabilityKey, booking.arenaCount, booking.venueKey, booking.date, booking.time, canCreateOrders, quote.duration, retry, selectedBookingArena, selectedGame, validTime, outsideHours, setBooking])
   const mutedTimes = slots?.key === availabilityKey ? slots.values.filter(slot => !slot.available || slot.past).map(slot => slot.time) : []
   const en = resolvedLanguage !== 'vi'
+  const invalidPhone = Boolean(booking.customerPhone.trim() && !reservationPhone(booking.customerPhone))
+  const invalidEmail = Boolean(booking.customerEmail.trim() && !guestEmailIsValid(booking.customerEmail))
+  const phoneError = en ? 'Enter a valid phone number for the selected country.' : 'Nhập số điện thoại hợp lệ cho quốc gia đã chọn.'
+  const emailError = en ? 'Enter a valid email address.' : 'Nhập địa chỉ email hợp lệ.'
   const reason = !locationAllowed || !canCreateOrders ? (en ? 'You do not have permission to book this venue.' : 'Bạn không có quyền đặt chỗ tại địa điểm này.')
     : saving ? (en ? 'Saving booking…' : 'Đang lưu đặt chỗ…')
     : !booking.guestBooking && !booking.customerName.trim() ? (en ? 'Enter the customer name or select Guest booking.' : 'Nhập tên khách hoặc chọn Đặt chỗ cho khách.')
     : officialReservationContact(booking.customerEmail, booking.customerPhone) ? (en ? 'Use the customer’s personal phone and email.' : 'Dùng số điện thoại và email cá nhân của khách.')
-    : booking.customerPhone.trim() && !reservationPhone(booking.customerPhone) ? (en ? 'Enter a valid phone number for the selected country.' : 'Nhập số điện thoại hợp lệ cho quốc gia đã chọn.')
-    : booking.customerEmail.trim() && !guestEmailIsValid(booking.customerEmail) ? (en ? 'Enter a valid email address.' : 'Nhập địa chỉ email hợp lệ.')
+    : invalidPhone ? phoneError
+    : invalidEmail ? emailError
     : !validTime ? (en ? 'Choose a valid starting time and duration.' : 'Chọn giờ bắt đầu và thời lượng hợp lệ.')
     : !validStaffSessionCount(booking.sessionCount) ? (en ? 'Enter a valid number of sessions.' : 'Nhập số lượt chơi hợp lệ.')
     : !Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 ? (en ? 'Choose between 1 and 16 players.' : 'Chọn từ 1 đến 16 người chơi.')
@@ -186,9 +190,9 @@ export default function NewSection({
     : availabilityState === 'checking' ? bookingText.checkingAvailability
     : availabilityState !== 'available' ? bookingText.unavailable : ''
   return (
-    <div className="staff-grid">
-      <div className="staff-card staff-card-wide">
-        <div className="staff-card-heading">
+    <div className="staff-grid staff-new-booking">
+      <div className="staff-card staff-card-wide staff-new-booking-form">
+        <div className="staff-card-heading staff-new-booking-heading">
           <h3>{text.labels.newBooking}</h3>
           <button
             aria-label={text.aria.openSessionCalendar}
@@ -209,254 +213,278 @@ export default function NewSection({
         </div>
         {!canCreateOrders && <p className="staff-readonly-note">{text.messages.readOnlyBooking}</p>}
         <fieldset className="staff-readonly-fieldset" disabled={!canCreateOrders || saving}>
-          <div className="form-grid compact-form-grid">
-            <label>
-              {bookingText.bookingSource}
-              <select value={booking.bookingSource} onChange={(event) => setBooking((current) => ({ ...current, bookingSource: event.target.value as BookingForm['bookingSource'] }))}>
-                {Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-              </select>
-            </label>
-            <label>
-              {bookingText.shop}
-              <select value={locationAllowed ? booking.venueKey : ""} onChange={(event) => setBooking((current) => ({
-                ...current,
-                venueKey: event.target.value as BookingForm['venueKey'],
-                gameId: '', arenaId: '', arenaCount: 1, discountId: '',
-                time: !current.allowOutsideHours && event.target.value === 'cafe-des-stagiaires' && current.time < '15:30' ? '15:30' : current.time,
-              }))}>
-                <option value="" disabled>{resolvedLanguage === 'vi' ? 'Chọn địa điểm được phép' : 'Choose an allowed location'}</option>
-                {locations.map((location) => <option key={location.venue_key} value={location.venue_key}>{location.name}</option>)}
-              </select>
-            </label>
-            <div className="full staff-booking-toggles">
-              <label className="staff-guest-toggle">
-                <input type="checkbox" checked={booking.guestBooking} onChange={(event) => setGuestBooking(event.target.checked)} />
-                <span>{text.labels.guestBooking}</span>
-              </label>
+          <section className="staff-new-section" aria-labelledby="staff-new-details">
+            <h4 id="staff-new-details">{bookingText.detailsSection}</h4>
+            <div className="form-grid compact-form-grid staff-new-fields">
               <label>
-                {bookingCategoryCopy[resolvedLanguage].label}
-                <select value={booking.bookingCategory} onChange={(event) => {
-                  const category = event.target.value as BookingCategory
-                  setBooking((current) => ({ ...current, bookingCategory: category, bookingKind: category === 'standard' ? 'standard' : 'event', allowOutsideHours: false,
-                    note: category === 'event' && !Object.values(staffBookingCopy).some((copy) => current.note.includes(copy.vatNotes.split('\n')[0]))
-                      ? [current.note, bookingText.vatNotes].filter(Boolean).join('\n\n') : current.note,
-                  }))
-                }}>
-                  {(['standard', 'birthday', 'event'] as const).map((value) => <option key={value} value={value}>{bookingCategoryCopy[resolvedLanguage][value]}</option>)}
+                {bookingText.venue}
+                <select value={locationAllowed ? booking.venueKey : ""} onChange={(event) => setBooking((current) => ({
+                  ...current,
+                  venueKey: event.target.value as BookingForm['venueKey'],
+                  gameId: '', arenaId: '', arenaCount: 1, discountId: '',
+                  time: !current.allowOutsideHours && event.target.value === 'cafe-des-stagiaires' && current.time < '15:30' ? '15:30' : current.time,
+                }))}>
+                  <option value="" disabled>{resolvedLanguage === 'vi' ? 'Chọn địa điểm được phép' : 'Choose an allowed location'}</option>
+                  {locations.map((location) => <option key={location.venue_key} value={location.venue_key}>{location.name}</option>)}
                 </select>
               </label>
+              <label>
+                {bookingText.bookingSource}
+                <select value={booking.bookingSource} onChange={(event) => setBooking((current) => ({ ...current, bookingSource: event.target.value as BookingForm['bookingSource'] }))}>
+                  {Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </label>
+                <label>
+                  {bookingCategoryCopy[resolvedLanguage].label}
+                  <select value={booking.bookingCategory} onChange={(event) => {
+                    const category = event.target.value as BookingCategory
+                    setBooking((current) => ({ ...current, bookingCategory: category, bookingKind: category === 'standard' ? 'standard' : 'event',
+                      note: category === 'event' && !Object.values(staffBookingCopy).some((copy) => current.note.includes(copy.vatNotes.split('\n')[0]))
+                        ? [current.note, bookingText.vatNotes].filter(Boolean).join('\n\n') : current.note,
+                    }))
+                  }}>
+                    {(['standard', 'birthday', 'event'] as const).map((value) => <option key={value} value={value}>{bookingCategoryCopy[resolvedLanguage][value]}</option>)}
+                  </select>
+                </label>
+                <label className="staff-guest-toggle staff-new-checkbox">
+                  <input type="checkbox" checked={booking.guestBooking} onChange={(event) => setGuestBooking(event.target.checked)} />
+                  <span>{text.labels.guestBooking}</span>
+                </label>
             </div>
-            {booking.guestBooking && <p className="field-help full">{text.messages.guestBookingHelp}</p>}
-            {!booking.guestBooking && <>
-              <div
-                className="staff-customer-name-field full"
-                onBlur={(event) => {
-                  if (!event.currentTarget.contains(event.relatedTarget)) setCustomerNameFocused(false)
-                }}
-                onFocus={() => setCustomerNameFocused(true)}
-              >
-                <label htmlFor="staff-booking-customer-name">{text.labels.customerName}</label>
-                <input
-                  id="staff-booking-customer-name"
-                  maxLength={120}
-                  autoComplete="off"
-                  placeholder={bookingText.searchCustomer}
-                  aria-activedescendant={showCustomerNameSuggestions && customerSuggestionIndex >= 0 ? `staff-customer-option-${customerSuggestionIndex}` : undefined}
-                  aria-autocomplete="list"
-                  aria-controls={!booking.guestBooking && showCustomerNameSuggestions ? 'staff-customer-name-suggestions' : undefined}
-                  aria-expanded={!booking.guestBooking && showCustomerNameSuggestions}
-                  disabled={booking.guestBooking}
-                  role="combobox"
-                  value={booking.customerName}
-                  onChange={(event) => handleCustomerNameChange(event.target.value)}
-                  onClick={() => setCustomerNameFocused(true)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Escape') { setCustomerNameFocused(false); setCustomerSuggestionIndex(-1) }
-                    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-                      event.preventDefault()
-                      setCustomerNameFocused(true)
-                      const count = visibleCustomerSuggestions.length + (canOfferNewCustomer ? 1 : 0)
-                      setCustomerSuggestionIndex((current) => count ? (current + (event.key === 'ArrowDown' ? 1 : -1) + count) % count : -1)
-                    }
-                    if (event.key === 'Enter' && showCustomerNameSuggestions && customerSuggestionIndex >= 0) {
-                      event.preventDefault()
-                      const match = visibleCustomerSuggestions[customerSuggestionIndex]
-                      if (match) selectCustomerSuggestion(match.id)
-                      else setCustomerNameFocused(false)
-                    }
+          </section>
+          <section className="staff-new-section" aria-labelledby="staff-new-customer">
+            <h4 id="staff-new-customer">{bookingText.customerSection}</h4>
+            <div className="form-grid compact-form-grid staff-new-fields">
+              {booking.guestBooking && <p className="field-help full staff-new-guest-hint">{bookingText.guestHint}</p>}
+              {!booking.guestBooking && <>
+                <div
+                  className="staff-customer-name-field full"
+                  onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget)) setCustomerNameFocused(false)
                   }}
-                />
-                {showCustomerNameSuggestions && (
-                  <div
-                    className="staff-customer-suggestions"
-                    id="staff-customer-name-suggestions"
-                    role="listbox"
-                    // Safari does not focus clicked buttons. Keep the input focused
-                    // so blur cannot unmount an option before its click is handled.
-                    onMouseDown={(event) => { if (event.button === 0) event.preventDefault() }}
-                  >
-                    {visibleCustomerSuggestions.map((item, index) => (
-                      <button
-                        id={`staff-customer-option-${index}`}
-                        aria-selected={customerSuggestionIndex === index || booking.customerId === item.id}
-                        className="staff-customer-suggestion"
-                        key={item.id}
-                        role="option"
-                        type="button"
-                        onClick={() => selectCustomerSuggestion(item.id)}
-                      >
-                        <span>{customerName(item, text)}</span>
-                        <small>{[item.phone, item.email].filter(Boolean).join(' · ') || text.noContact}</small>
-                      </button>
-                    ))}
-                    {canOfferNewCustomer && <button
-                      id={`staff-customer-option-${visibleCustomerSuggestions.length}`}
-                      className="staff-customer-suggestion"
-                      role="option"
-                      aria-selected={customerSuggestionIndex === visibleCustomerSuggestions.length}
-                      type="button"
-                      onClick={() => { setCustomerNameFocused(false); setCustomerSuggestionIndex(-1) }}
+                  onFocus={() => setCustomerNameFocused(true)}
+                >
+                  <label htmlFor="staff-booking-customer-name">{text.labels.customerName}</label>
+                  <input
+                    id="staff-booking-customer-name"
+                    maxLength={120}
+                    autoComplete="off"
+                    placeholder={bookingText.searchPlaceholder}
+                    aria-describedby="staff-new-customer-help"
+                    aria-activedescendant={showCustomerNameSuggestions && customerSuggestionIndex >= 0 ? `staff-customer-option-${customerSuggestionIndex}` : undefined}
+                    aria-autocomplete="list"
+                    aria-controls={!booking.guestBooking && showCustomerNameSuggestions ? 'staff-customer-name-suggestions' : undefined}
+                    aria-expanded={!booking.guestBooking && showCustomerNameSuggestions}
+                    disabled={booking.guestBooking}
+                    role="combobox"
+                    value={booking.customerName}
+                    onChange={(event) => handleCustomerNameChange(event.target.value)}
+                    onClick={() => setCustomerNameFocused(true)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') { setCustomerNameFocused(false); setCustomerSuggestionIndex(-1) }
+                      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                        event.preventDefault()
+                        setCustomerNameFocused(true)
+                        const count = visibleCustomerSuggestions.length + (canOfferNewCustomer ? 1 : 0)
+                        setCustomerSuggestionIndex((current) => count ? (current + (event.key === 'ArrowDown' ? 1 : -1) + count) % count : -1)
+                      }
+                      if (event.key === 'Enter' && showCustomerNameSuggestions && customerSuggestionIndex >= 0) {
+                        event.preventDefault()
+                        const match = visibleCustomerSuggestions[customerSuggestionIndex]
+                        if (match) selectCustomerSuggestion(match.id)
+                        else setCustomerNameFocused(false)
+                      }
+                    }}
+                  />
+                  {showCustomerNameSuggestions && (
+                    <div
+                      className="staff-customer-suggestions"
+                      id="staff-customer-name-suggestions"
+                      role="listbox"
+                      // Safari does not focus clicked buttons. Keep the input focused
+                      // so blur cannot unmount an option before its click is handled.
+                      onMouseDown={(event) => { if (event.button === 0) event.preventDefault() }}
                     >
-                      <span>+ {bookingText.createProfile.replace('{name}', booking.customerName.trim())}</span>
-                      <small>{bookingText.createWithBooking}</small>
-                    </button>}
-                    {!visibleCustomerSuggestions.length && !canOfferNewCustomer && <p className="field-help">{bookingText.searchCustomer}</p>}
-                  </div>
-                )}
+                      {visibleCustomerSuggestions.map((item, index) => (
+                        <button
+                          id={`staff-customer-option-${index}`}
+                          aria-selected={customerSuggestionIndex === index || booking.customerId === item.id}
+                          className="staff-customer-suggestion"
+                          key={item.id}
+                          role="option"
+                          type="button"
+                          onClick={() => selectCustomerSuggestion(item.id)}
+                        >
+                          <span>{customerName(item, text)}</span>
+                          <small>{[item.phone, item.email].filter(Boolean).join(' · ') || text.noContact}</small>
+                        </button>
+                      ))}
+                      {canOfferNewCustomer && <button
+                        id={`staff-customer-option-${visibleCustomerSuggestions.length}`}
+                        className="staff-customer-suggestion"
+                        role="option"
+                        aria-selected={customerSuggestionIndex === visibleCustomerSuggestions.length}
+                        type="button"
+                        onClick={() => { setCustomerNameFocused(false); setCustomerSuggestionIndex(-1) }}
+                      >
+                        <span>+ {bookingText.createProfile.replace('{name}', booking.customerName.trim())}</span>
+                        <small>{bookingText.createWithBooking}</small>
+                      </button>}
+                      {!visibleCustomerSuggestions.length && !canOfferNewCustomer && <p className="field-help">{bookingText.searchCustomer}</p>}
+                    </div>
+                  )}
+                </div>
+                <p className="field-help full staff-new-compact-help" id="staff-new-customer-help">{booking.customerId ? bookingText.selectedCustomerHint : bookingText.newCustomerHint}</p>
+                <label className="full">
+                  {bookingText.contactName}
+                  <input maxLength={120} value={booking.contactName} onChange={(event) => setBooking({ ...booking, contactName: event.target.value })} />
+                </label>
+                <label>
+                  {text.labels.phone}
+                  <PhoneNumberInput
+                    buttonLabel={sharedText.countryCode}
+                    className="staff-phone-control"
+                    disabled={booking.guestBooking}
+                    inputLabel={text.labels.phone}
+                    onChange={(phone) => setBooking({ ...booking, customerPhone: phone })}
+                    searchPlaceholder={sharedText.searchCountry}
+                    value={booking.customerPhone}
+                  />
+                  {invalidPhone && <span className="staff-new-error" role="status">{phoneError}</span>}
+                </label>
+                <label>
+                  {text.labels.email}
+                  <input type="email" autoComplete="off" aria-invalid={invalidEmail} aria-describedby={invalidEmail ? "staff-new-email-error" : undefined} disabled={booking.guestBooking} value={booking.customerEmail} onChange={(event) => setBooking({ ...booking, customerEmail: event.target.value })} />
+                  {invalidEmail && <span className="staff-new-error" id="staff-new-email-error">{emailError}</span>}
+                </label>
+              </>}
+            </div>
+          </section>
+          <section className="staff-new-section" aria-labelledby="staff-new-session">
+            <h4 id="staff-new-session">{bookingText.sessionSection}</h4>
+            <div className="form-grid compact-form-grid staff-new-fields">
+              <div className="full staff-new-schedule">
+              <label>
+                {text.labels.date}
+                <StaffPickerField ariaLabel={text.aria.bookingDate} inputRef={bookingDateInputRef} placeholder={text.chooseDate} type="date" value={booking.date} onChange={(value) => setBooking({ ...booking, date: value })} />
+              </label>
+                <label>
+                  {bookingText.startTime}
+                  <StaffPickerField ariaLabel={text.aria.bookingTime} timeOptions={slots?.key === availabilityKey ? slots.values.map(slot => slot.time) : undefined} mutedTimes={mutedTimes} placeholder={text.chooseTime} minTime={outsideHours ? '00:00' : hours.min} maxTime={outsideHours ? '23:59' : hours.max} type="time" value={booking.time} onChange={(value) => { manualTimeSelection.current = selectionKey; setBooking({ ...booking, time: value }) }} />
+                </label>
+                <label>
+                  {bookingText.endTime}
+                  {booking.bookingKind === 'event' ? <StaffPickerField ariaLabel={bookingText.endTime} type="time" mode="duration" minTime={booking.time} maxTime={outsideHours ? '24:00' : hours.close} value={staffBookingEndTime(booking.time, quote.duration)} onChange={(value) => {
+                    const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5))
+                    setBooking({ ...booking, reservedMinutes: minutes(value) - minutes(booking.time) })
+                  }} /> : <input aria-label={bookingText.endTime} readOnly value={staffBookingEndTime(booking.time, quote.duration)} />}
+                </label>
               </div>
-              <p className="field-help full">{booking.customerId ? bookingText.profileSelected : bookingText.createWithBooking}</p>
-              <label className="full">
-                {bookingText.contactName}
-                <input maxLength={120} value={booking.contactName} onChange={(event) => setBooking({ ...booking, contactName: event.target.value })} />
+              {!validStaffSessionCount(booking.sessionCount) && <p className="notice full" role="alert">{bookingText.invalidSessionCount}</p>}
+              <label className="full staff-guest-toggle staff-new-checkbox">
+                <input type="checkbox" aria-label={bookingText.allowOutsideHours} aria-describedby="staff-new-hours-hint" checked={outsideHours} onChange={(event) => setBooking({ ...booking, allowOutsideHours: event.target.checked })} />
+                <span>
+                  {bookingText.allowOutsideHours}
+                  <small className="field-help" id="staff-new-hours-hint">{outsideHours ? bookingText.midnightHint : bookingText.hoursHint}</small>
+                </span>
               </label>
-              <p className="field-help full">{bookingText.contactHelp}</p>
+              {booking.bookingKind === 'standard' && !quote.sessionMinutes && <p className="notice full" role="status">{sessionLengthError ? bookingText.sessionLengthError : bookingText.loadingSessionLength}{sessionLengthError && <button type="button" onClick={refreshSessionLength}>{bookingText.retry}</button>}</p>}
+              {(booking.bookingKind === 'event' || quote.sessionMinutes) && !validTime && <p className="notice full" role="alert">{outsideHours ? bookingText.invalidDuration : bookingText.outsideHours}</p>}
               <label>
-                {text.labels.phone}
-                <PhoneNumberInput
-                  buttonLabel={sharedText.countryCode}
-                  className="staff-phone-control"
-                  disabled={booking.guestBooking}
-                  inputLabel={text.labels.phone}
-                  onChange={(phone) => setBooking({ ...booking, customerPhone: phone })}
-                  searchPlaceholder={sharedText.searchCountry}
-                  value={booking.customerPhone}
-                />
-              </label>
-              <label>
-                {text.labels.email}
-                <input type="email" autoComplete="off" disabled={booking.guestBooking} value={booking.customerEmail} onChange={(event) => setBooking({ ...booking, customerEmail: event.target.value })} />
-              </label>
-            </>}
-            <label>
-              {text.labels.game}
-              <select value={selectedGame?.id || 'none'} onChange={(event) => setBooking({ ...booking, gameId: event.target.value, arenaId: '', discountId: '' })}>
-                <option value="none">{bookingText.noGame}</option>
-                {bookingGames.map((game) => (
-                  <option key={game.id} value={game.id}>{brandedGameName(game.slug, game.name)}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              {text.labels.date}
-              <StaffPickerField ariaLabel={text.aria.bookingDate} inputRef={bookingDateInputRef} placeholder={text.chooseDate} type="date" value={booking.date} onChange={(value) => setBooking({ ...booking, date: value })} />
-            </label>
-            <div className="staff-booking-pair">
-              <label>
-                {bookingText.startTime}
-                <StaffPickerField ariaLabel={text.aria.bookingTime} timeOptions={slots?.key === availabilityKey ? slots.values.map(slot => slot.time) : undefined} mutedTimes={mutedTimes} placeholder={text.chooseTime} minTime={outsideHours ? '00:00' : hours.min} maxTime={outsideHours ? '23:59' : hours.max} type="time" value={booking.time} onChange={(value) => { manualTimeSelection.current = selectionKey; setBooking({ ...booking, time: value }) }} />
-              </label>
-              <label>
-                {bookingText.endTime}
-                {booking.bookingKind === 'event' ? <StaffPickerField ariaLabel={bookingText.endTime} type="time" mode="duration" minTime={booking.time} maxTime={outsideHours ? '24:00' : hours.close} value={staffBookingEndTime(booking.time, quote.duration)} onChange={(value) => {
-                  const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5))
-                  setBooking({ ...booking, reservedMinutes: minutes(value) - minutes(booking.time) })
-                }} /> : <input aria-label={bookingText.endTime} readOnly value={staffBookingEndTime(booking.time, quote.duration)} />}
-              </label>
-            </div>
-            <div className="staff-booking-pair">
-              <label>
-                {text.labels.players}
-                <input min={1} max={16} type="number" value={booking.players} onChange={(event) => setBooking({ ...booking, players: Number(event.target.value) })} />
-              </label>
-              <label>
-                {bookingText.sessionCount}
-                <input min={1} max={32} step={1} type="number" value={booking.sessionCount || ''} onChange={(event) => setBooking({ ...booking, sessionCount: Number(event.target.value) })} />
-              </label>
-            </div>
-            {!validStaffSessionCount(booking.sessionCount) && <p className="notice full" role="alert">{bookingText.invalidSessionCount}</p>}
-            {booking.bookingKind === 'event' && <>
-              <label className="full staff-guest-toggle"><input type="checkbox" checked={booking.allowOutsideHours} onChange={(event) => setBooking({ ...booking, allowOutsideHours: event.target.checked })} /><span>{bookingText.allowOutsideHours}</span></label>
-            </>}
-            {booking.bookingKind === 'standard' && !quote.sessionMinutes && <p className="notice full" role="status">{sessionLengthError ? bookingText.sessionLengthError : bookingText.loadingSessionLength}{sessionLengthError && <button type="button" onClick={refreshSessionLength}>{bookingText.retry}</button>}</p>}
-            {(booking.bookingKind === 'event' || quote.sessionMinutes) && !validTime && <p className="notice full" role="alert">{outsideHours ? bookingText.invalidDuration : bookingText.outsideHours}</p>}
-            <div className={booking.venueKey === 'ha-do-centrosa' ? 'staff-booking-pair' : undefined}>
-              <label>
-                {text.labels.arena}
-                <select value={selectedBookingArena} onChange={(event) => setBooking({ ...booking, arenaId: event.target.value })}>
-                  {bookingArenas.map((arena) => <option key={arena} value={arena}>{text.labels.arena} {arena.endsWith('2') ? 2 : 1}</option>)}
+                {text.labels.game}
+                <select value={selectedGame?.id || 'none'} onChange={(event) => setBooking({ ...booking, gameId: event.target.value, arenaId: '', discountId: '' })}>
+                  <option value="none">{bookingText.noGame}</option>
+                  {bookingGames.map((game) => (
+                    <option key={game.id} value={game.id}>{brandedGameName(game.slug, game.name)}</option>
+                  ))}
                 </select>
               </label>
-              {booking.venueKey === 'ha-do-centrosa' && <label>
-                {bookingText.arenaCount}
-                <select value={booking.arenaCount} onChange={(event) => setBooking({ ...booking, arenaCount: Number(event.target.value) })}>
-                  <option value={1}>1</option><option value={2}>2</option>
-                </select>
-              </label>}
+                <label>
+                  {text.labels.arena}
+                  <select value={selectedBookingArena} onChange={(event) => setBooking({ ...booking, arenaId: event.target.value })}>
+                    {bookingArenas.map((arena) => <option key={arena} value={arena}>{text.labels.arena} {arena.endsWith('2') ? 2 : 1}</option>)}
+                  </select>
+                </label>
+                {booking.venueKey === 'ha-do-centrosa' && <label>
+                  {bookingText.arenaCount}
+                  <select value={booking.arenaCount} onChange={(event) => setBooking({ ...booking, arenaCount: Number(event.target.value) })}>
+                    <option value={1}>1</option><option value={2}>2</option>
+                  </select>
+                </label>}
+                <label>
+                  {text.labels.players}
+                  <input min={1} max={16} type="number" value={booking.players} onChange={(event) => setBooking({ ...booking, players: Number(event.target.value) })} />
+                </label>
+                <label>
+                  {bookingText.sessionCount}
+                  <input min={1} max={32} step={1} type="number" value={booking.sessionCount || ''} onChange={(event) => setBooking({ ...booking, sessionCount: Number(event.target.value) })} />
+                </label>
             </div>
-            <label>
-              {text.labels.discountVoucher}
-              <select
-                value={booking.discountId}
-                onChange={(event) => setBooking({
-                  ...booking,
-                  discountId: event.target.value,
-                  manualDiscountType: '',
-                  manualDiscountValue: 0,
-                })}
-              >
-                <option value="">{bookingText.automaticDiscount}</option>
-                {booking.discountId && !selectedDiscount && <option value={booking.discountId}>{bookingText.discountChanged}</option>}
-                {availableBookingDiscounts.filter((discount) => !isStaffGroupDiscount(discount)).map((discount) => (
-                  <option key={discount.id} value={discount.id}>{discount.code ? `${discount.code} · ` : ''}{discount.name} · {formatDiscountRuleValue(discount, text)}</option>
-                ))}
-              </select>
-            </label>
-            <div className="staff-manual-discount full">
-              <span className="staff-field-label">{text.labels.uniqueDiscount}</span>
-              <div>
+          </section>
+          <section className="staff-new-section" aria-labelledby="staff-new-discounts">
+            <h4 id="staff-new-discounts">{bookingText.discountsSection}</h4>
+            <div className="form-grid compact-form-grid staff-new-fields">
+              <label>
+                {text.labels.discountVoucher}
                 <select
-                  aria-label={text.labels.uniqueDiscount}
-                  value={booking.manualDiscountType}
+                  value={booking.discountId}
                   onChange={(event) => setBooking({
                     ...booking,
-                    discountId: '',
-                    manualDiscountType: event.target.value as BookingForm['manualDiscountType'],
-                    manualDiscountValue: event.target.value ? booking.manualDiscountValue : 0,
+                    discountId: event.target.value,
+                    manualDiscountType: '',
+                    manualDiscountValue: 0,
                   })}
                 >
-                  <option value="">{text.noUniqueDiscount}</option>
-                  <option value="fixed_amount">{text.vndAmount}</option>
-                  <option value="percentage">{text.discountTypes.percentage}</option>
+                  <option value="">{bookingText.automaticDiscount}</option>
+                  {booking.discountId && !selectedDiscount && <option value={booking.discountId}>{bookingText.discountChanged}</option>}
+                  {availableBookingDiscounts.filter((discount) => !isStaffGroupDiscount(discount)).map((discount) => (
+                    <option key={discount.id} value={discount.id}>{discount.code ? `${discount.code} · ` : ''}{discount.name} · {formatDiscountRuleValue(discount, text)}</option>
+                  ))}
                 </select>
-                <input
-                  aria-label={bookingText.discountValue}
-                  disabled={!booking.manualDiscountType}
-                  min={0}
-                  max={booking.manualDiscountType === 'percentage' ? 100 : undefined}
-                  placeholder={booking.manualDiscountType === 'percentage' ? '%' : 'VND'}
-                  type="number"
-                  value={booking.manualDiscountValue || ''}
-                  onChange={(event) => setBooking({
-                    ...booking,
-                    discountId: '',
-                    manualDiscountValue: Number(event.target.value),
-                  })}
-                />
+              </label>
+              <div className="staff-manual-discount staff-new-manual-discount">
+                <span className="staff-field-label">{text.labels.uniqueDiscount}</span>
+                <div>
+                  <select
+                    aria-label={text.labels.uniqueDiscount}
+                    value={booking.manualDiscountType}
+                    onChange={(event) => setBooking({
+                      ...booking,
+                      discountId: '',
+                      manualDiscountType: event.target.value as BookingForm['manualDiscountType'],
+                      manualDiscountValue: event.target.value ? booking.manualDiscountValue : 0,
+                    })}
+                  >
+                    <option value="">{text.noUniqueDiscount}</option>
+                    <option value="fixed_amount">{text.vndAmount}</option>
+                    <option value="percentage">{text.discountTypes.percentage}</option>
+                  </select>
+                  {booking.manualDiscountType && <input
+                    aria-label={bookingText.discountValue}
+                    inputMode="decimal"
+                    min={0}
+                    max={booking.manualDiscountType === 'percentage' ? 100 : undefined}
+                    placeholder={booking.manualDiscountType === 'percentage' ? '%' : 'VND'}
+                    type="number"
+                    value={booking.manualDiscountValue || ''}
+                    onChange={(event) => setBooking({
+                      ...booking,
+                      discountId: '',
+                      manualDiscountValue: Number(event.target.value),
+                    })}
+                  />}
+                </div>
               </div>
+              {quote.discountTotal > 0 && <p className="full staff-new-discount-applied" role="status">
+                {bookingText.appliedDiscount} {quote.discountLabel} · −{formatVnd(quote.discountTotal)}
+              </p>}
             </div>
+          </section>
+          <section className="staff-new-section" aria-labelledby="staff-new-payments">
+            <div className="form-grid compact-form-grid staff-new-fields">
             <div className="staff-payment-splits full">
               <div className="staff-list-head">
-                <h4>{text.labels.paymentSplits}</h4>
+                <h4 id="staff-new-payments">{text.labels.paymentSplits}</h4>
                 <button className="staff-payment-add secondary" type="button" onClick={addBookingPaymentSplit}>
                   <ButtonIconText icon={<Plus aria-hidden="true" size={14} />}>{text.actions.addSplit}</ButtonIconText>
                 </button>
@@ -501,10 +529,11 @@ export default function NewSection({
             {bookingText.bookingNotes}
             <textarea value={booking.note} onChange={(event) => setBooking({ ...booking, note: event.target.value })} />
           </label>
+          </section>
         </fieldset>
       </div>
 
-      <div className="staff-card staff-summary-card">
+      <div className="staff-card staff-summary-card staff-new-booking-summary">
         <div className="staff-card-heading">
           <h3>{text.labels.summary}</h3>
           {availabilityState === 'available' && validTime && <StaffBookingShareButton contentRef={summaryRef} snapshotKey={JSON.stringify([booking, quote, selectedGame?.name, bookingVenueName, resolvedLanguage])} date={booking.date} language={resolvedLanguage} />}
