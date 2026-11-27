@@ -119,7 +119,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   const selected = selectedVenues ? locations.filter((item) => selectedVenues.has(item)) : locations
   const filter = selectedVenues === null ? 'all' : new Set(selected)
   const allSelected = selectedVenues === null || selected.length === locations.length && locations.length > 0
-  const venueControl = <ReportToolbarMenu label={t.venue} icon={<MapPin size={15} aria-hidden="true" />}
+  const venueControl = <ReportToolbarMenu label={t.venue} hideLabel icon={<MapPin size={15} aria-hidden="true" />}
     value={allSelected ? t.all : selected.length ? selected.map((item) => venueNames[item]).join(', ') : language === 'vi' ? 'Chưa chọn địa điểm' : 'No venues selected'}>
     <label><input type="checkbox" checked={allSelected} disabled={!locations.length}
       ref={(node) => { if (node) node.indeterminate = !allSelected && selected.length > 0 }}
@@ -141,7 +141,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   const revenueKey = useGross ? 'grossSales' : 'netSales'
   const revenueLabel = useGross ? t.gross : t.net
   const controls = <>{venueControl}
-    <ReportToolbarMenu label={t.revenue} icon={<Banknote size={15} aria-hidden="true" />} value={revenueLabel}>
+    <ReportToolbarMenu label={t.revenue} hideLabel icon={<Banknote size={15} aria-hidden="true" />} value={revenueLabel}>
       <button type="button" aria-pressed={!useGross} onClick={() => setRevenueBasis('net')}>{t.net}</button>
       <button type="button" aria-pressed={useGross} disabled={!grossAvailable}
         title={grossAvailable ? undefined : t.grossUnavailable} onClick={() => setRevenueBasis('gross')}>{t.gross}</button>

@@ -137,7 +137,7 @@ export default function ReportSection({
   const exportLabel = vi ? 'Xuất báo cáo' : 'Export'
   const toolbar = (venueControl?: ReactNode) => (
     <div className={styles.reportToolbar} role="group" aria-label={vi ? 'Bộ lọc báo cáo' : 'Report controls'}>
-      <ReportToolbarMenu label={text.labels.dateRange} icon={<CalendarRange size={15} aria-hidden="true" />}
+      <ReportToolbarMenu label={text.labels.dateRange} hideLabel icon={<CalendarRange size={15} aria-hidden="true" />}
         value={activePreset ? presetLabel(activePreset) : customLabel} detail={periodLabel(reportStart, reportEnd)}>
         {datePresets.map((preset) => <button key={preset} type="button" aria-pressed={activePreset === preset}
           onClick={() => selectPreset(preset)}>{presetLabel(preset)}</button>)}

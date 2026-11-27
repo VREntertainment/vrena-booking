@@ -291,7 +291,8 @@
   .reportTabs { gap: 6px; }
   .dashboard .reportTabs > button[role='tab'] { flex: 1 1 0; font-size: .77rem; line-height: 1.25; }
   .reportToolbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; }
-  .toolbarControl { display: grid; grid-template-columns: 75px minmax(0, 1fr); }
+  .toolbarControl { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .toolbarControl:has(.toolbarLabel) { grid-template-columns: 75px minmax(0, 1fr); }
   .dashboard .toolbarMenu > summary, .dashboard .toolbarOptions > :is(button, label) { min-height: 44px; }
   .toolbarOptions { max-width: 100%; }
   .exportControl { margin-inline-start: 0; }

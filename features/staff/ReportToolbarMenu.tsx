@@ -4,11 +4,12 @@ import { useEffect, useRef, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 import styles from './ReportCharts.module.css'
 
-export function ReportToolbarMenu({ label, icon, value, detail, children }: {
+export function ReportToolbarMenu({ label, icon, value, detail, hideLabel, children }: {
   label: string
   icon: ReactNode
   value?: string
   detail?: string
+  hideLabel?: boolean
   children: ReactNode
 }) {
   const menu = useRef<HTMLDetailsElement>(null)
@@ -21,7 +22,7 @@ export function ReportToolbarMenu({ label, icon, value, detail, children }: {
   }, [])
 
   return <div className={styles.toolbarControl}>
-    {value && <span className={styles.toolbarLabel}>{label}</span>}
+    {value && !hideLabel && <span className={styles.toolbarLabel}>{label}</span>}
     <details ref={menu} className={styles.toolbarMenu}
       onBlur={(event) => {
         if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false
