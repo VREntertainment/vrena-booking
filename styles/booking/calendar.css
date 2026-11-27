@@ -18,7 +18,6 @@
 @media (max-width: 600px) {
   .app .calendar-booking-dialog { padding: 16px; }
   .app .calendar-edit-fields { grid-template-columns: minmax(0, 1fr); }
-  .app .calendar-dialog-actions button { flex: 1 1 auto; }
 }
 .app .calendar-session-block { min-height: 22px; padding: 3px 5px; }
 .app .calendar-session-compact { max-height: 100%; overflow: hidden; }
@@ -131,16 +130,23 @@
   .app .calendar-edit-fields select,
   .app .calendar-edit-fields textarea { min-height: 44px; font-size: 16px; }
   .app .calendar-edit-fields .calendar-outside-hours,
-  .app .calendar-dialog-close,
-  .app .calendar-dialog-actions button { min-height: 44px; }
+  .app .calendar-dialog-close { min-height: 44px; }
+  .app .calendar-dialog-actions > button {
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 8px;
+    white-space: normal;
+  }
+  .app .calendar-dialog-actions > .calendar-delete-action { margin-right: 0; }
   .app .calendar-dialog-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     position: sticky;
     bottom: -16px;
     z-index: 2;
     padding-block: 8px max(8px, env(safe-area-inset-bottom));
     background: var(--player-surface-raised, var(--vrena-white));
     border-top: 1px solid var(--player-border, var(--vrena-neutral-200));
-    justify-content: flex-end;
   }
 }
 
