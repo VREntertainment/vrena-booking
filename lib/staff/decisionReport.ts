@@ -7,7 +7,7 @@ export type ReportOrderFact = {
   arena_id: string | null; players_count: number; total: number; order_status: string; payment_status: string
   sessions: LinkedSession | null
 }
-export type ReportNetSale = { sale_date: string; venue_key: string; net_sales: number }
+export type ReportNetSale = { sale_date: string; venue_key: string; net_sales: number; gross_sales?: number | null }
 export type ReportPlayedFact = { session_id: string; game_ids: string[]; sessions: LinkedSession }
 const excluded = new Set(['draft', 'cancelled', 'refunded'])
 
@@ -29,13 +29,13 @@ export function decisionPeriod(start: string, end: string, orders: ReportOrderFa
   const buckets = Array.from({ length: Math.ceil(days / binDays) }, (_, i) => ({
     from: dateString(first + i * binDays),
     to: dateString(Math.min(first + (i + 1) * binDays - 1, dayNumber(end))),
-    sales: 0, netSales: 0, bookings: 0, players: 0, paidPlayers: 0,
+    sales: 0, netSales: 0, grossSales: 0, bookings: 0, players: 0, paidPlayers: 0,
   }))
   const hours = Array.from({ length: 7 }, () => Array<number>(24).fill(0))
   const weekdays = Array<number>(7).fill(0)
   const times = Array<number>(24).fill(0)
-  const byVenue = Object.fromEntries(reportVenueKeys.map((key) => [key, { sales: 0, netSales: 0, bookings: 0, players: 0, paidPlayers: 0 }])) as Record<ReportVenue, {
-    sales: number; netSales: number; bookings: number; players: number; paidPlayers: number
+  const byVenue = Object.fromEntries(reportVenueKeys.map((key) => [key, { sales: 0, netSales: 0, grossSales: 0, bookings: 0, players: 0, paidPlayers: 0 }])) as Record<ReportVenue, {
+    sales: number; netSales: number; grossSales: number; bookings: number; players: number; paidPlayers: number
   }>
   const games = new Map<string, Record<ReportVenue, number>>()
   const recordedSessions = new Set<string>()
@@ -79,15 +79,21 @@ export function decisionPeriod(start: string, end: string, orders: ReportOrderFa
   }
 
   let netTotal = 0
+  let grossTotal = 0
   for (const sale of netSales) {
     const date = dayNumber(sale.sale_date)
     if (!Number.isFinite(date) || date < first || date >= first + days) continue
     const venue = reportVenue(sale.venue_key)
-    const amount = Number(sale.net_sales)
-    byVenue[venue].netSales += amount
+    const net = Number(sale.net_sales)
+    const gross = Number(sale.gross_sales ?? 0)
+    byVenue[venue].netSales += net
+    byVenue[venue].grossSales += gross
     if (!includesVenue(venue)) continue
-    netTotal += amount
-    buckets[Math.floor((date - first) / binDays)].netSales += amount
+    netTotal += net
+    grossTotal += gross
+    const bucket = buckets[Math.floor((date - first) / binDays)]
+    bucket.netSales += net
+    bucket.grossSales += gross
   }
 
   for (const record of played) {
@@ -103,7 +109,7 @@ export function decisionPeriod(start: string, end: string, orders: ReportOrderFa
   }
 
   return {
-    sales, netSales: netTotal, bookings, players, paidPlayers, cancelled, noShows, byVenue, buckets, games, weekdays, times, hours,
+    sales, netSales: netTotal, grossSales: grossTotal, bookings, players, paidPlayers, cancelled, noShows, byVenue, buckets, games, weekdays, times, hours,
     recordedSessions: recordedSessions.size,
     playersPerDay: players / days,
     playersPerSession: reservedSessions.size ? players / reservedSessions.size : null,

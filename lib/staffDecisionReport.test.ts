@@ -70,12 +70,14 @@ test('net sales follow receipt dates and the venue filter independently of booke
     order('future', { booking_date: end, sessions: { date: end, venue_key: venue }, payment_status: 'unpaid' }),
   ]
   const result = decisionPeriod(start, end, bookings, [], venue, 2, [
-    { sale_date: '2026-11-25', venue_key: venue, net_sales: 275_500 },
-    { sale_date: '2026-11-25', venue_key: 'ha-do-centrosa', net_sales: 240_000 },
+    { sale_date: '2026-11-25', venue_key: venue, net_sales: 275_500, gross_sales: 315_500 },
+    { sale_date: '2026-11-25', venue_key: 'ha-do-centrosa', net_sales: 240_000, gross_sales: 240_000 },
     { sale_date: '2026-11-27', venue_key: venue, net_sales: 420_000 },
   ])
   assert.equal(result.sales, 400_000)
   assert.equal(result.netSales, 275_500)
+  assert.equal(result.grossSales, 315_500)
+  assert.deepEqual(result.buckets.map((bin) => bin.grossSales), [0, 315_500])
   assert.deepEqual(result.buckets.map((bin) => bin.netSales), [0, 275_500])
   assert.equal(result.byVenue['ha-do-centrosa'].netSales, 240_000)
 })

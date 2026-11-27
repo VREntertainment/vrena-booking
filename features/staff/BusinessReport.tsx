@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { MapPin } from 'lucide-react'
+import { Banknote, MapPin } from 'lucide-react'
 import { ReportToolbarMenu } from './ReportToolbarMenu'
 import { brandedGameName } from '../../lib/anvio'
 import { orderedRange } from '../../lib/staff/dates'
@@ -31,7 +31,7 @@ const labelDate = (date: string, language: string) => new Intl.DateTimeFormat(la
 const labels = {
   en: {
     venue: 'Venue', all: 'All accessible venues', other: 'Unassigned venue',
-    sales: 'Booked sales', revenue: 'Net sales', posThrough: 'KiotViet data through', bookings: 'Bookings', players: 'Booked players', paid: 'Paid players',
+    sales: 'Booked sales', revenue: 'Revenue', net: 'Net sales', gross: 'Gross sales', grossUnavailable: 'Gross sales are unavailable for part of this period.', posThrough: 'KiotViet data through', bookings: 'Bookings', players: 'Booked players', paid: 'Paid players',
     perDay: 'Players per day', perSession: 'Players per session',
     trend: 'Booking trend', trendDescription: 'Compare the same day or interval within each selected period.',
     day: 'Bookings by weekday', time: 'Bookings by start hour', heat: 'Peak booking slots',
@@ -40,7 +40,7 @@ const labels = {
     previous: 'Comparison', current: 'Selected period', noData: 'No data for this period.', load: 'Loading venue and booking metrics…',
     missing: 'The booking metrics could not load.', gameMissing: 'Recorded gameplay data could not load.',
     gameEmpty: 'No recorded games are available for this selection.', gameCoverage: 'sessions with recorded gameplay',
-    venueComparison: 'Venue comparison', venueDescription: 'Compare net sales, bookings, players and paid players side by side.',
+    venueComparison: 'Venue comparison', venueDescription: 'Compare revenue, bookings, players and paid players side by side.',
     businessScope: 'Payments and booking sources · all accessible venues',
     receipts: 'Cash and bank amounts follow original receipts. Voucher redemption is not cash received.',
     peak: 'Busiest', cancelled: 'Cancelled', noShows: 'No-shows', retry: 'Retry', metric: 'Metric', period: 'Period',
@@ -49,7 +49,7 @@ const labels = {
   },
   vi: {
     venue: 'Địa điểm', all: 'Tất cả địa điểm được phép', other: 'Chưa xác định địa điểm',
-    sales: 'Doanh số đặt chỗ', revenue: 'Doanh thu thuần', posThrough: 'Dữ liệu KiotViet đến', bookings: 'Lượt đặt', players: 'Người chơi đã đặt', paid: 'Người chơi đã thanh toán',
+    sales: 'Doanh số đặt chỗ', revenue: 'Doanh thu', net: 'Doanh thu thuần', gross: 'Doanh thu gộp', grossUnavailable: 'Thiếu dữ liệu doanh thu gộp cho một phần của kỳ này.', posThrough: 'Dữ liệu KiotViet đến', bookings: 'Lượt đặt', players: 'Người chơi đã đặt', paid: 'Người chơi đã thanh toán',
     perDay: 'Người chơi mỗi ngày', perSession: 'Người chơi mỗi phiên',
     trend: 'Xu hướng đặt chỗ', trendDescription: 'So sánh theo cùng vị trí ngày hoặc khoảng thời gian trong mỗi kỳ.',
     day: 'Lượt đặt theo ngày trong tuần', time: 'Lượt đặt theo giờ bắt đầu', heat: 'Khung giờ được đặt nhiều nhất',
@@ -58,7 +58,7 @@ const labels = {
     previous: 'Kỳ so sánh', current: 'Kỳ đã chọn', noData: 'Không có dữ liệu trong kỳ này.', load: 'Đang tải số liệu địa điểm và đặt chỗ…',
     missing: 'Không thể tải số liệu đặt chỗ.', gameMissing: 'Không thể tải dữ liệu trò chơi đã chơi.',
     gameEmpty: 'Chưa ghi nhận trò chơi nào cho lựa chọn này.', gameCoverage: 'phiên đã ghi nhận trò chơi',
-    venueComparison: 'So sánh địa điểm', venueDescription: 'So sánh doanh thu thuần, lượt đặt, người chơi và người chơi đã thanh toán.',
+    venueComparison: 'So sánh địa điểm', venueDescription: 'So sánh doanh thu, lượt đặt, người chơi và người chơi đã thanh toán.',
     businessScope: 'Thanh toán và nguồn đặt · tất cả địa điểm được phép',
     receipts: 'Tiền mặt và chuyển khoản theo biên nhận gốc. Sử dụng voucher không tạo tiền thu mới.',
     peak: 'Cao nhất', cancelled: 'Đã hủy', noShows: 'Không đến', retry: 'Thử lại', metric: 'Chỉ số', period: 'Kỳ',
@@ -76,7 +76,8 @@ function gameLabel(id: string, catalog: Map<string, CatalogEntry>) {
 
 export default function BusinessReport({ start, end, compareStart, compareEnd, compare, language, text, financial, toolbar }: Props) {
   const [selectedVenues, setSelectedVenues] = useState<ReadonlySet<ReportVenue> | null>(null)
-  const [metric, setMetric] = useState<'netSales' | 'sales' | 'bookings' | 'players' | 'paidPlayers'>('netSales')
+  const [revenueBasis, setRevenueBasis] = useState<'net' | 'gross'>('net')
+  const [metric, setMetric] = useState<'revenue' | 'sales' | 'bookings' | 'players' | 'paidPlayers'>('revenue')
   const [showGames, setShowGames] = useState(false)
   const [heatComparison, setHeatComparison] = useState(false)
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
@@ -134,6 +135,19 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
     </label>)}
   </ReportToolbarMenu>
 
+  const grossAvailable = Boolean(loaded?.current.posThrough && loaded.current.netSales.every((sale) => sale.gross_sales != null)
+    && (!loaded.previous || loaded.previous.netSales.every((sale) => sale.gross_sales != null)))
+  const useGross = revenueBasis === 'gross' && grossAvailable
+  const revenueKey = useGross ? 'grossSales' : 'netSales'
+  const revenueLabel = useGross ? t.gross : t.net
+  const controls = <>{venueControl}
+    <ReportToolbarMenu label={t.revenue} icon={<Banknote size={15} aria-hidden="true" />} value={revenueLabel}>
+      <button type="button" aria-pressed={!useGross} onClick={() => setRevenueBasis('net')}>{t.net}</button>
+      <button type="button" aria-pressed={useGross} disabled={!grossAvailable}
+        title={grossAvailable ? undefined : t.grossUnavailable} onClick={() => setRevenueBasis('gross')}>{t.gross}</button>
+    </ReportToolbarMenu>
+  </>
+
   const days = Math.max(reportDayCount(from, to), compare ? reportDayCount(compareFrom, compareTo) : 0)
   const binDays = days > 62 ? Math.ceil(days / (62 * 7)) * 7 : 1
   const periods = loaded ? {
@@ -142,7 +156,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   } : null
   const byLocation = periods && loaded ? selected.flatMap((item) =>
     periods.current.byVenue[item].bookings || periods.previous?.byVenue[item].bookings ||
-    periods.current.byVenue[item].netSales || periods.previous?.byVenue[item].netSales ? [{
+    periods.current.byVenue[item][revenueKey] || periods.previous?.byVenue[item][revenueKey] ? [{
       item,
       current: decisionPeriod(from, to, loaded.current.orders, [], item, binDays, loaded.current.netSales).buckets,
       previous: loaded.previous ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, [], item, binDays, loaded.previous.netSales).buckets : [],
@@ -156,16 +170,17 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
       : absolute >= 1e6 ? `${reportNumber(language, value / 1e6, 1)}M`
         : absolute >= 1e3 ? `${reportNumber(language, value / 1e3, 1)}k` : count(value)
   }
-  if (!periods || !loaded) return <>{toolbar(venueControl)}<div className={styles.dashboard}>
+  if (!periods || !loaded) return <>{toolbar(controls)}<div className={styles.dashboard}>
     {failed === key
       ? <p role="alert">{t.missing} <button type="button" onClick={() => setRetry((value) => value + 1)}>{t.retry}</button></p>
       : <p role="status" className={styles.note}>{t.load}</p>}
   </div></>
 
   const { current, previous } = periods
-  const venueMetrics = { netSales: t.revenue, bookings: t.bookings, players: t.players, paidPlayers: t.paid }
+  const venueMetrics = { revenue: revenueLabel, bookings: t.bookings, players: t.players, paidPlayers: t.paid }
   const metrics = { ...venueMetrics, sales: t.sales }
-  const moneyMetric = metric === 'sales' || metric === 'netSales'
+  const moneyMetric = metric === 'sales' || metric === 'revenue'
+  const chartKey = metric === 'revenue' ? revenueKey : metric
   const displayMetric = moneyMetric ? money : count
   const dotColor = selected.length === 1 ? colors[selected[0]] : 'primary'
   const describeBin = (point: typeof current.buckets[number]) => point.from === point.to
@@ -179,8 +194,8 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
       const color = item === 'all' ? dotColor : colors[item]
       const venueName = item === 'all' ? '' : `${venueNames[item]} · `
       return [
-        { label: `${venueName}${compare ? t.current : ''}`.replace(/ · $/, '') || t.current, color, values: primary.map((point) => point[metric]), dates: primary.map(describeBin) },
-        ...(previous ? [{ label: `${venueName}${t.previous}`, color, values: secondary.map((point) => point[metric]), dates: secondary.map(describeBin), comparison: true }] : []),
+        { label: `${venueName}${compare ? t.current : ''}`.replace(/ · $/, '') || t.current, color, values: primary.map((point) => point[chartKey]), dates: primary.map(describeBin) },
+        ...(previous ? [{ label: `${venueName}${t.previous}`, color, values: secondary.map((point) => point[chartKey]), dates: secondary.map(describeBin), comparison: true }] : []),
       ]
     })
   const weekdayDates = [4, 5, 6, 7, 8, 9, 10]
@@ -203,7 +218,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   }).sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
   const venueTotals = reportVenueKeys.filter((item) => locations.includes(item) || current.byVenue[item].bookings || previous?.byVenue[item].bookings)
   const summary = [
-    { label: t.revenue, value: current.netSales, previous: previous?.netSales, format: money },
+    { label: revenueLabel, value: current[revenueKey], previous: previous?.[revenueKey], format: money },
     { label: t.bookings, value: current.bookings, previous: previous?.bookings, format: count },
     { label: t.players, value: current.players, previous: previous?.players, format: count },
     { label: t.paid, value: current.paidPlayers, previous: previous?.paidPlayers, format: count },
@@ -220,7 +235,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
     { label: text.paymentMethods.vnpay, value: financial.vnpayTotal },
     { label: text.unpaid, value: financial.unpaidAmount },
   ].sort((a, b) => b.value - a.value) : []
-  return <>{toolbar(venueControl)}<div className={styles.dashboard}>
+  return <>{toolbar(controls)}<div className={styles.dashboard}>
     <dl className={styles.metrics}>{summary.map((item) => <div key={item.label}>
       <dt>{item.label}</dt><dd>{item.value == null ? '—' : item.format(item.value)}</dd>
       {previous && <small>{t.previous} · {item.previous == null ? '—' : item.format(item.previous)}</small>}
@@ -245,7 +260,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
             {(Object.keys(venueMetrics) as Array<keyof typeof venueMetrics>).map((key) => (
               <td key={key} className={styles.venueMetric}>
                 <span className={styles.mobileMetricLabel} aria-hidden="true">{metrics[key]}</span>
-                <span>{key === 'netSales' ? money(period.byVenue[item][key]) : count(period.byVenue[item][key])}</span>
+                <span>{key === 'revenue' ? money(period.byVenue[item][revenueKey]) : count(period.byVenue[item][key])}</span>
               </td>
             ))}
           </tr>))}</tbody>
