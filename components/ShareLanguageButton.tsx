@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useEffectEvent, useId, useRef, useState, type ComponentPropsWithoutRef, type ReactNode } from 'react'
+import { useEffect, useEffectEvent, useId, useState, type ComponentPropsWithoutRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import styles from './ShareLanguageButton.module.css'
@@ -18,32 +18,33 @@ export function ShareLanguageButton({
   prepare?: PrepareShare
   renderOptions?: (close: () => void) => ReactNode
 }) {
-  const trigger = useRef<HTMLButtonElement>(null)
-  const dialog = useRef<HTMLDialogElement>(null)
+  const [trigger, setTrigger] = useState<HTMLButtonElement | null>(null)
+  const [dialog, setDialog] = useState<HTMLDialogElement | null>(null)
   const [host, setHost] = useState<HTMLElement | null>(null)
   const titleId = useId()
   const vi = language === 'vi'
 
   useEffect(() => {
-    if (host && !dialog.current?.open) dialog.current?.showModal()
-  }, [host])
+    if (dialog && !dialog.open) dialog.showModal()
+  }, [dialog])
 
   function close() {
-    dialog.current?.close()
+    dialog?.close()
     setHost(null)
-    const button = trigger.current
-    if (button?.getClientRects().length) button.focus()
-    else button?.closest('details')?.querySelector('summary')?.focus()
+    if (trigger?.getClientRects().length) trigger.focus()
+    else trigger?.closest('details')?.querySelector('summary')?.focus()
+    setTrigger(null)
   }
 
   return <>
-    <button {...button} ref={trigger} type="button" aria-haspopup="dialog" aria-expanded={Boolean(host)} onClick={(event) => {
+    <button {...button} type="button" aria-haspopup="dialog" aria-expanded={Boolean(host)} onClick={(event) => {
       event.stopPropagation()
+      setTrigger(event.currentTarget)
       // Keep the dialog in an existing modal's focus scope when Share is nested inside one.
       setHost(event.currentTarget.closest('dialog[open], .app') as HTMLElement | null ?? document.body)
     }}>{children}</button>
     {host && createPortal(
-      <dialog ref={dialog} className={styles.dialog} aria-labelledby={titleId}
+      <dialog ref={setDialog} className={styles.dialog} aria-labelledby={titleId}
         onClick={(event) => event.stopPropagation()}
         onCancel={(event) => { event.preventDefault(); event.stopPropagation(); close() }}>
         <div className={styles.heading}>
