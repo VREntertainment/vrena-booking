@@ -1032,6 +1032,7 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
       {currentTab === 'orders' && confirmedSummary && <div className="notice staff-booking-success" role="status"><strong>{resolvedLanguage === 'vi' ? 'Đặt chỗ đã xác nhận' : 'Booking confirmed'} · {confirmedSummary.orderNumber}</strong><button type="button" className="secondary" onClick={() => { setConfirmedSummary(null); setOrdersQuery(query => ({ ...query, focus: undefined, page: 0 })) }}>{resolvedLanguage === 'vi' ? 'Tất cả đơn hàng' : 'All orders'}</button><button type="button" className="secondary" onClick={() => { setConfirmedSummary(null); setOrdersQuery(query => ({ ...query, focus: undefined, page: 0 })); setActiveTab('new') }}>{text.labels.newBooking}</button></div>}
 
       {currentTabReady && currentTab === 'new' && (<NewSection
+        initialCalendarTime={initialBooking?.time}
         sessionLengthError={sessionLength.error}
         refreshSessionLength={sessionLength.refresh}
         text={text}

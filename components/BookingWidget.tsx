@@ -61,7 +61,7 @@ import { bindBookingTournamentActions } from '../features/booking/tournament.act
 import { CAFE_SOFT_OPENING_DATE, availableSessionTimes, cafeTicketTimes } from '../lib/booking/availability'
 import { clearPendingTicketAccountBooking, readPendingTicketAccountBooking } from '../lib/booking/pendingAccountBooking'
 
-import { arenaTimeOptions } from '../lib/booking/arenaAvailability'
+import { arenaTimeOptions, vietnamClock } from '../lib/booking/arenaAvailability'
 import { useArenaOccupancy } from '../hooks/useArenaOccupancy'
 
 import { useTicketCheckout } from '../hooks/useTicketCheckout'
@@ -4082,6 +4082,7 @@ function BookingWorkspace({
 
 
 
+  const staffCalendarClock = canManageCalendarBookings ? vietnamClock() : null
   const calendarAvailableSlotKeys = useMemo(() => {
     const availableKeys = new Set<string>()
     const today = localDateString()
@@ -5679,12 +5680,16 @@ function BookingWorkspace({
                           <div className="calendar-day-slots">
                             {calendarTimeSlots.map((slot) => {
                               const slotKey = `${day.value}-${slot.value}`
-                              const slotAvailable = calendarAvailableSlotKeys.has(slotKey)
+                              const pastStaffSlot = staffCalendarClock !== null && (
+                                day.value < staffCalendarClock.date
+                                || (day.value === staffCalendarClock.date && slot.minutes <= staffCalendarClock.minutes)
+                              )
+                              const slotAvailable = !pastStaffSlot && calendarAvailableSlotKeys.has(slotKey)
                               return (
                                 <button
                                   aria-label={`${text.emptySlot}: ${day.weekday} ${day.day} ${slot.value}`}
                                   className={slotAvailable ? 'calendar-slot' : 'calendar-slot unavailable'}
-                                  disabled={!slotAvailable || isCalendarLoading}
+                                  disabled={isCalendarLoading || (!slotAvailable && !canManageCalendarBookings)}
                                   key={slot.value}
                                   type="button"
                                   onClick={() => startCalendarBooking(day.value, slot.value)}

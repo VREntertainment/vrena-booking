@@ -49,6 +49,7 @@ import type {
 import { ButtonIconText } from './shared'
 
 export type NewSectionProps = {
+  initialCalendarTime: string | undefined
   sessionLengthError: boolean
   refreshSessionLength: () => void
   text: StaffConsoleCopy
@@ -90,6 +91,7 @@ export type NewSectionProps = {
 }
 
 export default function NewSection({
+  initialCalendarTime,
   sessionLengthError,
   refreshSessionLength,
   text,
@@ -135,8 +137,8 @@ export default function NewSection({
   const hours = staffBookingHours(booking.venueKey, quote.duration)
   const outsideHours = booking.allowOutsideHours
   const validTime = validStaffBookingTime(booking.venueKey, quote.duration, booking.time, outsideHours)
-  const selectionKey = JSON.stringify([booking.date, booking.venueKey, selectedBookingArena, quote.duration, booking.arenaCount, selectedGame?.id, outsideHours])
-  const manualTimeSelection = useRef<string | null>(null)
+  const selectionKey = JSON.stringify([booking.date, booking.venueKey, selectedBookingArena, booking.arenaCount, selectedGame?.id])
+  const manualTimeSelection = useRef<string | null>(initialCalendarTime && booking.time === initialCalendarTime ? selectionKey : null)
   const availabilityKey = JSON.stringify([booking.date, booking.time, selectedBookingArena, quote.duration, booking.arenaCount, selectedGame?.id, outsideHours])
   const [availability, setAvailability] = useState<{ key: string; state: 'available' | 'unavailable' | 'error' } | null>(null)
   const [slots, setSlots] = useState<{ key: string; values: Array<{ time: string; available: boolean; past?: boolean }> } | null>(null)
