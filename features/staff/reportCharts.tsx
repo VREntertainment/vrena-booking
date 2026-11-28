@@ -23,53 +23,69 @@ function scaleFor(values: number[]) {
   return { ticks, y: (value: number) => (top - value) / (top - bottom) * 100 }
 }
 
-export function ReportVenueLegend({ periods }: { periods: { label: string; dates: string }[] }) {
+type VenuePeriod = { label: string; dates: string; comparison?: boolean }
+
+export function ReportVenueLegend({ periods }: { periods: VenuePeriod[] }) {
   return <ul className={styles.venueChartLegend}>
-      {periods.map((period, index) => <li key={period.label}>
-        <i aria-hidden="true" data-previous={index === 1 || undefined} />
-        <span><strong>{period.label}</strong><span>{period.dates}</span></span>
-      </li>)}
-    </ul>
+    {periods.map((period) => <li key={period.label}>
+      <i aria-hidden="true" data-previous={period.comparison || undefined} />
+      <span><strong>{period.label}</strong> {period.dates}</span>
+    </li>)}
+  </ul>
 }
 
-export function ReportVenueBars({ label, venues, periods, formatValue, formatTick }: {
+export function ReportVenueBars({ label, venues, periods, formatValue, formatTick, axisLabel }: {
   label: string
-  venues: { name: string; color: ChartColor; values: ChartPoint[] }[]
-  periods: { label: string }[]
+  venues: { id: string; name: string; values: ChartPoint[]; details?: string[] }[]
+  periods: VenuePeriod[]
   formatValue: (value: ChartPoint) => string
   formatTick: (value: number) => string
+  axisLabel?: string
 }) {
   const { ticks, y } = scaleFor(venues.flatMap((venue) => venue.values.filter((value): value is number => value !== null)))
   const axis = ticks.slice().reverse()
   const x = (value: number) => 100 - y(value)
   const zero = x(0)
+  const id = useId()
+  const showMidpoint = zero === 0 || zero === 100
 
-  return <div className={styles.venueChart} role="group" aria-label={label}>
-    <p className={styles.venueChartTitle}>{label}</p>
-    <ul className={styles.venueBarGroups}>
-      {venues.map((venue) => <li key={venue.color} data-color={venue.color} className={styles.venueBarGroup}>
-        <h5>{venue.name}</h5>
-        <div className={styles.venueBarRows}>
-          {venue.values.map((value, index) => <div key={periods[index].label} className={styles.venueBarRow}>
-            <span className={styles.venueBarTrack} aria-hidden="true">
-              {axis.map((tick) => <i key={tick} className={styles.venueGridline} data-zero={tick === 0 || undefined} style={{ left: `${x(tick)}%` }} />)}
-              {value !== null && value !== 0 && <i className={styles.venueBar} data-previous={index === 1 || undefined}
-                style={{ left: `${Math.min(zero, x(value))}%`, width: `${Math.abs(x(value) - zero)}%` }} />}
-            </span>
-            <strong className={styles.venueBarValue}>
-              <span className="sr-only">{periods[index].label}: </span>{formatValue(value)}
-            </strong>
-          </div>)}
-        </div>
-      </li>)}
-    </ul>
-    <div className={styles.venueBarAxis} aria-hidden="true">
-      <div>
+  return <div className={styles.venueChart} data-wide={Boolean(axisLabel) || undefined} role="group" aria-labelledby={id} aria-describedby={axisLabel ? `${id}-units` : undefined}>
+    <h5 id={id} className={styles.venueChartTitle}>{label}</h5>
+    <div className={styles.venuePlot}>
+      <div className={styles.venueGridlines} aria-hidden="true">
+        {axis.map((tick) => <i key={tick} data-zero={tick === 0 || undefined} style={{ left: `${x(tick)}%` }} />)}
+      </div>
+      <ul className={styles.venueBarGroups}>
+        {venues.map((venue) => <li key={venue.id} className={styles.venueBarGroup}>
+          <p>{venue.name}</p>
+          <div className={styles.venueBarRows}>
+            {periods.map((period, index) => {
+              const value = venue.values[index]
+              const end = x(value ?? 0)
+              const detail = venue.details?.[index]
+              return <div key={period.label} className={styles.venueBarRow}>
+                {value !== null && value !== 0 && <div className={styles.venueBar} data-previous={period.comparison || undefined}
+                  style={{ left: `${Math.min(zero, end)}%`, width: `${Math.abs(end - zero)}%` }}>
+                  {detail && <span aria-hidden="true">{detail}</span>}
+                </div>}
+                <strong className={styles.venueBarValue} style={{ left: `${Math.max(end, zero)}%` }}>
+                  <span className="sr-only">{period.label}: </span>{formatValue(value)}
+                  {detail && <span className="sr-only">, {detail}</span>}
+                </strong>
+              </div>
+            })}
+          </div>
+        </li>)}
+      </ul>
+    </div>
+    <div className={styles.venueBarAxis}>
+      <div aria-hidden="true">
         {axis.map((tick, index) => <span key={tick}
-          data-interior={index > 0 && index < axis.length - 1 || undefined}
-          data-zero={tick === 0 || undefined}
+          data-interior={index > 0 && index < axis.length - 1 && tick !== 0
+            && !(showMidpoint && index === Math.floor(axis.length / 2)) || undefined}
           style={{ left: `${x(tick)}%` }}>{formatTick(tick)}</span>)}
       </div>
+      {axisLabel && <p id={`${id}-units`}>{axisLabel}</p>}
     </div>
   </div>
 }
