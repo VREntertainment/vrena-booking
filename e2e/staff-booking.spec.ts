@@ -338,7 +338,7 @@ test('staff calendar: shared calendar supports source-aware creation, edit, dele
   await loginAsAdmin(page)
   await openAdmin(page)
   await page.setViewportSize({ width: 1142, height: 894 })
-  await expect(page.getByRole('combobox', { name: 'Booking source', exact: true }).locator('option')).toHaveText(['Walk-in','Zalo','WhatsApp','Phone','Website','Social Media','Other'])
+  await expect(page.getByRole('combobox', { name: 'Booking source', exact: true }).locator('option')).toHaveText(['Walk-in','Zalo','WhatsApp','Phone','Website','Social Media','Google Maps','Other'])
   await page.getByRole('button', { name: 'Add split', exact: true }).click()
   await expect(page.getByRole('textbox', { name: 'Payment amount', exact: true })).toHaveCount(2)
   await page.getByRole('button', { name: 'Remove payment split 2', exact: true }).click()

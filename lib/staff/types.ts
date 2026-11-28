@@ -1,3 +1,4 @@
+import type { staffBookingCopy } from './bookingCopy'
 import type { RefObject } from 'react'
 import type { LanguageCode } from '../i18n/languages'
 import type { ProgressivePitBracket } from '../hrPayrollPolicy'
@@ -780,7 +781,7 @@ export type BookingForm = {
   overrideTotalEnabled: boolean
   overrideTotal: string
   overrideReason: string
-  bookingSource: 'walk_in' | 'zalo' | 'whatsapp' | 'phone' | 'website' | 'social_media' | 'other'
+  bookingSource: keyof typeof staffBookingCopy.en.sources
   venueKey: 'ha-do-centrosa' | 'cafe-des-stagiaires'
   guestBooking: boolean
   customerId: string
