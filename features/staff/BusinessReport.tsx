@@ -41,7 +41,7 @@ const labels = {
     previous: 'Comparison', current: 'Selected period', noData: 'No data for this period.', load: 'Loading venue and booking metrics…',
     missing: 'The booking metrics could not load.', gameMissing: 'Recorded gameplay data could not load.',
     gameEmpty: 'No recorded games are available for this selection.', gameCoverage: 'sessions with recorded gameplay',
-    venueComparison: 'Venue Comparison', viewVenueData: 'View venue data', priorUnavailable: 'Previous-period data could not load.',
+    venueComparison: 'Venue Comparison', millionVnd: 'million VND', paidPlayerCount: (formatted: string, value: number) => `${formatted} paid ${value === 1 ? 'player' : 'players'}`, viewVenueData: 'View venue data', priorUnavailable: 'Previous-period data could not load.',
     peak: 'Busiest', cancelled: 'Cancelled', noShows: 'No-shows', retry: 'Retry', metric: 'Metric', period: 'Period',
     mix: 'Payment mix',
     more: 'More games', less: 'Show fewer games',
@@ -57,7 +57,7 @@ const labels = {
     previous: 'Kỳ so sánh', current: 'Kỳ đã chọn', noData: 'Không có dữ liệu trong kỳ này.', load: 'Đang tải số liệu địa điểm và đặt chỗ…',
     missing: 'Không thể tải số liệu đặt chỗ.', gameMissing: 'Không thể tải dữ liệu trò chơi đã chơi.',
     gameEmpty: 'Chưa ghi nhận trò chơi nào cho lựa chọn này.', gameCoverage: 'phiên đã ghi nhận trò chơi',
-    venueComparison: 'So sánh địa điểm', viewVenueData: 'Xem dữ liệu địa điểm', priorUnavailable: 'Không tải được dữ liệu kỳ trước.',
+    venueComparison: 'So sánh địa điểm', millionVnd: 'triệu đồng', paidPlayerCount: (formatted: string) => `${formatted} người chơi đã thanh toán`, viewVenueData: 'Xem dữ liệu địa điểm', priorUnavailable: 'Không tải được dữ liệu kỳ trước.',
     peak: 'Cao nhất', cancelled: 'Đã hủy', noShows: 'Không đến', retry: 'Thử lại', metric: 'Chỉ số', period: 'Kỳ',
     mix: 'Cơ cấu thanh toán',
     more: 'Thêm trò chơi', less: 'Thu gọn',
@@ -219,7 +219,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   const venueTotals = reportVenueKeys.filter((item) => locations.includes(item) || current.byVenue[item].bookings || previous?.byVenue[item].bookings)
   const venuePrevious = previous ?? (loaded.previous
     ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, [], filter, binDays, loaded.previous.netSales) : null)
-  const venuePeriods = [current, venuePrevious]
+  const venuePeriods = [venuePrevious, current]
   const venueMetricKeys = Object.keys(venueMetrics) as VenueMetric[]
   const priorGrossAvailable = Boolean(loaded.previous?.posThrough && loaded.previous.netSales.every((sale) => sale.gross_sales != null))
   const periodDate = new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-GB', {
@@ -230,8 +230,8 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   const previousDates = previous ? dateRange(compareFrom, compareTo) : null
   const comparedDates = previousDates ? `${currentDates} ${language === 'vi' ? 'so với' : 'vs.'} ${previousDates}` : currentDates
   const venueSeriesPeriods = [
+    { label: t.previous, dates: dateRange(compareFrom, compareTo), comparison: true },
     { label: t.current, dates: currentDates },
-    { label: t.previous, dates: dateRange(compareFrom, compareTo) },
   ]
   const venueValue = (period: typeof current | null, item: ReportVenue, metricKey: VenueMetric) =>
     !period || period === venuePrevious && metricKey === 'revenue' && useGross && !priorGrossAvailable
@@ -280,10 +280,19 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
           {venueMetricKeys.map((metricKey) => (
             <ReportVenueBars key={metricKey} label={venueMetrics[metricKey]} periods={venueSeriesPeriods}
               venues={venueTotals.map((item) => ({
-                name: venueNames[item], color: colors[item], values: venuePeriods.map((period) => venueValue(period, item, metricKey)),
+                id: item,
+                name: venueNames[item],
+                values: venuePeriods.map((period) => venueValue(period, item, metricKey)),
+                details: metricKey === 'revenue' ? venuePeriods.map((period) => {
+                  const players = period?.byVenue[item].paidPlayers
+                  return players == null ? '' : t.paidPlayerCount(count(players), players)
+                }) : undefined,
               }))}
-              formatValue={(value) => formatVenueValue(value, metricKey)}
-              formatTick={metricKey === 'revenue' ? shortMoney : (value) => reportNumber(language, value, 1)} />
+              axisLabel={metricKey === 'revenue' ? `${revenueLabel} (${t.millionVnd})` : undefined}
+              formatValue={(value) => metricKey === 'revenue' && value !== null
+                ? reportNumber(language, value / 1e6, Math.abs(value) < 10_000 ? 6 : 2)
+                : formatVenueValue(value, metricKey)}
+              formatTick={(value) => reportNumber(language, metricKey === 'revenue' ? value / 1e6 : value, metricKey === 'revenue' ? 6 : 1)} />
           ))}
         </div>
         <details className={`${styles.details} ${styles.venueData}`}>
@@ -292,7 +301,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
           {Object.values(venueMetrics).map((label) => <th scope="col" key={label}>{label}</th>)}</tr></thead>
           <tbody>{venueTotals.map((item) => venuePeriods.map((period, index) => <tr key={`${item}-${index}`}>
             <th scope="row" className={styles.venueLabel} data-color={colors[item]}>{venueNames[item]}</th>
-            <td className={styles.venuePeriod}>{index ? t.previous : t.current}</td>
+            <td className={styles.venuePeriod}>{venueSeriesPeriods[index].label}</td>
             {venueMetricKeys.map((key) => (
               <td key={key} className={styles.venueMetric}>
                 <span className={styles.mobileMetricLabel} aria-hidden="true">{metrics[key]}</span>
