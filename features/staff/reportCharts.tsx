@@ -23,25 +23,29 @@ function scaleFor(values: number[]) {
   return { ticks, y: (value: number) => (top - value) / (top - bottom) * 100 }
 }
 
-export function ReportVenueBars({ label, venues, periods, formatValue, formatTick }: {
-  label: string
-  venues: { name: string; color: ChartColor; values: number[] }[]
-  periods: { label: string; dates: string }[]
-  formatValue: (value: number) => string
-  formatTick: (value: number) => string
-}) {
-  const { ticks, y } = scaleFor(venues.flatMap((venue) => venue.values))
-  const axis = ticks.slice().reverse()
-  const x = (value: number) => 100 - y(value)
-  const zero = x(0)
-
-  return <div className={styles.venueChart} role="group" aria-label={label}>
-    <ul className={styles.venueChartLegend}>
+export function ReportVenueLegend({ periods }: { periods: { label: string; dates: string }[] }) {
+  return <ul className={styles.venueChartLegend}>
       {periods.map((period, index) => <li key={period.label}>
         <i aria-hidden="true" data-previous={index === 1 || undefined} />
         <span><strong>{period.label}</strong><span>{period.dates}</span></span>
       </li>)}
     </ul>
+}
+
+export function ReportVenueBars({ label, venues, periods, formatValue, formatTick }: {
+  label: string
+  venues: { name: string; color: ChartColor; values: ChartPoint[] }[]
+  periods: { label: string }[]
+  formatValue: (value: ChartPoint) => string
+  formatTick: (value: number) => string
+}) {
+  const { ticks, y } = scaleFor(venues.flatMap((venue) => venue.values.filter((value): value is number => value !== null)))
+  const axis = ticks.slice().reverse()
+  const x = (value: number) => 100 - y(value)
+  const zero = x(0)
+
+  return <div className={styles.venueChart} role="group" aria-label={label}>
+    <p className={styles.venueChartTitle}>{label}</p>
     <ul className={styles.venueBarGroups}>
       {venues.map((venue) => <li key={venue.color} data-color={venue.color} className={styles.venueBarGroup}>
         <h5>{venue.name}</h5>
@@ -49,7 +53,7 @@ export function ReportVenueBars({ label, venues, periods, formatValue, formatTic
           {venue.values.map((value, index) => <div key={periods[index].label} className={styles.venueBarRow}>
             <span className={styles.venueBarTrack} aria-hidden="true">
               {axis.map((tick) => <i key={tick} className={styles.venueGridline} data-zero={tick === 0 || undefined} style={{ left: `${x(tick)}%` }} />)}
-              {value !== 0 && <i className={styles.venueBar} data-previous={index === 1 || undefined}
+              {value !== null && value !== 0 && <i className={styles.venueBar} data-previous={index === 1 || undefined}
                 style={{ left: `${Math.min(zero, x(value))}%`, width: `${Math.abs(x(value) - zero)}%` }} />}
             </span>
             <strong className={styles.venueBarValue}>
@@ -70,13 +74,17 @@ export function ReportVenueBars({ label, venues, periods, formatValue, formatTic
   </div>
 }
 
-export function ReportPanel({ title, description, children, wide, actions }: {
-  title: string; description?: string; children: ReactNode; wide?: boolean; actions?: ReactNode
+export function ReportPanel({ title, period, description, children, wide, actions }: {
+  title: string; period?: string; description?: string; children: ReactNode; wide?: boolean; actions?: ReactNode
 }) {
   const id = useId()
   return <section className={wide ? `${styles.panel} ${styles.wide}` : styles.panel} aria-labelledby={id}>
     <header className={styles.panelHead}>
-      <div><h4 id={id}>{title}</h4>{description && <p>{description}</p>}</div>
+      <div>
+        <h4 id={id}>{title}</h4>
+        {period && <p className={styles.chartPeriod}>{period}</p>}
+        {description && <p>{description}</p>}
+      </div>
       {actions}
     </header>
     {children}
