@@ -277,11 +277,12 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
           {t.priorUnavailable} <button type="button" onClick={() => setRetry((value) => value + 1)}>{t.retry}</button>
         </p>}
         <div className={styles.venueChartGrid}>
-          {venueMetricKeys.map((metricKey) => (
+          {venueMetricKeys.filter((metricKey) => metricKey !== 'paidPlayers').map((metricKey) => (
             <ReportVenueBars key={metricKey} label={venueMetrics[metricKey]} periods={venueSeriesPeriods}
               venues={venueTotals.map((item) => ({
                 id: item,
                 name: venueNames[item],
+                color: colors[item],
                 values: venuePeriods.map((period) => venueValue(period, item, metricKey)),
                 details: metricKey === 'revenue' ? venuePeriods.map((period) => {
                   const players = period?.byVenue[item].paidPlayers
