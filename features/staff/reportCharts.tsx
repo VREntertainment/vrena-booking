@@ -23,7 +23,8 @@ function scaleFor(values: number[]) {
   return { ticks, y: (value: number) => (top - value) / (top - bottom) * 100 }
 }
 
-type VenuePeriod = { label: string; dates: string; comparison?: boolean }
+type BarSeries = { label: string; comparison?: boolean; color?: ChartColor }
+type VenuePeriod = BarSeries & { dates: string }
 
 export function ReportVenueLegend({ periods }: { periods: VenuePeriod[] }) {
   return <ul className={styles.venueChartLegend}>
@@ -34,13 +35,14 @@ export function ReportVenueLegend({ periods }: { periods: VenuePeriod[] }) {
   </ul>
 }
 
-export function ReportVenueBars({ label, venues, periods, formatValue, formatTick, axisLabel }: {
+export function ReportVenueBars({ label, venues, periods, formatValue, formatTick, axisLabel, compact }: {
   label: string
-  venues: { id: string; name: string; color: ChartColor; values: ChartPoint[]; details?: string[] }[]
-  periods: VenuePeriod[]
+  venues: { id: string; name: string; color?: ChartColor; values: ChartPoint[]; details?: string[] }[]
+  periods: BarSeries[]
   formatValue: (value: ChartPoint) => string
   formatTick: (value: number) => string
   axisLabel?: string
+  compact?: boolean
 }) {
   const { ticks, y } = scaleFor(venues.flatMap((venue) => venue.values.filter((value): value is number => value !== null)))
   const axis = ticks.slice().reverse()
@@ -49,7 +51,7 @@ export function ReportVenueBars({ label, venues, periods, formatValue, formatTic
   const id = useId()
   const showMidpoint = zero === 0 || zero === 100
 
-  return <div className={styles.venueChart} role="group" aria-labelledby={id} aria-describedby={axisLabel ? `${id}-units` : undefined}>
+  return <div className={styles.venueChart} data-compact={compact || undefined} role="group" aria-labelledby={id} aria-describedby={axisLabel ? `${id}-units` : undefined}>
     <h5 id={id} className={styles.venueChartTitle}>{label}</h5>
     <div className={styles.venuePlot}>
       <div className={styles.venueGridlines} aria-hidden="true">
@@ -64,7 +66,7 @@ export function ReportVenueBars({ label, venues, periods, formatValue, formatTic
               const end = x(value ?? 0)
               const detail = venue.details?.[index]
               return <div key={period.label} className={styles.venueBarRow}>
-                {value !== null && value !== 0 && <div className={styles.venueBar} data-previous={period.comparison || undefined}
+                {value !== null && value !== 0 && <div className={styles.venueBar} data-color={period.color} data-previous={period.comparison || undefined}
                   style={{ left: `${Math.min(zero, end)}%`, width: `${Math.abs(end - zero)}%` }}>
                   {detail && <span aria-hidden="true">{detail}</span>}
                 </div>}

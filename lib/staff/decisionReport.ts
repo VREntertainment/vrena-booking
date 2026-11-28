@@ -8,13 +8,67 @@ export type ReportOrderFact = {
   sessions: LinkedSession | null
 }
 export type ReportNetSale = { sale_date: string; venue_key: string; net_sales: number; gross_sales?: number | null }
-export type ReportPlayedFact = { session_id: string; game_ids: string[]; sessions: LinkedSession }
+export type ReportPlayedFact = {
+  session_id: string; game_ids: string[]
+  sessions: LinkedSession & { duration_minutes?: number; ticket_player_count?: number | null }
+}
+export const gameProviders = ['Virtual Arena', 'Anvio', 'Spatial Ops', 'Laser Limbo', 'VR Arena'] as const
+type GameProvider = typeof gameProviders[number]
+
+const providerGames: Record<GameProvider, string[]> = {
+  'Virtual Arena': ['arc-of-the-covenant', 'castle-unspunnen', 'joller-house', 'laser-tag', 'mini-block-towers', 'office-war', 'paintball', 'snow-battle', 'wild-west'],
+  Anvio: ['city-z', 'revolta', 'station-zarya'],
+  'Spatial Ops': ['spatial-ops'],
+  'Laser Limbo': ['laser-limbo'],
+  'VR Arena': ['arcade-2-0', 'birthday-party', 'orc-kings-arena', 'party-games', 'portal-mafia', 'portal-zombie', 'vr-arena-strike'],
+}
+const providerByGame = new Map(gameProviders.flatMap((provider) => providerGames[provider].map((game) => [game, provider] as const)))
 const excluded = new Set(['draft', 'cancelled', 'refunded'])
 
 export function reportVenue(key: string | null | undefined, arena?: string | null): ReportVenue {
   if (key) return key === 'ha-do-centrosa' || key === 'cafe-des-stagiaires' ? key : 'other'
   if (arena === 'cafe:arena-1') return 'cafe-des-stagiaires'
   return arena && ['arena-1', 'arena-2', 'sim-racing-1', 'sim-racing-2'].includes(arena) ? 'ha-do-centrosa' : 'other'
+}
+
+export function reportProviderMinutes(start: string, end: string, orders: ReportOrderFact[], played: ReportPlayedFact[], venues: readonly ReportVenue[]) {
+  const playersBySession = new Map<string, number>()
+  for (const order of orders) {
+    if (!order.session_id) continue
+    const players = playersBySession.get(order.session_id) ?? 0
+    const eligible = !excluded.has(order.order_status) && order.order_status !== 'no_show' && order.payment_status !== 'refunded'
+    playersBySession.set(order.session_id, players + (eligible ? Number(order.players_count) || 0 : 0))
+  }
+
+  const minutes = new Map(gameProviders.map((provider) => [provider, { 'ha-do-centrosa': 0, 'cafe-des-stagiaires': 0, other: 0 }]))
+  let counted = 0
+  let mixed = 0
+  let omitted = 0
+  for (const record of played) {
+    const { sessions: session, session_id: id, game_ids: games } = record
+    const venue = reportVenue(session.venue_key)
+    if (!venues.includes(venue) || session.date < start || session.date > end || session.status === 'cancelled' || !games.length) continue
+    const orderPlayers = playersBySession.get(id)
+    if (orderPlayers === 0) continue
+
+    // Modes and maps use their parent game's slug before the first colon.
+    const providers = new Set(games.map((game) => providerByGame.get(game.split(':')[0])))
+    const players = Number(session.ticket_player_count) || orderPlayers || 0
+    const duration = Number(session.duration_minutes)
+    if (providers.has(undefined) || !Number.isFinite(duration) || duration <= 0 || players <= 0) {
+      omitted++
+      continue
+    }
+
+    counted++
+    if (providers.size > 1) mixed++
+    const share = players * duration / providers.size
+    for (const provider of providers) {
+      const totals = provider && minutes.get(provider)
+      if (totals) totals[venue] += share
+    }
+  }
+  return { minutes, counted, mixed, omitted }
 }
 
 const dayMs = 86400000

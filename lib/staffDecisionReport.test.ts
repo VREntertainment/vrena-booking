@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { reportPresetRange } from './staff/dates.ts'
-import { decisionPeriod, type ReportOrderFact } from './staff/decisionReport.ts'
+import { decisionPeriod, reportProviderMinutes, type ReportOrderFact, type ReportPlayedFact } from './staff/decisionReport.ts'
 
 function order(id: string, overrides: Partial<ReportOrderFact> = {}): ReportOrderFact {
   return {
@@ -84,4 +84,37 @@ test('net sales follow receipt dates and the venue filter independently of booke
 
 test('the default reporting window uses the last 30 completed days', () => {
   assert.deepEqual(reportPresetRange('last_30', '2026-11-27'), ['2026-10-28', '2026-11-26'])
+})
+
+test('provider play time counts players times duration and splits mixed-provider minutes only once', () => {
+  const date = '2026-11-23'
+  const hado = 'ha-do-centrosa'
+  const thao = 'cafe-des-stagiaires'
+  const session = { date, venue_key: hado, duration_minutes: 30, ticket_player_count: 4 }
+  const played: ReportPlayedFact[] = [
+    { session_id: 'same-provider', game_ids: ['laser-tag', 'snow-battle'], sessions: session },
+    { session_id: 'mixed', game_ids: ['spatial-ops:modes:domination', 'spatial-ops', 'revolta'],
+      sessions: { ...session, venue_key: thao, ticket_player_count: null } },
+    { session_id: 'vr-arena', game_ids: ['arcade-2-0:maps:house', 'portal-zombie'], sessions: session },
+    { session_id: 'voided', game_ids: ['laser-limbo'], sessions: session },
+    { session_id: 'cancelled', game_ids: ['laser-limbo'], sessions: { ...session, status: 'cancelled' } },
+    { session_id: 'unknown', game_ids: ['unknown-game'], sessions: session },
+    { session_id: 'missing-duration', game_ids: ['laser-limbo'], sessions: { ...session, duration_minutes: undefined } },
+    { session_id: 'outside', game_ids: ['laser-limbo'], sessions: { ...session, date: '2026-11-22' } },
+  ]
+  const orders = [
+    order('a', { session_id: 'mixed', players_count: 2, payment_status: 'unpaid' }),
+    order('b', { session_id: 'mixed', players_count: 2 }),
+    order('c', { session_id: 'voided', order_status: 'no_show' }),
+  ]
+  const result = reportProviderMinutes(date, date, orders, played, [hado, thao])
+  assert.equal(result.minutes.get('Virtual Arena')?.[hado], 120)
+  assert.equal(result.minutes.get('VR Arena')?.[hado], 120)
+  assert.equal(result.minutes.get('Anvio')?.[thao], 60)
+  assert.equal(result.minutes.get('Spatial Ops')?.[thao], 60)
+  assert.equal(result.minutes.get('Laser Limbo')?.[hado], 0)
+  assert.deepEqual([result.counted, result.mixed, result.omitted], [3, 1, 2])
+  const singleVenue = reportProviderMinutes(date, date, orders, played, [thao])
+  assert.equal(singleVenue.counted, 1)
+  assert.equal(singleVenue.minutes.get('Virtual Arena')?.[hado], 0)
 })
