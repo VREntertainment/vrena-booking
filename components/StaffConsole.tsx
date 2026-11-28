@@ -712,11 +712,12 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
       const actions = (shareAction || voucherAction || (canCreateOrders && (order.session_id || !terminal))) ? <>
         {shareAction}
         {voucherAction}
-        {canCreateOrders && order.session_id && <button type="button" data-close-order-menu disabled={saving} onClick={() => setEditingBookingId(order.session_id)}>{resolvedLanguage === 'vi' ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button>}
+        {canCreateOrders && order.session_id && <button type="button" data-close-order-menu disabled={saving} onClick={() => setEditingBookingId(order.session_id)}>{resolvedLanguage === 'vi' ? 'Sửa chi tiết đặt chỗ' : 'Edit booking details'}</button>}
         {canCreateOrders && !terminal && <>
           <button type="button" data-close-order-menu disabled={saving} onClick={adjustTotal}>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'}</button>
           <button type="button" data-close-order-menu disabled={saving} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'completed' })}>{text.actions.done}</button>
           <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'no_show' })}>{text.actions.noShow}</button>
+          <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'cancelled' })}>{resolvedLanguage === 'vi' ? 'Hủy đặt chỗ' : 'Cancel booking'}</button>
         </>}
       </> : undefined
       return <Fragment key={order.id}>
