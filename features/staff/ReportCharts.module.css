@@ -385,21 +385,26 @@
 .venueChartGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px 24px;
+  gap: 26px 30px;
 }
 .venueChartTitle {
-  margin: 0 0 5px;
+  margin: 0 0 12px;
   color: var(--report-ink);
-  font-size: .9rem;
+  font-size: .95rem;
   font-weight: 700;
 }
-@media (max-width: 850px) {
-  .venueChartGrid { grid-template-columns: minmax(0, 1fr); }
+.venueChart[data-wide] {
+  grid-column: 1 / -1;
+  --venue-chart-label: 8.5rem;
+  --venue-bar-height: clamp(32px, 4vw, 44px);
+  --venue-group-space: 20px;
 }
 .venueChart {
-  --venue-chart-label: clamp(6.75rem, 10vw, 8.75rem);
-  --venue-chart-value: clamp(5.5rem, 9vw, 7rem);
-  --venue-chart-gap: 14px;
+  --venue-chart-label: 7rem;
+  --venue-chart-value: 5.5rem;
+  --venue-chart-gap: 12px;
+  --venue-bar-height: 25px;
+  --venue-group-space: 12px;
   min-width: 0;
 }
 .venueChartLegend, .venueBarGroups {
@@ -410,81 +415,88 @@
 .venueChartLegend {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 24px;
-  margin-block-end: 20px;
+  gap: 8px 24px;
+  margin-block-end: 22px;
 }
 .venueChartLegend li {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   gap: 8px;
   color: var(--report-muted);
-  font-size: .78rem;
-  line-height: 1.4;
+  font-size: .8rem;
+  line-height: 1.45;
 }
-.venueChartLegend li > span { display: grid; gap: 2px; }
 .venueChartLegend strong { color: var(--report-ink); font-weight: 650; }
-.venueChartLegend i {
-  flex: none;
-  width: 18px;
-  height: 11px;
-  margin-block-start: 3px;
-  border: 1px solid var(--report-muted);
-  border-radius: 2px;
-  background: var(--report-muted);
-}
-.venueChartLegend i[data-previous] { background: transparent; border-style: dashed; }
+.venueChartLegend i, .venueBar { background: var(--vrena-cyan-800); }
+.venueChartLegend i[data-previous], .venueBar[data-previous] { background: var(--vrena-blue-900); }
+.venueChartLegend i { flex: none; width: 22px; height: 9px; }
 
-.venueBarGroups { display: grid; gap: 5px; }
+.venuePlot { position: relative; }
+.venueGridlines {
+  position: absolute;
+  inset: 0 var(--venue-chart-value) 0 calc(var(--venue-chart-label) + var(--venue-chart-gap));
+  pointer-events: none;
+}
+.venueGridlines i {
+  position: absolute;
+  inset-block: 0;
+  border-inline-start: 1px solid var(--report-grid);
+}
+.venueGridlines i[data-zero] { border-color: var(--report-rule); }
+.venueBarGroups { display: grid; gap: var(--venue-group-space); padding-block: 6px; }
 .venueBarGroup {
   display: grid;
   grid-template-columns: var(--venue-chart-label) minmax(0, 1fr);
   align-items: center;
   gap: 6px var(--venue-chart-gap);
-  padding-block: 9px;
-  border-block-end: 1px solid var(--report-rule);
 }
-.dashboard .venueBarGroup h5 {
+.dashboard .venueBarGroup p {
+  position: relative;
   margin: 0;
   color: var(--report-ink);
-  font-size: .88rem;
-  font-weight: 680;
-  line-height: 1.4;
+  text-align: end;
+  font-size: .84rem;
+  font-weight: 600;
 }
-.venueBarRows { display: grid; gap: 5px; }
-.venueBarRow {
+.venueBarRows {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--venue-chart-value);
-  align-items: center;
-  gap: var(--venue-chart-gap);
-  min-height: 20px;
+  gap: 5px;
+  margin-inline-end: var(--venue-chart-value);
 }
-.venueBarTrack { position: relative; height: 20px; min-width: 0; }
-.venueGridline {
-  position: absolute;
-  inset-block: 0;
-  border-inline-start: 1px solid var(--report-grid);
-}
-.venueGridline[data-zero] { border-color: var(--report-rule); }
+.venueBarRow { position: relative; height: var(--venue-bar-height); }
 .venueBar {
   position: absolute;
-  inset-block: 2px;
-  border-radius: 2px;
-  background: var(--series);
+  inset-block: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  container-type: inline-size;
 }
-.venueBar[data-previous] {
-  border: 1px dashed var(--series);
-  background: color-mix(in srgb, var(--series) 12%, transparent);
+.venueBar > span {
+  display: none;
+  padding-inline: 8px;
+  color: var(--vrena-white);
+  font-size: .78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+@container (min-width: 12rem) {
+  .venueBar > span { display: block; }
 }
 .venueBarValue {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-inline-start: 6px;
   color: var(--report-ink);
-  font-size: .86rem;
+  font-size: .83rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 .venueBarAxis {
-  padding-inline: calc(var(--venue-chart-label) + var(--venue-chart-gap)) calc(var(--venue-chart-value) + var(--venue-chart-gap));
+  padding-inline: calc(var(--venue-chart-label) + var(--venue-chart-gap)) var(--venue-chart-value);
   margin-block-start: 8px;
   color: var(--report-muted);
   font-size: .72rem;
@@ -494,11 +506,15 @@
 .venueBarAxis span { position: absolute; transform: translateX(-50%); }
 .venueBarAxis span:first-child { transform: none; }
 .venueBarAxis span:last-child { transform: translateX(-100%); }
+.venueBarAxis p { margin: 7px 0 0; text-align: center; }
 .venueData { margin-block-start: 14px; }
 .dashboard .venueData > summary { display: list-item; min-height: 44px; padding-block: 12px; font-weight: 600; }
+@media (max-width: 850px) {
+  .venueChartGrid { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 620px) {
-  .venueChart { --venue-chart-value: 6.2rem; --venue-chart-gap: 10px; }
+  .venueChart, .venueChart[data-wide] { --venue-chart-label: 0px; --venue-chart-gap: 0px; --venue-chart-value: 4.5rem; }
   .venueBarGroup { grid-template-columns: minmax(0, 1fr); }
-  .venueBarAxis { padding-inline-start: 0; }
-  .venueBarAxis [data-interior]:not([data-zero]) { display: none; }
+  .dashboard .venueBarGroup p { text-align: start; background: var(--report-surface); }
+  .venueBarAxis [data-interior] { display: none; }
 }
