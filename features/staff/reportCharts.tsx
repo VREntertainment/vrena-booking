@@ -36,7 +36,7 @@ export function ReportVenueLegend({ periods }: { periods: VenuePeriod[] }) {
 
 export function ReportVenueBars({ label, venues, periods, formatValue, formatTick, axisLabel }: {
   label: string
-  venues: { id: string; name: string; values: ChartPoint[]; details?: string[] }[]
+  venues: { id: string; name: string; color: ChartColor; values: ChartPoint[]; details?: string[] }[]
   periods: VenuePeriod[]
   formatValue: (value: ChartPoint) => string
   formatTick: (value: number) => string
@@ -56,7 +56,7 @@ export function ReportVenueBars({ label, venues, periods, formatValue, formatTic
         {axis.map((tick) => <i key={tick} data-zero={tick === 0 || undefined} style={{ left: `${x(tick)}%` }} />)}
       </div>
       <ul className={styles.venueBarGroups}>
-        {venues.map((venue) => <li key={venue.id} className={styles.venueBarGroup}>
+        {venues.map((venue) => <li key={venue.id} data-color={venue.color} className={styles.venueBarGroup}>
           <p>{venue.name}</p>
           <div className={styles.venueBarRows}>
             {periods.map((period, index) => {
