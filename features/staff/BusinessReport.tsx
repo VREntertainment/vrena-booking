@@ -5,7 +5,7 @@ import { Banknote, MapPin } from 'lucide-react'
 import { ReportToolbarMenu } from './ReportToolbarMenu'
 import { brandedGameName } from '../../lib/anvio'
 import { orderedRange, previousPeriodRange } from '../../lib/staff/dates'
-import { decisionPeriod, gameProviders, reportDayCount, reportProviderMinutes, reportVenue, reportVenueKeys, type ReportVenue, type ReportVenueFilter } from '../../lib/staff/decisionReport'
+import { decisionPeriod, reportDayCount, reportVenue, reportVenueKeys, type ReportVenue, type ReportVenueFilter } from '../../lib/staff/decisionReport'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import type { StaffReportSummary } from '../../lib/staff/types'
 import { supabase } from '../../lib/supabase/client'
@@ -37,11 +37,6 @@ const labels = {
     trend: 'Booking trend', trendDescription: 'Compare the same day or interval within each selected period.',
     day: 'Bookings by weekday', time: 'Bookings by start hour', heat: 'Peak booking slots',
     heatDescription: 'Bookings by weekday and local start hour. Cell values are bookings.',
-    providerMinutes: 'Minutes played by game provider', playerMinutes: 'Player-minutes',
-    providerMethod: 'Recorded session length × player count.',
-    providerSplit: 'Minutes are split evenly when a session includes multiple providers.',
-    providerOmitted: 'Recorded sessions with missing data or an unknown provider are excluded.',
-    providerEmpty: 'No recorded player-minutes for this selection.',
     games: 'Most-played games', gameDescription: 'Sessions where staff recorded each game as played. A session can count toward multiple games.',
     previous: 'Comparison', current: 'Selected period', noData: 'No data for this period.', load: 'Loading venue and booking metrics…',
     missing: 'The booking metrics could not load.', gameMissing: 'Recorded gameplay data could not load.',
@@ -58,11 +53,6 @@ const labels = {
     trend: 'Xu hướng đặt chỗ', trendDescription: 'So sánh theo cùng vị trí ngày hoặc khoảng thời gian trong mỗi kỳ.',
     day: 'Lượt đặt theo ngày trong tuần', time: 'Lượt đặt theo giờ bắt đầu', heat: 'Khung giờ được đặt nhiều nhất',
     heatDescription: 'Lượt đặt theo ngày trong tuần và giờ bắt đầu tại Việt Nam.',
-    providerMinutes: 'Phút chơi theo nhà cung cấp trò chơi', playerMinutes: 'Phút chơi cộng dồn theo người',
-    providerMethod: 'Thời lượng phiên đã ghi nhận × số người chơi.',
-    providerSplit: 'Số phút được chia đều khi một phiên có nhiều nhà cung cấp.',
-    providerOmitted: 'Không tính các phiên thiếu dữ liệu hoặc chưa xác định được nhà cung cấp.',
-    providerEmpty: 'Chưa có số phút chơi được ghi nhận cho lựa chọn này.',
     games: 'Trò chơi được chơi nhiều nhất', gameDescription: 'Số phiên mà nhân viên ghi nhận trò chơi đã được chơi. Một phiên có thể tính cho nhiều trò chơi.',
     previous: 'Kỳ so sánh', current: 'Kỳ đã chọn', noData: 'Không có dữ liệu trong kỳ này.', load: 'Đang tải số liệu địa điểm và đặt chỗ…',
     missing: 'Không thể tải số liệu đặt chỗ.', gameMissing: 'Không thể tải dữ liệu trò chơi đã chơi.',
@@ -226,11 +216,6 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
     const detail = [...parts.map((part) => `${part.label} ${count(part.value)}`), ...(previous ? [`${t.previous} ${count(before)}`] : [])].join(' · ')
     return { id, label: gameLabel(id, catalog), value, detail, parts }
   }).sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
-  const providerUsage = reportProviderMinutes(from, to, loaded.current.orders, loaded.current.played ?? [], selected)
-  const providerSeries = selected.map((venue) => ({ label: venueNames[venue], color: colors[venue] }))
-  const providerRows = gameProviders.map((provider) => ({
-    id: provider, name: provider, values: selected.map((venue) => providerUsage.minutes.get(provider)?.[venue] ?? 0),
-  })).sort((a, b) => b.values.reduce((sum, value) => sum + value, 0) - a.values.reduce((sum, value) => sum + value, 0))
   const venueTotals = reportVenueKeys.filter((item) => locations.includes(item) || current.byVenue[item].bookings || previous?.byVenue[item].bookings)
   const venuePrevious = previous ?? (loaded.previous
     ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, [], filter, binDays, loaded.previous.netSales) : null)
@@ -344,19 +329,6 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
       </div>}>
         <ReportHeatmap rows={weekdays} columns={hourIndices.map(hourText)} values={heat.hours.map((hours) => hourIndices.map((hour) => hours[hour]))}
           label={t.heat} legend={['0', count(Math.max(...heat.hours.flat()))]} language={language} />
-      </ReportPanel>
-      <ReportPanel title={t.providerMinutes} period={currentDates} description={t.providerMethod} wide>
-        {providerUsage.counted ? <>
-          <div className={styles.legend}>
-            {providerSeries.map((series) => <span key={series.label}><i data-color={series.color} />{series.label}</span>)}
-          </div>
-          <ReportVenueBars label={t.playerMinutes} venues={providerRows} periods={providerSeries} compact
-            formatValue={(value) => value === null ? '—' : reportNumber(language, value, 2)}
-            formatTick={(value) => reportNumber(language, value, 1)} />
-        </> : <p className={styles.empty}>{loaded.current.played ? t.providerEmpty : t.gameMissing}</p>}
-        {(providerUsage.mixed > 0 || providerUsage.omitted > 0) && <p className={styles.note}>
-          {[providerUsage.mixed > 0 && t.providerSplit, providerUsage.omitted > 0 && t.providerOmitted].filter(Boolean).join(' ')}
-        </p>}
       </ReportPanel>
       <ReportPanel title={t.games} period={comparedDates} description={t.gameDescription} wide>
         <p className={styles.note}>{loaded.current.played ? `${count(current.recordedSessions)} ${t.gameCoverage}` : t.gameMissing}</p>
