@@ -243,15 +243,15 @@ export default function StaffQrAnalytics({
       {!error && summary.totalScans === 0 ? <p className="staff-insights-empty">{text.empty}</p> : null}
 
       <div className={chartStyles.grid}>
-        <ReportPanel title={text.trend} description={`${text.trendHelp} · ${rangeLabel}`} wide>
+        <ReportPanel title={text.trend} period={rangeLabel} description={text.trendHelp} wide>
           <ReportTrend label={text.trend} language={language} labels={daily.map((point) => dateLabel(point.date, language))}
             series={[{ label: text.scans, color: 'primary', values: daily.map((point) => point.scans) }]} valueLabel={count} />
         </ReportPanel>
-        <ReportPanel title={text.deviceMix} description={text.deviceMixHelp}>
+        <ReportPanel title={text.deviceMix} period={rangeLabel} description={text.deviceMixHelp}>
           <ReportRanking rows={(data?.deviceMix ?? []).map((item) => ({ label: text[item.deviceClass], value: item.scans }))
             .sort((a, b) => b.value - a.value)} valueLabel={count} empty={text.empty} />
         </ReportPanel>
-        <ReportPanel title={language === 'vi' ? 'Mã QR hàng đầu' : 'Top QR codes'} description={rangeLabel}>
+        <ReportPanel title={language === 'vi' ? 'Mã QR hàng đầu' : 'Top QR codes'} period={rangeLabel}>
           <ReportRanking rows={(data?.qrCodes ?? []).filter((item) => item.scans > 0)
             .map((item) => ({ id: item.id, label: item.name, value: item.scans, detail: `/q/${item.slug}` }))
             .sort((a, b) => b.value - a.value).slice(0, 8)} valueLabel={count} empty={text.empty} />
