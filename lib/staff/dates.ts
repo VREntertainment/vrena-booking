@@ -63,7 +63,9 @@ export function previousPeriodRange(start: string, end: string) {
   return [previousStart, previousEnd] as const
 }
 
-export function reportPresetRange(preset: StaffReportRangePreset, anchor = todayString()) {
+const reportDayFormatter = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' })
+
+export function reportPresetRange(preset: StaffReportRangePreset, anchor = reportDayFormatter.format()) {
   if (preset === 'today') return [anchor, anchor] as const
   if (preset === 'yesterday') {
     const yesterday = addDays(anchor, -1)
@@ -77,7 +79,7 @@ export function reportPresetRange(preset: StaffReportRangePreset, anchor = today
     const end = addDays(startOfWeek(anchor), -1)
     return [addDays(end, -6), end] as const
   }
-  if (preset === 'this_month') return [startOfMonth(anchor), endOfMonth(anchor)] as const
+  if (preset === 'this_month') return [startOfMonth(anchor), addDays(anchor, -1)] as const
   if (preset === 'last_month') {
     const previousMonth = addMonths(startOfMonth(anchor), -1)
     return [startOfMonth(previousMonth), endOfMonth(previousMonth)] as const
