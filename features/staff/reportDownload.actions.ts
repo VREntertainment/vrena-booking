@@ -2,7 +2,7 @@ import type { ReportsActionContext } from './reports.actions'
 import { staffConsoleText } from '../../lib/staff/copy'
 import { rangeLabel } from '../../lib/staff/dates'
 import { accountantExportReports, accountantExportStores } from '../../lib/staff/options'
-import { downloadCsv, downloadExcel, downloadPdf, reportPdfLines, staffOrderExportRows, staffReportRows } from '../../lib/staff/reportExports'
+import { downloadCsv, downloadExcel, staffOrderExportRows, staffReportRows } from '../../lib/staff/reportExports'
 import type { StaffAuditLog } from '../../lib/staff/types'
 
 export async function exportExcelReport(context: ReportsActionContext) {
@@ -12,16 +12,6 @@ export async function exportExcelReport(context: ReportsActionContext) {
     { title: `${text.tabs.report} ${rangeLabel(reportStart, reportEnd)}`, rows: staffReportRows(report, text) },
     { title: text.labels.orders, rows: staffOrderExportRows(reportOrders, games, reportPaymentsByOrderId, text) },
   ], text)
-}
-
-export async function exportPdfReport(context: ReportsActionContext) {
-  const { reportStart, reportEnd, text, report, reportOrders, games, reportPaymentsByOrderId } = context
-
-  await downloadPdf(
-    `vrena-daily-report-${reportStart}-${reportEnd}.pdf`,
-    reportPdfLines(`${text.tabs.report} ${rangeLabel(reportStart, reportEnd)}`, report, reportOrders, games, reportPaymentsByOrderId, text),
-    text
-  )
 }
 
 export async function downloadAccountantExport(context: ReportsActionContext) {

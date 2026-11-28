@@ -5,6 +5,7 @@ type LinkedSession = { date: string; venue_key: string | null; status?: string }
 export type ReportOrderFact = {
   id: string; session_id: string | null; booking_date: string; booking_time: string
   arena_id: string | null; players_count: number; total: number; order_status: string; payment_status: string
+  discount_total?: number; payment_method?: string; booking_source?: string | null
   sessions: LinkedSession | null
 }
 export type ReportNetSale = { sale_date: string; venue_key: string; net_sales: number; gross_sales?: number | null }
@@ -115,4 +116,43 @@ export function decisionPeriod(start: string, end: string, orders: ReportOrderFa
     playersPerSession: reservedSessions.size ? players / reservedSessions.size : null,
     sessions: reservedSessions.size,
   }
+}
+
+export type ReportReceipt = { order_id: string; payment_method: string; amount: number }
+
+export function decisionFinancial(orders: ReportOrderFact[], receipts: ReportReceipt[], venue: ReportVenueFilter | ReadonlySet<ReportVenue>, yesterday: string) {
+  const paymentByOrder = new Map<string, ReportReceipt[]>()
+  for (const receipt of receipts) {
+    const group = paymentByOrder.get(receipt.order_id) ?? []
+    group.push(receipt)
+    paymentByOrder.set(receipt.order_id, group)
+  }
+  const methodTotals = { cash: 0, bank_transfer: 0, card_manual: 0, momo_manual: 0, vnpay: 0 }
+  function recordMethod(method: string, amount: number) {
+    if (Object.hasOwn(methodTotals, method)) methodTotals[method as keyof typeof methodTotals] += amount
+  }
+  const bookingSources = new Map<string, { source: string; bookings: number; sales: number }>()
+  let totalPaid = 0
+  let unpaidAmount = 0
+  let discounts = 0
+  for (const order of orders) {
+    const location = reportVenue(order.sessions?.venue_key, order.arena_id)
+    if (typeof venue === 'string' ? venue !== 'all' && venue !== location : !venue.has(location)) continue
+    const payments = paymentByOrder.get(order.id)
+    const paid = payments?.reduce((sum, payment) => sum + payment.amount, 0) ?? (order.payment_status === 'paid' ? order.total : 0)
+    totalPaid += paid
+    discounts += order.discount_total ?? 0
+    if (order.booking_date <= yesterday && !excluded.has(order.order_status) && order.order_status !== 'no_show' && order.payment_status !== 'refunded') {
+      unpaidAmount += Math.max(0, order.total - paid)
+    }
+    if (payments) for (const payment of payments) recordMethod(payment.payment_method, payment.amount)
+    else if (order.payment_status === 'paid') recordMethod(order.payment_method ?? '', order.total)
+
+    const source = order.booking_source || 'unspecified'
+    const bucket = bookingSources.get(source) ?? { source, bookings: 0, sales: 0 }
+    bucket.bookings++
+    bucket.sales += order.total
+    bookingSources.set(source, bucket)
+  }
+  return { totalPaid, unpaidAmount, discounts, methodTotals, bookingSources: [...bookingSources.values()] }
 }

@@ -37,7 +37,7 @@ export function useStaffReportsState({ language }: { language: string | undefine
   const [accountantExportStore, setAccountantExportStore] = useState(accountantExportStores[0].id)
   const [accountantIncludeAttachments, setAccountantIncludeAttachments] = useState(false)
   const [accountantReportId, setAccountantReportId] = useState<AccountantExportReportId>('sales_revenue')
-  const [reportExporting, setReportExporting] = useState<'excel' | 'pdf' | 'accountant' | null>(null)
+  const [reportExporting, setReportExporting] = useState<'excel' | 'powerpoint' | 'accountant' | null>(null)
   const [reportExportFeedback, setReportExportFeedback] = useState<{ message: string; tone: 'success' | 'error' } | null>(null)
   const [reportSnapshot, setReportSnapshot] = useState<StaffReportSnapshot | null>(null)
   const [qrAnalyticsSnapshot, setQrAnalyticsSnapshot] = useState<StaffQrAnalyticsSnapshot | null>(null)

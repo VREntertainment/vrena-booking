@@ -43,10 +43,9 @@ export type ReportSectionProps = {
   applyReportDateRange: (start: string, end: string, compare: boolean, compareStart: string, compareEnd: string) => void
   applyPreviousPeriodComparison: () => void
   setCompareEnabled: React.Dispatch<React.SetStateAction<boolean>>
-  reportExporting: "excel" | "pdf" | "accountant" | null
-  runReportExport: (kind: "excel" | "pdf" | "accountant", task: () => Promise<void>) => Promise<void>
+  reportExporting: "excel" | "powerpoint" | "accountant" | null
+  runReportExport: (kind: "excel" | "powerpoint" | "accountant", task: () => Promise<void>) => Promise<void>
   exportExcelReport: () => Promise<void>
-  exportPdfReport: () => Promise<void>
   accountantExportOpen: boolean
   setAccountantExportOpen: React.Dispatch<React.SetStateAction<boolean>>
   accountantExportStore: string
@@ -62,7 +61,6 @@ export type ReportSectionProps = {
   downloadAccountantExport: () => Promise<void>
   reportExportFeedback: { message: string; tone: "error" | "success" } | null
   reportReady: boolean
-  report: import("../../lib/staff/types").StaffReportSummary
   orderRows: (rows: import("../../lib/staff/types").StaffOrder[], paymentsByOrderId?: Map<string, import("../../lib/staff/types").StaffOrderPayment[]>) => React.JSX.Element
   reportOrders: import("../../lib/staff/types").StaffOrder[]
   reportPaymentsByOrderId: Map<string, import("../../lib/staff/types").StaffOrderPayment[]>
@@ -89,7 +87,6 @@ export default function ReportSection({
   reportExporting,
   runReportExport,
   exportExcelReport,
-  exportPdfReport,
   accountantExportOpen,
   setAccountantExportOpen,
   accountantExportStore,
@@ -104,7 +101,6 @@ export default function ReportSection({
   setAccountantReportId,
   downloadAccountantExport,
   reportExportFeedback,
-  report,
   reportReady,
   orderRows,
   reportOrders,
@@ -138,7 +134,7 @@ export default function ReportSection({
   }
   const off = vi ? 'Tắt' : 'Off'
   const exportLabel = vi ? 'Xuất báo cáo' : 'Export'
-  const toolbar = (venueControl?: ReactNode) => (
+  const toolbar = (venueControl?: ReactNode, exportPowerPoint?: () => Promise<void>) => (
     <div className={styles.reportToolbar} role="group" aria-label={vi ? 'Bộ lọc báo cáo' : 'Report controls'}>
       <ReportToolbarMenu label={text.labels.dateRange} hideLabel icon={<CalendarRange size={15} aria-hidden="true" />}
         value={activePreset ? presetLabel(activePreset) : customLabel} detail={periodLabel(reportStart, reportEnd)}>
@@ -164,9 +160,9 @@ export default function ReportSection({
               onClick={() => { void runReportExport('excel', exportExcelReport) }}>
               <ButtonIconText icon={<FileSpreadsheet aria-hidden="true" size={14} />}>{text.actions.excel}</ButtonIconText>
             </button>
-            <button type="button" aria-busy={reportExporting === 'pdf'} disabled={reportExporting !== null}
-              onClick={() => { void runReportExport('pdf', exportPdfReport) }}>
-              <ButtonIconText icon={<FileText aria-hidden="true" size={14} />}>{text.actions.pdf}</ButtonIconText>
+            <button type="button" aria-busy={reportExporting === 'powerpoint'} disabled={reportExporting !== null || !exportPowerPoint}
+              onClick={() => { if (exportPowerPoint) void runReportExport('powerpoint', exportPowerPoint) }}>
+              <ButtonIconText icon={<FileText aria-hidden="true" size={14} />}>{vi ? 'Xuất PowerPoint' : 'Export PowerPoint'}</ButtonIconText>
             </button>
             <button type="button" onClick={() => setAccountantExportOpen((open) => !open)}>{text.labels.accountantExports}</button>
           </ReportToolbarMenu>
@@ -293,7 +289,7 @@ export default function ReportSection({
       {reportView === 'business' ? (
         <>
           <BusinessReport start={reportStart} end={reportEnd} compareStart={compareStart} compareEnd={compareEnd}
-            compare={compareEnabled} language={resolvedLanguage} text={text} financial={reportReady ? report : null} toolbar={toolbar} />
+            compare={compareEnabled} language={resolvedLanguage} text={text} toolbar={toolbar} />
           {reportReady && orderRows(reportOrders, reportPaymentsByOrderId)}
         </>
       ) : (
