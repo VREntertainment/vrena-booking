@@ -1,4 +1,5 @@
-export type BookingCategory = 'standard' | 'birthday' | 'event'
+export const bookingCategories = ['standard', 'birthday', 'event', 'free_trial'] as const
+export type BookingCategory = typeof bookingCategories[number]
 export type BookingVenue = 'ha-do-centrosa' | 'cafe-des-stagiaires'
 
 // Matches the shared games in the current guide, including their mini-games/modes.
@@ -28,14 +29,14 @@ export function bookingCategory(booking: BookingMetadata): BookingCategory {
 }
 
 export const bookingCategoryCopy = {
-  en: { label: 'Booking category', standard: 'Standard', birthday: 'Birthday', event: 'Event', noGames: 'Games not selected' },
-  vi: { label: 'Loại đặt chỗ', standard: 'Thông thường', birthday: 'Sinh nhật', event: 'Sự kiện', noGames: 'Chưa chọn trò chơi' },
-  fr: { label: 'Type de réservation', standard: 'Standard', birthday: 'Anniversaire', event: 'Événement', noGames: 'Jeux non sélectionnés' },
-  de: { label: 'Buchungsart', standard: 'Standard', birthday: 'Geburtstag', event: 'Veranstaltung', noGames: 'Keine Spiele ausgewählt' },
-  it: { label: 'Tipo di prenotazione', standard: 'Standard', birthday: 'Compleanno', event: 'Evento', noGames: 'Giochi non selezionati' },
-  ja: { label: '予約の種類', standard: '通常', birthday: '誕生日', event: 'イベント', noGames: 'ゲーム未選択' },
-  ko: { label: '예약 유형', standard: '일반', birthday: '생일', event: '이벤트', noGames: '게임 미선택' },
-  zh: { label: '预约类型', standard: '标准', birthday: '生日', event: '活动', noGames: '尚未选择游戏' },
+  en: { label: 'Booking category', standard: 'Standard', birthday: 'Birthday', event: 'Event', free_trial: 'Free trial', noGames: 'Games not selected' },
+  vi: { label: 'Loại đặt chỗ', standard: 'Thông thường', birthday: 'Sinh nhật', event: 'Sự kiện', free_trial: 'Chơi thử miễn phí', noGames: 'Chưa chọn trò chơi' },
+  fr: { label: 'Type de réservation', standard: 'Standard', birthday: 'Anniversaire', event: 'Événement', free_trial: 'Essai gratuit', noGames: 'Jeux non sélectionnés' },
+  de: { label: 'Buchungsart', standard: 'Standard', birthday: 'Geburtstag', event: 'Veranstaltung', free_trial: 'Kostenloses Probespiel', noGames: 'Keine Spiele ausgewählt' },
+  it: { label: 'Tipo di prenotazione', standard: 'Standard', birthday: 'Compleanno', event: 'Evento', free_trial: 'Prova gratuita', noGames: 'Giochi non selezionati' },
+  ja: { label: '予約の種類', standard: '通常', birthday: '誕生日', event: 'イベント', free_trial: '無料体験', noGames: 'ゲーム未選択' },
+  ko: { label: '예약 유형', standard: '일반', birthday: '생일', event: '이벤트', free_trial: '무료 체험', noGames: '게임 미선택' },
+  zh: { label: '预约类型', standard: '标准', birthday: '生日', event: '活动', free_trial: '免费试玩', noGames: '尚未选择游戏' },
 }
 
 export function selectedBookingGames(booking: BookingMetadata) {

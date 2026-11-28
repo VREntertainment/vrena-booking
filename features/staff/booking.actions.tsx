@@ -124,11 +124,8 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
     } = getContext()
 
     if (!canCreateOrders || bookingSubmitRef.current) return
-    if (!booking.guestBooking && !booking.customerName.trim()) {
-      setStatus(text.messages.customerAccountNameRequired)
-      return
-    }
-    if (!validStaffSessionCount(booking.sessionCount)) {
+    const isFreeTrial = booking.bookingKind === 'free_trial'
+    if (!isFreeTrial && !validStaffSessionCount(booking.sessionCount)) {
       setStatus(bookingText.invalidSessionCount)
       return
     }
@@ -147,11 +144,11 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
       setStatus(bookingText.invalidEmail)
       return
     }
-    if (booking.discountId && !selectedDiscount) {
+    if (!isFreeTrial && booking.discountId && !selectedDiscount) {
       setStatus(bookingText.discountChanged)
       return
     }
-    if (!validBookingTotalOverride(booking)) {
+    if (!isFreeTrial && !validBookingTotalOverride(booking)) {
       setStatus(bookingText.invalidOverride)
       return
     }
@@ -162,22 +159,22 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
       if (!allowed) return
       setStatus(text.messages.orderCreating)
       const guestCustomer = booking.guestBooking
-      const hasManualDiscount = calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, quote.subtotal) > 0
-      const paymentSplits = normalizePaymentSplits(booking.paymentSplits)
+      const hasManualDiscount = !isFreeTrial && calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, quote.subtotal) > 0
+      const paymentSplits = isFreeTrial ? [] : normalizePaymentSplits(booking.paymentSplits)
       const { data, error } = await supabase.rpc('staff_create_booking_with_metadata', {
         p_booking_source: booking.bookingSource,
         p_booking: {
           p_booking_category: booking.bookingCategory,
           p_booking_kind: booking.bookingKind,
-          p_session_count: booking.sessionCount,
+          p_session_count: isFreeTrial ? 1 : booking.sessionCount,
           p_session_length_minutes: booking.bookingKind === 'standard' ? quote.sessionMinutes : null,
-          p_duration_minutes: booking.bookingKind === 'event' ? booking.reservedMinutes : null,
+          p_duration_minutes: booking.bookingKind === 'standard' ? null : booking.reservedMinutes,
           p_allow_outside_hours: booking.allowOutsideHours,
           p_contact_name: booking.contactName.trim() || null,
-          p_total_override: booking.overrideTotalEnabled ? Number(booking.overrideTotal) : null,
-          p_override_reason: booking.overrideTotalEnabled ? booking.overrideReason.trim() : null,
+          p_total_override: !isFreeTrial && booking.overrideTotalEnabled ? Number(booking.overrideTotal) : null,
+          p_override_reason: !isFreeTrial && booking.overrideTotalEnabled ? booking.overrideReason.trim() : null,
           p_customer_id: guestCustomer ? null : booking.customerId || null,
-          p_customer_name: guestCustomer ? null : booking.customerName || null,
+          p_customer_name: guestCustomer ? null : booking.customerName.trim() || null,
           p_customer_phone: guestCustomer ? null : normalizedCustomerPhone,
           p_customer_email: guestCustomer ? null : booking.customerEmail.trim().toLowerCase() || null,
           p_game_id: selectedGame?.id || null,
@@ -186,7 +183,7 @@ export function createStaffBookingActions(getContext: () => BookingActionContext
           p_booking_time: `${booking.time}:00`,
           p_players_count: booking.players,
           p_arena_id: selectedBookingArena || null,
-          p_discount_rule_id: hasManualDiscount ? null : selectedDiscount?.id || null,
+          p_discount_rule_id: isFreeTrial || hasManualDiscount ? null : selectedDiscount?.id || null,
           p_manual_discount_type: hasManualDiscount ? booking.manualDiscountType : null,
           p_manual_discount_value: hasManualDiscount ? booking.manualDiscountValue : 0,
           p_payment_splits: paymentSplits,

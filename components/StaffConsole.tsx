@@ -46,7 +46,7 @@ import { createStaffReportsActions } from '../features/staff/reports.actions'
 import { ButtonIconText, StaffReportDateRangeModal } from '../features/staff/shared'
 
 
-import { gameAvailableAtVenue } from '../lib/bookingMetadata'
+import { bookingCategoryCopy, gameAvailableAtVenue } from '../lib/bookingMetadata'
 import { staffBookingCopy } from '../lib/staff/bookingCopy'
 import { useStaffSessionLength } from '../hooks/useStaffSessionLength'
 import { staffBookingDuration } from '../lib/staff/bookingHours'
@@ -419,6 +419,10 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
   }, [availableBookingDiscounts, booking.discountId, booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice])
 
   const quote = useMemo(() => {
+    if (booking.bookingKind === 'free_trial') return {
+      unitPrice: 0, subtotal: 0, discountTotal: 0, discountLabel: text.noDiscount, total: 0,
+      ruleName: bookingCategoryCopy[resolvedLanguage].free_trial, sessionMinutes: null, duration: booking.reservedMinutes,
+    }
     const subtotal = bookingSubtotal
     const manualDiscountTotal = calculateManualDiscount(booking.manualDiscountType, booking.manualDiscountValue, subtotal)
     const discountTotal = manualDiscountTotal > 0
@@ -436,9 +440,9 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
       sessionMinutes: sessionLength.minutes,
       duration: staffBookingDuration({ bookingKind: booking.bookingKind, reservedMinutes: booking.reservedMinutes, sessionCount: booking.sessionCount, date: booking.date }, sessionLength.minutes || 0),
     }
-  }, [sessionLength.minutes, booking.date, booking.sessionCount, booking.bookingKind, booking.reservedMinutes, booking.overrideTotalEnabled, booking.overrideTotal, booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice, selectedDiscount, selectedRule, text, booking.venueKey, bookingVenueName])
+  }, [sessionLength.minutes, booking.date, booking.sessionCount, booking.bookingKind, resolvedLanguage, booking.reservedMinutes, booking.overrideTotalEnabled, booking.overrideTotal, booking.manualDiscountType, booking.manualDiscountValue, bookingSubtotal, bookingUnitPrice, selectedDiscount, selectedRule, text, booking.venueKey, bookingVenueName])
   const bookingPaymentSplits = useMemo(() => normalizePaymentSplits(booking.paymentSplits), [booking.paymentSplits])
-  const bookingPaidTotal = useMemo(() => paymentSplitTotal(bookingPaymentSplits), [bookingPaymentSplits])
+  const bookingPaidTotal = booking.bookingKind === 'free_trial' ? 0 : paymentSplitTotal(bookingPaymentSplits)
   const bookingRemainingTotal = Math.max(0, quote.total - bookingPaidTotal)
 
   useEffect(() => {

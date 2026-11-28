@@ -189,6 +189,12 @@
 .app .staff-console .staff-new-booking-form .staff-new-schedule {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+.app .staff-console .staff-required-mark {
+  margin-inline-start: .25em;
+  color: var(--vrena-status-danger-ink);
+  font-size: .85em;
+  font-weight: 650;
+}
 .app .staff-console .staff-new-fields .full { grid-column: 1 / -1; }
 .app .staff-console .staff-new-section label,
 .app .staff-console .staff-new-section .staff-field-label {
