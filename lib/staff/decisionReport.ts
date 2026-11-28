@@ -1,7 +1,7 @@
 export const reportVenueKeys = ['ha-do-centrosa', 'cafe-des-stagiaires', 'other'] as const
 export type ReportVenue = typeof reportVenueKeys[number]
 export type ReportVenueFilter = ReportVenue | 'all'
-type LinkedSession = { date: string; venue_key: string | null; status?: string }
+type LinkedSession = { date: string; venue_key: string | null; status?: string; booking_category?: string | null; deleted_at?: string | null }
 export type ReportOrderFact = {
   id: string; session_id: string | null; booking_date: string; booking_time: string
   arena_id: string | null; players_count: number; total: number; order_status: string; payment_status: string
@@ -41,6 +41,7 @@ export function decisionPeriod(start: string, end: string, orders: ReportOrderFa
   const games = new Map<string, Record<ReportVenue, number>>()
   const recordedSessions = new Set<string>()
   const reservedSessions = new Set<string>()
+  const freeTrialSessions = new Set<string>()
   let sales = 0, bookings = 0, players = 0, paidPlayers = 0, cancelled = 0, noShows = 0
   for (const order of orders) {
     const date = dayNumber(order.booking_date)
@@ -64,6 +65,10 @@ export function decisionPeriod(start: string, end: string, orders: ReportOrderFa
     players += count
     paidPlayers += paid
     if (order.order_status === 'no_show') noShows++
+    if (order.session_id && order.sessions?.booking_category === 'free_trial'
+      && order.order_status !== 'no_show' && order.sessions.status !== 'cancelled' && !order.sessions.deleted_at) {
+      freeTrialSessions.add(order.session_id)
+    }
     reservedSessions.add(order.session_id ?? order.id)
     const bucket = buckets[Math.floor((date - first) / binDays)]
     bucket.sales += total
@@ -110,7 +115,7 @@ export function decisionPeriod(start: string, end: string, orders: ReportOrderFa
   }
 
   return {
-    sales, netSales: netTotal, grossSales: grossTotal, bookings, players, paidPlayers, cancelled, noShows, byVenue, buckets, games, weekdays, times, hours,
+    sales, netSales: netTotal, grossSales: grossTotal, bookings, players, paidPlayers, cancelled, freeTrials: freeTrialSessions.size, noShows, byVenue, buckets, games, weekdays, times, hours,
     recordedSessions: recordedSessions.size,
     playersPerDay: players / days,
     playersPerSession: reservedSessions.size ? players / reservedSessions.size : null,
