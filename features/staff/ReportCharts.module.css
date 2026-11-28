@@ -371,3 +371,130 @@
   .toolbarActions { margin-inline-start: 0; }
   .dashboard .toolbarActions > button, .dashboard .toolbarControl > :global(.staff-picker-shell) { min-height: 44px; }
 }
+
+.venueChartField {
+  display: grid;
+  width: min(100%, 12rem);
+  gap: 5px;
+  color: var(--player-text-muted);
+  font-size: .8125rem;
+  font-weight: 600;
+}
+.dashboard .venueChartField select {
+  width: 100%;
+  min-height: 44px;
+  background: var(--player-field-bg);
+  color: var(--player-field-text);
+  border-color: var(--player-field-border-strong);
+  border-radius: var(--player-radius-sm);
+}
+.venueChartField select:focus-visible, .venueData summary:focus-visible {
+  outline: 2px solid var(--vrena-focus-halo);
+  outline-offset: 2px;
+}
+.venueChart {
+  --venue-chart-label: clamp(8.5rem, 19vw, 12rem);
+  --venue-chart-value: clamp(5.75rem, 12vw, 8rem);
+  --venue-chart-gap: 14px;
+  min-width: 0;
+}
+.venueChartLegend, .venueBarGroups {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.venueChartLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  margin-block-end: 20px;
+}
+.venueChartLegend li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--report-muted);
+  font-size: .78rem;
+  line-height: 1.4;
+}
+.venueChartLegend li > span { display: grid; gap: 2px; }
+.venueChartLegend strong { color: var(--report-ink); font-weight: 650; }
+.venueChartLegend i {
+  flex: none;
+  width: 18px;
+  height: 11px;
+  margin-block-start: 3px;
+  border: 1px solid var(--report-muted);
+  border-radius: 2px;
+  background: var(--report-muted);
+}
+.venueChartLegend i[data-previous] { background: transparent; border-style: dashed; }
+
+.venueBarGroups { display: grid; gap: 16px; }
+.venueBarGroup {
+  display: grid;
+  grid-template-columns: var(--venue-chart-label) minmax(0, 1fr);
+  align-items: center;
+  gap: 6px var(--venue-chart-gap);
+  padding-block: 9px;
+  border-block-end: 1px solid var(--report-rule);
+}
+.dashboard .venueBarGroup h5 {
+  margin: 0;
+  color: var(--report-ink);
+  font-size: .88rem;
+  font-weight: 680;
+  line-height: 1.4;
+}
+.venueBarRows { display: grid; gap: 5px; }
+.venueBarRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--venue-chart-value);
+  align-items: center;
+  gap: var(--venue-chart-gap);
+  min-height: 25px;
+}
+.venueBarTrack { position: relative; height: 25px; min-width: 0; }
+.venueGridline {
+  position: absolute;
+  inset-block: 0;
+  border-inline-start: 1px solid var(--report-grid);
+}
+.venueGridline[data-zero] { border-color: var(--report-rule); }
+.venueBar {
+  position: absolute;
+  inset-block: 2px;
+  border-radius: 2px;
+  background: var(--series);
+}
+.venueBar[data-previous] {
+  border: 1px dashed var(--series);
+  background: color-mix(in srgb, var(--series) 12%, transparent);
+}
+.venueBarValue {
+  color: var(--report-ink);
+  font-size: .86rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+.venueBarAxis {
+  padding-inline: calc(var(--venue-chart-label) + var(--venue-chart-gap)) calc(var(--venue-chart-value) + var(--venue-chart-gap));
+  margin-block-start: 8px;
+  color: var(--report-muted);
+  font-size: .72rem;
+  font-variant-numeric: tabular-nums;
+}
+.venueBarAxis > div { position: relative; height: 1.4em; }
+.venueBarAxis span { position: absolute; transform: translateX(-50%); }
+.venueBarAxis span:first-child { transform: none; }
+.venueBarAxis span:last-child { transform: translateX(-100%); }
+.venueData { margin-block-start: 14px; }
+.dashboard .venueData > summary { display: list-item; min-height: 44px; padding-block: 12px; font-weight: 600; }
+@media (max-width: 620px) {
+  .venueChart { --venue-chart-value: 6.2rem; --venue-chart-gap: 10px; }
+  .venueBarGroup { grid-template-columns: minmax(0, 1fr); }
+  .venueBarAxis { padding-inline-start: 0; }
+  .venueBarAxis [data-interior]:not([data-zero]) { display: none; }
+}
