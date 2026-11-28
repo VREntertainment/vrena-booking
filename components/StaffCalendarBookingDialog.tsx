@@ -5,15 +5,18 @@ import { useStaffLocations } from '../hooks/useStaffLocations'
 import StaffGamesPlayed, { type PlayedGamesDraft } from './staff/StaffGamesPlayed'
 
 import { staffBookingName } from '../lib/staffBookingName'
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { StaffSavedBookingShare } from './staff/StaffSavedBookingShare'
 import { Trash2, X } from 'lucide-react'
 import { supabase } from '../lib/supabase/client'
 import { bookingCategory, bookingCategoryCopy, gameAvailableAtVenue, selectedBookingGames, type BookingCategory } from '../lib/bookingMetadata'
 import { staffBookingHours, validStaffBookingTime } from '../lib/staff/bookingHours'
 import { staffBookingCopy } from '../lib/staff/bookingCopy'
-import type { BookingForm, StaffGame, StaffOrder } from '../lib/staff/types'
+import type { BookingForm, StaffGame, StaffOrder, StaffOrderPayment } from '../lib/staff/types'
 import type { Session } from '../lib/bookingWidgetDomain'
+import { hasRecordedOrderPayment } from '../lib/staff/payments'
+import StaffPaymentVouchers from './StaffPaymentVouchers'
+import StaffPaymentResolutionDialog from './staff/StaffPaymentResolutionDialog'
 import { notifyBookingUpdateEmail } from '../lib/bookingUpdateNotificationClient'
 
 type Draft = {
@@ -39,12 +42,14 @@ const copy = {
   vi: { client: 'Thông tin khách hàng', editClient: 'Sửa thông tin khách hàng', clientName: 'Tên', email: 'Email', phone: 'Điện thoại', points: 'Điểm thưởng', gamesPlayed: 'Ghi nhận trò chơi đã chơi', invalidPrice: 'Nhập số tiền VND nguyên không thấp hơn số tiền đã thanh toán.', reservedBy: 'Người tạo đặt chỗ', notRecorded: 'Chưa ghi nhận', clientConfirmed: 'Đã xác nhận với khách', title: 'Sửa đặt chỗ', shop: 'Cửa hàng', name: 'Tên đặt chỗ', date: 'Ngày', time: 'Giờ', game: 'Trò chơi', players: 'Số người', duration: 'Thời lượng (phút)', arenas: 'Số arena', arena: 'Arena', status: 'Trạng thái', notes: 'Ghi chú nội bộ', save: 'Lưu thay đổi', close: 'Đóng', remove: 'Xóa đặt chỗ', confirm: 'Xác nhận xóa', keep: 'Giữ đặt chỗ', loading: 'Đang tải đặt chỗ…', outsideHours: 'Đặt chỗ ngoài giờ mở cửa', reason: 'Lý do thay đổi giá', paid: 'Đã thanh toán', due: 'Còn phải thanh toán', invalidTime: 'Chọn giờ kết thúc trong cùng ngày và trong giờ mở cửa, hoặc cho phép đặt ngoài giờ.', savedPrice: 'Giữ nguyên các khoản đã thanh toán. Nhập lý do khi thay đổi tổng tiền đã thỏa thuận.', deleteHelp: 'Chỉ xóa lượt đặt chỗ này khỏi lịch và hủy đơn liên kết. Các khoản đã thanh toán vẫn được giữ; hoàn tiền được xử lý riêng.', unspecified: 'Chưa xác định', open: 'Đã xác nhận / mở', completed: 'Hoàn tất', cancelled: 'Đã hủy', total: 'Tổng tiền đã thỏa thuận', conflict: 'Đặt chỗ đã thay đổi. Đóng và mở lại trước khi lưu.' },
 }
 
-export default function StaffCalendarBookingDialog({ sessionId, language, onClose, onSaved }: {
+export default function StaffCalendarBookingDialog({ sessionId, language, onClose, onSaved, onPaymentChanged }: {
   sessionId: string; language: 'en' | 'vi'; onClose: () => void; onSaved: (date: string, deleted: boolean, venue: BookingForm['venueKey']) => void
+  onPaymentChanged?: () => void
 }) {
   const text = copy[language]
   const bookingText = staffBookingCopy[language]
   const dialog = useRef<HTMLDialogElement>(null)
+  const formId = useId()
   const busy = useRef(false)
   const gamesPlayedDraft = useRef<PlayedGamesDraft | null>(null)
   const originalDraft = useRef<Draft | null>(null)
@@ -60,6 +65,8 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
   const [persisted, setPersisted] = useState<{ name: string; venue: string; date: string; time: string } | null>(null)
   const [games, setGames] = useState<StaffGame[]>([])
   const [orders, setOrders] = useState<Array<StaffOrder & { booking_source?: string | null }>>([])
+  const [receipts, setReceipts] = useState<StaffOrderPayment[]>([])
+  const [paymentDeleteOrder, setPaymentDeleteOrder] = useState<StaffOrder | null>(null)
   const [prices, setPrices] = useState<Record<string, { total: string; reason: string; paid: number }>>({})
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -80,10 +87,16 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         const failure = booking.error || linked.error || catalog.error
         if (failure) throw new Error(failure.message)
         const linkedOrders = linked.data || []
-        const payments = linkedOrders.length ? await supabase.from('staff_order_payments').select('order_id,amount').in('order_id', linkedOrders.map((item) => item.id)).abortSignal(controller.signal) : { data: [], error: null }
+        const payments = linkedOrders.length ? await supabase.from('staff_order_payments').select('*').in('order_id', linkedOrders.map((item) => item.id)).abortSignal(controller.signal) : { data: [], error: null }
         if (controller.signal.aborted) return
         if (payments.error) throw new Error(payments.error.message)
-        setPrices(Object.fromEntries(linkedOrders.map((item) => [item.id, { total: String(item.total), reason: '', paid: (payments.data || []).filter((payment) => payment.order_id === item.id).reduce((sum, payment) => sum + payment.amount, 0) }])))
+        const receiptRows: StaffOrderPayment[] = payments.data || []
+        setReceipts(receiptRows)
+        setPrices(Object.fromEntries(linkedOrders.map((item) => {
+          const matching = receiptRows.filter(payment => payment.order_id === item.id)
+          const paid = matching.length ? matching.reduce((sum, payment) => sum + payment.amount, 0) : item.payment_status === 'paid' ? item.total : 0
+          return [item.id, { total: String(item.total), reason: '', paid }]
+        })))
         const record = booking.data!
         setCreator(record.booking_creator_name || null)
         setCreatedAt(record.created_at ?? null)
@@ -194,6 +207,30 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
     } finally { busy.current = false; setSaving(false) }
   }
 
+  async function refreshVoucherOrder(orderId: string) {
+    const [orderResult, paymentResult] = await Promise.all([
+      supabase.from('staff_orders').select('*').eq('id', orderId).single(),
+      supabase.from('staff_order_payments').select('*').eq('order_id', orderId),
+    ])
+    const failure = orderResult.error || paymentResult.error
+    if (failure) throw new Error(failure.message)
+    const order: StaffOrder = orderResult.data
+    const payments: StaffOrderPayment[] = paymentResult.data || []
+    setOrders(current => current.map(item => item.id === orderId ? order : item))
+    setReceipts(current => [...current.filter(item => item.order_id !== orderId), ...payments])
+    setPrices(current => ({ ...current, [orderId]: {
+      total: String(order.total), reason: '', paid: payments.length ? payments.reduce((sum, item) => sum + item.amount, 0)
+        : order.payment_status === 'paid' ? order.total : 0,
+    } }))
+    onPaymentChanged?.()
+  }
+
+  function askToDelete() {
+    const paidOrder = orders.find(order => hasRecordedOrderPayment(order, receipts.filter(receipt => receipt.order_id === order.id)))
+    if (paidOrder) setPaymentDeleteOrder(paidOrder)
+    else setConfirmDelete(true)
+  }
+
   function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void mutate(false, event.currentTarget) }
 
   return <dialog ref={dialog} className="calendar-booking-dialog" aria-labelledby="calendar-edit-title" onCancel={(event) => { event.preventDefault(); if (!busy.current) onClose() }}>
@@ -203,7 +240,8 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
     {draft && (confirmDelete ? <div className="calendar-delete-confirm">
       <strong>{persisted?.name || draft.name}</strong><p>{(persisted?.venue || draft.venue) === 'ha-do-centrosa' ? 'VRena Hà Đô Centrosa' : 'Vrena Thao Dien'} · {persisted?.date || draft.date} · {persisted?.time || draft.time}</p>
       <p>{text.deleteHelp}</p><div className="action-row"><button className="danger" disabled={saving} onClick={() => void mutate(true)} type="button">{text.confirm}</button><button className="secondary" disabled={saving} onClick={() => setConfirmDelete(false)} type="button">{text.keep}</button></div>
-    </div> : <form noValidate onSubmit={submit}>
+    </div> : <>
+      <form id={formId} noValidate onSubmit={submit}>
       <fieldset disabled={saving} className="calendar-edit-fields">
         <p className="full calendar-booking-creator">{text.reservedBy}: <strong>{creator || text.notRecorded}</strong>{createdAt && <> · <time dateTime={createdAt}>{bookingTime.format(new Date(createdAt))}</time></>}</p>
         <section className="full calendar-client-details" aria-labelledby="calendar-client-title">
@@ -289,12 +327,22 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         })}
       </fieldset>
       <p className="field-help">{text.savedPrice}</p>
+      </form>
       <div className="calendar-dialog-actions">
-        <button className="calendar-delete-action" disabled={saving} type="button" onClick={() => setConfirmDelete(true)}><Trash2 size={16} aria-hidden="true" />{text.remove}</button>
+        <button className="calendar-delete-action" disabled={saving} type="button" onClick={askToDelete}><Trash2 size={16} aria-hidden="true" />{text.remove}</button>
         <button className="secondary" disabled={saving} onClick={onClose} type="button">{text.close}</button>
         <StaffSavedBookingShare sessionId={sessionId} language={language} disabled={saving || session?.status === 'cancelled'} />
-        <button className="primary" disabled={saving} type="submit">{text.save}</button>
+        {orders.map(order => <StaffPaymentVouchers key={order.id} order={order}
+          payments={receipts.filter(receipt => receipt.order_id === order.id)}
+          language={language} onChanged={() => refreshVoucherOrder(order.id)} />)}
+        <button className="primary" disabled={saving} type="submit" form={formId}>{text.save}</button>
       </div>
-    </form>)}
+    </>)}
+    {paymentDeleteOrder && session && draft && <StaffPaymentResolutionDialog
+      order={paymentDeleteOrder} bookingAction="delete" language={language}
+      onClose={resolved => {
+        setPaymentDeleteOrder(null)
+        if (resolved) onSaved(session.date, true, draft.venue)
+      }} />}
   </dialog>
 }
