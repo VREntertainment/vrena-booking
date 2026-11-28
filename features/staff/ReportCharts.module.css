@@ -396,6 +396,10 @@
   --venue-group-space: 20px;
   min-width: 0;
 }
+.venueChart[data-compact] {
+  --venue-bar-height: 20px;
+  --venue-group-space: 12px;
+}
 .venueChartLegend, .venueBarGroups {
   list-style: none;
   margin: 0;
@@ -455,6 +459,7 @@
   font-size: .84rem;
   font-weight: 600;
 }
+.venueChart[data-compact] .venueBarRows { gap: 3px; }
 .venueBarRows {
   display: grid;
   gap: 5px;
