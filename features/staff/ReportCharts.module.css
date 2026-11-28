@@ -382,29 +382,18 @@
   outline: 2px solid var(--vrena-focus-halo);
   outline-offset: 2px;
 }
-.venueChartGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 26px 30px;
-}
 .venueChartTitle {
   margin: 0 0 12px;
   color: var(--report-ink);
   font-size: .95rem;
   font-weight: 700;
 }
-.venueChart[data-wide] {
-  grid-column: 1 / -1;
-  --venue-chart-label: 8.5rem;
-  --venue-bar-height: clamp(32px, 4vw, 44px);
-  --venue-group-space: 20px;
-}
 .venueChart {
-  --venue-chart-label: 7rem;
+  --venue-chart-label: 8.5rem;
   --venue-chart-value: 5.5rem;
   --venue-chart-gap: 12px;
-  --venue-bar-height: 25px;
-  --venue-group-space: 12px;
+  --venue-bar-height: clamp(32px, 4vw, 44px);
+  --venue-group-space: 20px;
   min-width: 0;
 }
 .venueChartLegend, .venueBarGroups {
@@ -484,13 +473,17 @@
   display: none;
   padding-inline: 8px;
   color: var(--vrena-neutral-950);
-  font-size: .78rem;
+  font-size: .7rem;
   font-weight: 700;
-  white-space: nowrap;
+  line-height: 1.15;
+  text-align: end;
 }
 .venueBar[data-previous] > span { color: var(--report-ink); }
-@container (min-width: 12rem) {
+@container (min-width: 7.5rem) {
   .venueBar > span { display: block; }
+}
+@container (min-width: 16rem) {
+  .venueBar > span { font-size: .78rem; }
 }
 .venueBarValue {
   position: absolute;
@@ -518,11 +511,8 @@
 .venueBarAxis p { margin: 7px 0 0; text-align: center; }
 .venueData { margin-block-start: 14px; }
 .dashboard .venueData > summary { display: list-item; min-height: 44px; padding-block: 12px; font-weight: 600; }
-@media (max-width: 850px) {
-  .venueChartGrid { grid-template-columns: minmax(0, 1fr); }
-}
 @media (max-width: 620px) {
-  .venueChart, .venueChart[data-wide] { --venue-chart-label: 0px; --venue-chart-gap: 0px; --venue-chart-value: 4.5rem; }
+  .venueChart { --venue-chart-label: 0px; --venue-chart-gap: 0px; --venue-chart-value: 4.5rem; }
   .venueBarGroup { grid-template-columns: minmax(0, 1fr); }
   .dashboard .venueBarGroup p { text-align: start; background: var(--report-surface); }
   .venueBarAxis [data-interior] { display: none; }
