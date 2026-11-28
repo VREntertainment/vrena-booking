@@ -13,7 +13,8 @@ import type { ConfirmedBookingSummary } from '../lib/staff/bookingSummary'
 import dynamic from 'next/dynamic'
 
 const StaffOrderStatusConfirmation = dynamic(() => import('./staff/StaffOrderStatusConfirmation'), { ssr: false })
-const StaffSavedBookingShare = dynamic(() => import('./staff/StaffSavedBookingShare').then(module => module.StaffSavedBookingShare), { ssr: false })
+const StaffPaymentResolutionDialog = dynamic(() => import('./staff/StaffPaymentResolutionDialog'), { ssr: false })
+import type { BookingPaymentAction } from './staff/StaffPaymentResolutionDialog'
 const StaffPaymentVouchers = dynamic(() => import('./StaffPaymentVouchers'), { ssr: false })
 import { SetupFeedback } from '../features/staff/SetupFeedback'
 import type { OrderStatusChange } from './staff/StaffOrderStatusConfirmation'
@@ -79,7 +80,7 @@ import {
   emptyStaffPayments,
   staffTabGroups
 } from '../lib/staff/options'
-import { normalizePaymentSplits, paymentSplitTotal } from '../lib/staff/payments'
+import { hasRecordedOrderPayment, normalizePaymentSplits, paymentSplitTotal } from '../lib/staff/payments'
 import {
   calculateDiscount,
   calculateManualDiscount,
@@ -164,6 +165,7 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
   const confirmedOrderRef = useRef<HTMLTableRowElement>(null)
   const [confirmedSummary, setConfirmedSummary] = useState<ConfirmedBookingSummary | null>(null)
   const [editingBookingId, setEditingBookingId] = useState<string | null>(null)
+  const [paymentResolution, setPaymentResolution] = useState<{ order: StaffOrder; action: BookingPaymentAction } | null>(null)
   const [orderStatusConfirm, setOrderStatusConfirm] = useState<{ orderId: string; status: OrderStatusChange } | null>(null)
   const [ordersShop, setOrdersShop] = useState('all')
   const [commerceTab, setCommerceTab] = useState<StaffCommerceTab>('discounts')
@@ -450,8 +452,11 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
     const frame = requestAnimationFrame(() => { lastFocusedOrder.current = confirmedSummary.orderNumber; confirmedOrderRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' }); confirmedOrderRef.current?.focus({ preventScroll: true }) })
     return () => cancelAnimationFrame(frame)
   }, [currentTab, confirmedSummary, browsedOrders])
-  const voucherOrderIds = useMemo(() => [...new Set((currentTab === 'orders' ? browsedOrders?.rows ?? [] : currentTab === 'report' ? reportSnapshot?.orders ?? [] : currentTab === 'today' ? orders : []).map(order => order.id))].sort(), [currentTab, orders, browsedOrders, reportSnapshot])
-  const voucherSummaries = useStaffVoucherSummaries(voucherOrderIds, canCreateOrders)
+  const unlinkedVoucherOrderIds = useMemo(() => {
+    const rows = currentTab === 'orders' ? browsedOrders?.rows : currentTab === 'report' ? reportSnapshot?.orders : currentTab === 'today' ? orders : []
+    return (rows ?? []).filter(order => !order.session_id).map(order => order.id).sort()
+  }, [currentTab, orders, browsedOrders, reportSnapshot])
+  const unlinkedVoucherSummaries = useStaffVoucherSummaries(unlinkedVoucherOrderIds, canCreateOrders)
   const orderPaymentsByOrderId = useMemo(() => paymentMapFromRows(orderPayments), [orderPayments])
   const operationOrders = useMemo(() => (
     orders
@@ -685,6 +690,20 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
     )
   )
 
+  function refreshBookingOrders() {
+    markStaffDataStale('today', 'orders', 'report')
+    if (currentTab === 'orders') void loadRecentOrders()
+    if (currentTab === 'today') void Promise.all([loadTodayOrders(true), loadTodaySessions(true)])
+    if (currentTab === 'report') void loadReportData(true)
+  }
+
+  function resolveBookingPayment(order: StaffOrder, action: BookingPaymentAction) {
+    setPaymentOrderId(null)
+    setOrderEditDraft(null)
+    setOrderStatusConfirm(null)
+    setPaymentResolution({ order, action })
+  }
+
   const orderRows = (rows: StaffOrder[], paymentsByOrderId = orderPaymentsByOrderId) => {
     const entries = rows.map((order) => {
       const draft = orderEditDraft?.orderId === order.id ? orderEditDraft : null
@@ -696,8 +715,7 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
       const unknownPayment = payments.length === 0 && order.payment_status === 'partially_paid'
       const highlighted = order.order_number === confirmedSummary?.orderNumber
       const game = games.find((item) => item.id === order.game_id)
-      const shareAction = order.session_id && ['confirmed', 'paid', 'partially_paid', 'completed'].includes(order.order_status) && <StaffSavedBookingShare orderId={order.id} sessionId={order.session_id} language={resolvedLanguage} disabled={saving} />
-      const voucherAction = canCreateOrders && <StaffPaymentVouchers order={order} summary={voucherSummaries[order.id]} payments={payments} language={resolvedLanguage} onClosed={() => { if (currentTab === 'report') void loadReportData(true) }} onChanged={async () => {
+      const voucherAction = canCreateOrders && !order.session_id && <StaffPaymentVouchers order={order} summary={unlinkedVoucherSummaries[order.id]} payments={payments} language={resolvedLanguage} onClosed={() => { if (currentTab === 'report') void loadReportData(true) }} onChanged={async () => {
         const [updated, receipts] = await Promise.all([supabase.from('staff_orders').select('*').eq('id', order.id).single(), fetchOrderPayments([order])])
         if (updated.error) throw new Error(updated.error.message)
         const fresh = updated.data as StaffOrder
@@ -709,16 +727,17 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
       }} />
       const recordPayment = () => { setOrderEditDraft(null); setPaymentOrderId(order.id) }
       const adjustTotal = () => { setPaymentOrderId(null); beginOrderEdit(order) }
-      const actions = (shareAction || voucherAction || (canCreateOrders && (order.session_id || !terminal))) ? <>
-        {shareAction}
+      const hasPayment = hasRecordedOrderPayment(order, payments)
+      const actions = canCreateOrders && (order.session_id || voucherAction || hasPayment || !terminal) ? <>
         {voucherAction}
         {canCreateOrders && order.session_id && <button type="button" data-close-order-menu disabled={saving} onClick={() => setEditingBookingId(order.session_id)}>{resolvedLanguage === 'vi' ? 'Sửa chi tiết đặt chỗ' : 'Edit booking details'}</button>}
         {canCreateOrders && !terminal && <>
-          <button type="button" data-close-order-menu disabled={saving} onClick={adjustTotal}>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'}</button>
+          {!order.session_id && <button type="button" data-close-order-menu disabled={saving} onClick={adjustTotal}>{resolvedLanguage === 'vi' ? 'Điều chỉnh tổng tiền' : 'Adjust total'}</button>}
           <button type="button" data-close-order-menu disabled={saving} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'completed' })}>{text.actions.done}</button>
           <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'no_show' })}>{text.actions.noShow}</button>
-          <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => setOrderStatusConfirm({ orderId: order.id, status: 'cancelled' })}>{resolvedLanguage === 'vi' ? 'Hủy đặt chỗ' : 'Cancel booking'}</button>
+          <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => hasPayment ? resolveBookingPayment(order, 'cancel') : setOrderStatusConfirm({ orderId: order.id, status: 'cancelled' })}>{resolvedLanguage === 'vi' ? 'Hủy đặt chỗ' : 'Cancel booking'}</button>
         </>}
+        {hasPayment && <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => resolveBookingPayment(order, 'keep')}>{resolvedLanguage === 'vi' ? 'Hủy thanh toán' : 'Cancel payment'}</button>}
       </> : undefined
       return <Fragment key={order.id}>
         <StaffOrderListEntry
@@ -1107,6 +1126,7 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
         openOperationDeleteDraft={openOperationDeleteDraft}
         paymentOrderId={paymentOrderId}
         onEditBooking={setEditingBookingId}
+        resolveBookingPayment={resolveBookingPayment}
         orderPaymentForm={orderPaymentForm}
         resolvedLanguage={resolvedLanguage}
         visitOrderSelection={visitOrderSelection}
@@ -1291,14 +1311,21 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
         </div>
       )}
 
-      {editingBookingId && canCreateOrders && <StaffCalendarBookingDialog key={editingBookingId} sessionId={editingBookingId} language={resolvedLanguage} onClose={() => setEditingBookingId(null)} onSaved={() => {
+      {paymentResolution && canCreateOrders && <StaffPaymentResolutionDialog
+        order={paymentResolution.order} bookingAction={paymentResolution.action} language={resolvedLanguage}
+        onClose={resolved => {
+          setPaymentResolution(null)
+          if (resolved) {
+            refreshBookingOrders()
+            setStatus(text.messages.orderUpdated)
+          }
+        }} />}
+
+      {editingBookingId && canCreateOrders && <StaffCalendarBookingDialog key={editingBookingId} sessionId={editingBookingId} language={resolvedLanguage} onPaymentChanged={refreshBookingOrders} onClose={() => setEditingBookingId(null)} onSaved={() => {
         setEditingBookingId(null)
         setPaymentOrderId(null)
         setOrderEditDraft(null)
-        markStaffDataStale('today', 'orders', 'report')
-        if (currentTab === 'orders') void loadRecentOrders()
-        if (currentTab === 'today') void Promise.all([loadTodayOrders(true), loadTodaySessions(true)])
-        if (currentTab === 'report') void loadReportData(true)
+        refreshBookingOrders()
         setStatus(text.messages.orderUpdated)
       }} />}
 

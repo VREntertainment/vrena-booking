@@ -5,7 +5,7 @@ import { brandedGameName } from '../../lib/anvio'
 import StaffGamesPlayed from '../../components/staff/StaffGamesPlayed'
 
 import { StaffOrderDetailRow, StaffOrderList, StaffOrderPaymentDetails, StaffOrderTableRow } from '../../components/staff/StaffOrderList'
-import { StaffSavedBookingShare } from '../../components/staff/StaffSavedBookingShare'
+import type { BookingPaymentAction } from '../../components/staff/StaffPaymentResolutionDialog'
 
 import { useState } from 'react'
 import { reportVenue } from '../../lib/staff/decisionReport'
@@ -44,7 +44,7 @@ import {
   sessionKindLabel,
   sessionStaffGame
 } from '../../lib/staff/operations'
-import { paymentStatusLabel } from '../../lib/staff/payments'
+import { hasRecordedOrderPayment, paymentStatusLabel } from '../../lib/staff/payments'
 import {
   isDemoProfile
 } from '../../lib/staff/profiles'
@@ -59,6 +59,7 @@ import { ButtonIconText } from './shared'
 
 export type TodaySectionProps = {
   onEditBooking: (sessionId: string) => void
+  resolveBookingPayment: (order: import('../../lib/staff/types').StaffOrder, action: BookingPaymentAction) => void
   text: StaffConsoleCopy
   operationsDate: string
   setOperationsDate: React.Dispatch<React.SetStateAction<string>>
@@ -109,6 +110,7 @@ export default function TodaySection({
   setOperationsDate,
   onOpenSessionCalendar,
   onEditBooking,
+  resolveBookingPayment,
   canCreateOrders,
   setBooking,
   setActiveTab,
@@ -214,6 +216,7 @@ export default function TodaySection({
           const chapterCount = Math.max(1, Math.min(50, Number(staffGame?.escape_chapter_count ?? 1) || 1))
           const addableProfiles = profiles.filter((item) => !isDemoProfile(item) && !participants.some((participant) => participant.profile_id === item.id))
           const payments = order ? orderPaymentsByOrderId.get(order.id) || [] : []
+          const hasPayment = Boolean(order && hasRecordedOrderPayment(order, payments))
           const paidAmount = order ? orderPaidAmount(order, orderPaymentsByOrderId) : 0
           const totalAmount = order?.total ?? session.ticket_total_price ?? null
           const balance = order && !(order.payment_status === 'partially_paid' && payments.length === 0)
@@ -242,7 +245,6 @@ export default function TodaySection({
                 recordPayment={canCollect ? () => setPaymentOrderId(order.id) : undefined} disabled={saving}
                 actions={<>
                   {canCreateOrders && <button type="button" data-close-order-menu onClick={() => setExpanded(true)}>{visitText.record}</button>}
-                  <StaffSavedBookingShare sessionId={session.id} language={resolvedLanguage} disabled={saving || session.status === 'cancelled'} />
                   {canCreateOrders && <button type="button" data-close-order-menu disabled={saving} onClick={() => onEditBooking(session.id)}>{vi ? 'Sửa chi tiết đặt chỗ' : 'Edit booking details'}</button>}
                   {order && canCreateOrders && !terminal && <>
                     <button type="button" data-close-order-menu disabled={saving} onClick={() => {
@@ -256,11 +258,14 @@ export default function TodaySection({
                     <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => setStatusConfirmation({ id: session.id, status: 'no_show' })}>
                       <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.noShow}</ButtonIconText>
                     </button>
-                    <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => setStatusConfirmation({ id: session.id, status: 'cancelled' })}>
+                    <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => hasPayment ? resolveBookingPayment(order, 'cancel') : setStatusConfirmation({ id: session.id, status: 'cancelled' })}>
                       {vi ? 'Hủy đặt chỗ' : 'Cancel booking'}
                     </button>
                   </>}
-                  {canCreateOrders && <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => openOperationDeleteDraft(session, order || null)}>
+                  {order && hasPayment && canCreateOrders && <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => resolveBookingPayment(order, 'keep')}>
+                    {vi ? 'Hủy thanh toán' : 'Cancel payment'}
+                  </button>}
+                  {canCreateOrders && <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => order && hasPayment ? resolveBookingPayment(order, 'delete') : openOperationDeleteDraft(session, order || null)}>
                     <ButtonIconText icon={<Trash2 aria-hidden="true" size={14} />}>{text.actions.deleteSession}</ButtonIconText>
                   </button>}
                 </>}

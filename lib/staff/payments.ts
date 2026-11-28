@@ -2,7 +2,7 @@ import type { StaffConsoleCopy } from './copy.ts'
 import { staffConsoleText } from './copy.ts'
 import { normalizeTime } from './dates.ts'
 import { parseDong } from './formatting.ts'
-import type { PaymentSplitDraft, PaymentSplitPayload, StaffOrder, StaffOrderEditDraft, StaffPaymentMethod } from './types.ts'
+import type { PaymentSplitDraft, PaymentSplitPayload, StaffOrder, StaffOrderEditDraft, StaffOrderPayment, StaffPaymentMethod } from './types.ts'
 
 export function newPaymentSplit(method: StaffPaymentMethod = 'cash', amount = ''): PaymentSplitDraft {
   return {
@@ -57,4 +57,10 @@ export function paymentStatusLabel(value: StaffOrder['payment_status'], text: St
   if (value === 'partially_paid') return text.orderStatuses.partially_paid
   if (value === 'refunded') return text.orderStatuses.refunded
   return value
+}
+
+export function hasRecordedOrderPayment(order: StaffOrder, payments: StaffOrderPayment[]) {
+  if (order.payment_status === 'refunded' || order.order_status === 'refunded') return false
+  if (payments.length) return payments.reduce((total, payment) => total + payment.amount, 0) > 0
+  return order.total > 0 && (order.payment_status === 'paid' || order.payment_status === 'partially_paid')
 }
