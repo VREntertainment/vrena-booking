@@ -1,0 +1,180 @@
+.root {
+  --tour-text: var(--vrena-text, #112020);
+  --tour-muted: var(--vrena-neutral-600, #566769);
+  --tour-surface: var(--vrena-surface, #fff);
+  --tour-raised: var(--vrena-neutral-50, #f6f8f8);
+  --tour-line: var(--vrena-neutral-200, #dde5e5);
+  --tour-accent: var(--vrena-purple-600, #3d38f3);
+  --tour-accent-soft: var(--vrena-purple-50, #edf2ff);
+  color: var(--tour-text);
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+  min-width: 0;
+}
+.root h2,.root h3,.root h4,.root p { margin: 0; }
+.root button,.root select,.root input,.root textarea { font: inherit; }
+.root button { min-height: 42px; display: inline-flex; gap: 7px; align-items: center; justify-content: center; }
+.header,.heading,.headerActions,.eventSelect,.event,.dayHeader,.matchTop,.dialogHead,.rules,.tvBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.heading { justify-content: flex-start; }
+.heading h2 { font-size: clamp(1.5rem,3vw,2rem); letter-spacing: -.055em; font-weight: 780; }
+.mark { display: grid; place-items: center; width: 39px; height: 39px; border-radius: 12px; background: var(--tour-accent-soft); color: var(--tour-accent); flex: none; }
+.headerActions { justify-content: flex-end; flex-wrap: wrap; }
+.eventSelect { justify-content: flex-start; }
+.eventSelect label { display: grid; gap: 5px; max-width: 420px; flex: 1; }
+.eventSelect > button { align-self: flex-end; }
+.root label { font-size: .8rem; font-weight: 650; }
+.root input:not([type='checkbox']),.root select,.root textarea {
+  border: 1px solid var(--tour-line);
+  border-radius: 9px;
+  padding: .62rem .72rem;
+  background: var(--tour-raised);
+  color: var(--tour-text);
+  min-height: 44px;
+  width: 100%;
+}
+.event { padding: 24px; border-radius: 17px; border: 1px solid var(--tour-line); background: var(--tour-surface); border-left: 4px solid var(--vrena-venue-accent, var(--tour-accent)); }
+.event h3 { font-size: clamp(1.4rem, 4vw, 2.4rem); line-height: 1.05; letter-spacing: -.05em; font-weight: 790; margin-block: 7px 11px; }
+.event p,.scheduleLine,.callout,.audit p,.eventFormat { color: var(--tour-muted); }
+.event p,.eventFormat,.callout { font-size: .83rem; }
+.progress { text-align: right; flex: 0 0 151px; }
+.progress strong { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.progress strong span { color: var(--tour-muted); font-size: 1rem; font-weight: 580; }
+.progress label { display: block; margin: 3px 0; color: var(--tour-muted); }
+.root progress { width: 100%; height: 7px; accent-color: var(--tour-accent); }
+.nav,.seg {
+  display: flex; gap: 4px; min-width: 0; background: var(--tour-surface);
+  padding: 4px; border: 1px solid var(--tour-line); border-radius: 11px;
+}
+.nav button,.seg button {
+  background: none; border: 0; color: var(--tour-muted); padding: 7px 14px; border-radius: 8px;
+  min-height: 39px; font-size: .85rem; font-weight: 650;
+}
+.nav button[aria-current],.seg button[aria-pressed="true"] { background: var(--tour-accent-soft); color: var(--tour-accent); }
+.nav button:focus-visible,.seg button:focus-visible { outline: 2px solid var(--tour-accent); outline-offset: -2px; }
+.seg { width: fit-content; max-width: 100%; }
+.seg button span { font-size: .73rem; min-width: 19px; border-radius: 20px; background: var(--tour-raised); }
+.dayHeader h3 { font-size: 1.2rem; }
+.matchGrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,335px),1fr)); gap: 13px; align-items: start; }
+.match { display: grid; gap: 11px; padding: 15px; background: var(--tour-surface); border: 1px solid var(--tour-line); border-radius: 14px; min-width: 0; }
+.matchTop { align-items: flex-start; }
+.matchTop strong { font-size: .8rem; }
+.outcome { padding: 4px 7px; border-radius: 7px; font-size: .7rem; font-weight: 700; color: var(--tour-muted); background: var(--tour-raised); flex: none; }
+.outcome[data-active] { background: #dcf6ed; color: #095f4b; }
+.match[data-review],.round li[data-review] { border-color: #db9659; }
+.match[data-review] .outcome { background: #fff2df; color: #874708; }
+.scheduleLine { display: flex; gap: 6px; align-items: center; font-size: .8rem; }
+.sides { display: grid; gap: 4px; }
+.sides > div,.round li > div { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 40px; padding: 7px 9px; border-radius: 7px; background: var(--tour-raised); overflow-wrap: anywhere; }
+.sides [data-winner],.round [data-winner] { background: var(--tour-accent-soft); color: var(--tour-accent); }
+.sides b { font-size: 1.08rem; font-variant-numeric: tabular-nums; }
+.cardActions,.dialogActions { display: flex; flex-wrap: wrap; gap: 7px; justify-content: flex-end; }
+.cardActions button { padding-inline: .72rem; }
+.warning,.error,.champion { display: flex; align-items: center; gap: 7px; padding: .65rem .8rem; border-radius: 9px; }
+.warning { background: #fff5e8; color: #78420b; font-size: .8rem; }
+.error { color: #a11e38; background: #fff0f3; font-size: .85rem; flex-wrap: wrap; }
+.champion { background: var(--tour-accent-soft); color: var(--tour-accent); }
+.empty,.rules,.teams,.results,.audit { padding: 16px; background: var(--tour-surface); border-radius: 12px; border: 1px solid var(--tour-line); min-width: 0; }
+.empty { color: var(--tour-muted); }
+.teams h3,.results h3,.audit h3 { margin-bottom: 12px; }
+.teams ul,.audit ul,.tvQueues ul,.round ol { list-style: none; padding: 0; margin: 0; }
+.teams li { display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--tour-line); padding: .48rem 0; min-height: 49px; }
+.teams li > strong { flex: 1; overflow-wrap: anywhere; }
+.teams li button { min-height: 40px; }
+.seed { display: grid; place-items: center; border-radius: 7px; background: var(--tour-raised); color: var(--tour-muted); font-size: .78rem; width: 28px; height: 28px; flex: none; }
+.seedButtons,.addTeam { display: flex; align-items: flex-end; gap: 6px; flex-wrap: wrap; }
+.seedButtons button { min-width: 36px; padding-inline: 6px; }
+.addTeam { margin-bottom: 12px; }
+.addTeam label,.rules label { flex: 1; }
+.addTeam label,.rules label { display: grid; gap: 5px; }
+.rules { align-items: flex-end; flex-wrap: wrap; }
+.rules small { color: var(--tour-muted); padding-bottom: .5rem; }
+.bracket { display: grid; grid-template-columns: repeat(var(--tournament-rounds), minmax(210px,1fr)); gap: 13px; overflow-x: auto; padding: 1px 1px 9px; }
+.round h4 { margin: 0 0 8px; color: var(--tour-muted); font-size: .8rem; }
+.round ol { display: flex; flex-direction: column; justify-content: space-around; gap: 9px; }
+.round li { display: grid; gap: 4px; padding: 8px; border: 1px solid var(--tour-line); border-radius: 9px; }
+.round li small { color: var(--tour-muted); font-size: .74rem; }
+.round li > div { min-height: 31px; font-size: .85rem; }
+.tableWrap { overflow-x: auto; }
+.tableWrap table { width: 100%; border-collapse: collapse; }
+.tableWrap th,.tableWrap td { padding: 8px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--tour-line); }
+.tableWrap th[scope='row'],.tableWrap th:nth-child(2) { text-align: left; }
+.audit li { padding: 10px 0; border-top: 1px solid var(--tour-line); }
+.audit p { font-size: .82rem; margin: 3px 0; overflow-wrap: anywhere; }
+.tvLink { justify-self: start; font-size: .84rem; }
+.dialog { width: min(520px,calc(100% - 22px)); max-height: min(780px,calc(100dvh - 18px)); padding: 17px; border: 1px solid var(--tour-line); border-radius: 15px; color: var(--tour-text); background: var(--tour-surface); }
+.dialog::backdrop { background: rgb(14 23 47 / 58%); }
+.dialogHead { margin-bottom: 13px; }
+.dialogHead button { min-width: 42px; padding: 0; }
+.dialog fieldset { display: grid; gap: 10px; margin: 0; border: 0; padding: 0; }
+.dialog label { display: grid; gap: 5px; }
+.dialogMatch { font-weight: 650; }
+.formGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.formGrid > * { min-width: 0; }
+.tv { background: #121a31; color: #f7f9ff; padding: clamp(18px,3vw,48px); margin-top: 0; min-height: min(750px,95vh); overflow: auto; border-radius: 16px; --tour-surface:#202a43; --tour-raised:#293651; --tour-text:#f7f9ff; --tour-muted:#c2cde1; --tour-line:#3b4966; --tour-accent-soft:#334276; --tour-accent:#dee4ff; }
+.tv:fullscreen { border-radius: 0; margin: 0; }
+.tvBar span,.tvBar div { display: flex; align-items: center; gap: 8px; }
+.tv h1 { font-size: clamp(2.1rem,6vw,4.6rem); letter-spacing: -.065em; line-height: 1.05; margin: 0; }
+.tvMeta,.tvQueues small,.tvQueues p { color: #c2cde1; }
+.tvProgress { max-width: 520px; }
+.tvProgress strong { font-size: 1.7rem; margin-right: 7px; }
+.tvProgress progress { display: block; }
+.tvQueues { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,240px),1fr)); gap: 14px; }
+.tvQueues section { background: var(--tour-surface); border: 1px solid var(--tour-line); border-radius: 13px; padding: 15px; }
+.tvQueues h2 { font-size: 1.12rem; margin-bottom: 8px; }
+.tvQueues li { border-top: 1px solid var(--tour-line); padding: 8px 0; }
+.tvQueues li strong { display: flex; justify-content: space-between; gap: 6px; font-size: .95rem; }
+.tvQueues small { display: block; margin-top: 5px; }
+.tvChampion { display: flex; align-items: center; gap: 8px; color: #ffd068; font-size: 1.4rem; }
+
+@media (max-width: 540px) {
+  .root { gap: 12px; }
+  .header { flex-wrap: wrap; }
+  .headerActions { justify-content: flex-start; }
+  .event { padding: 15px; gap: 6px; }
+  .progress { flex-basis: 91px; }
+  .progress label { font-size: .66rem; }
+  .nav button,.seg button { flex: 1; padding: 5px 6px; font-size: .77rem; min-height: 44px; }
+  .seg { width: 100%; }
+  .root button { min-height: 44px; }
+  .match { padding: 12px; }
+  .cardActions { justify-content: flex-start; }
+  .cardActions > button { flex: 1 0 auto; }
+  .bracket { grid-template-columns: repeat(var(--tournament-rounds),minmax(170px,1fr)); }
+  .tvBar { align-items: flex-start; }
+  .tvBar div { flex-wrap: wrap; justify-content: flex-end; }
+}
+
+.teamEditor { display:flex; flex-wrap:wrap; align-items:end; gap:8px; margin:12px 0; }
+.teamEditor label { display:grid; gap:4px; flex:1 0 170px; }
+.teamEditor small { flex-basis:100%; }
+.diagramScroll { overflow-x:auto; padding:6px 0; }
+.diagram { position:relative; margin-inline:auto; }
+.diagram > svg { position:absolute; inset:0; color:var(--vrena-purple-300); pointer-events:none; }
+.diagramLabel { position:absolute; top:0; color:var(--tour-muted); }
+.diagramCard { position:absolute; display:grid; gap:4px; background:var(--tour-surface); padding:8px; border:1px solid var(--tour-line); border-radius:9px; }
+.diagramCard[data-review] { border-color:var(--vrena-orange-400); }
+.diagramCard small { color:var(--tour-muted); }
+.diagramCard > div { display:flex; align-items:center; justify-content:space-between; gap:6px; padding:3px 0; min-height:30px; }
+.diagramCard > div span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.diagramCard [data-winner] { color:var(--tour-accent); font-weight:750; }
+.diagramCard [data-drop] { background:var(--tour-accent-soft); outline:2px solid var(--tour-accent); border-radius:4px; }
+.root .dragHandle { min-height:32px; padding:0 5px; touch-action:none; cursor:grab; color:var(--tour-accent); background:none; border:0; }
+.tv { background:var(--vrena-purple-950); --tour-surface:var(--vrena-purple-900); --tour-line:var(--vrena-purple-800); --tour-accent:var(--vrena-cyan-300); }
+.tv .event,.tv .tvQueues section,.tv .results { animation:tvEnter .42s ease-out both; }
+.tv [data-motion] { animation:tvHighlight 1.45s ease-out both; }
+.tv [data-motion] [data-winner] strong { animation:tvScore .58s ease-out both; }
+.tv [data-path] { animation:tvPath 1.3s ease-out both; }
+.tv section > h2 { margin-bottom:8px; }
+@keyframes tvEnter { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+@keyframes tvHighlight { from { box-shadow:inset 0 0 0 2px var(--vrena-cyan-400); } to { box-shadow:inset 0 0 0 1px transparent; } }
+@keyframes tvScore { from { opacity:.6; transform:scale(.9); } to { opacity:1; transform:scale(1); } }
+@keyframes tvPath { 0% { stroke:var(--vrena-cyan-300); stroke-dasharray:1; stroke-dashoffset:1; } 55%,100% { stroke-dasharray:1; stroke-dashoffset:0; } 100% { stroke:currentColor; } }
+@media(prefers-reduced-motion:reduce) {
+  .tv .event,.tv .tvQueues section,.tv .results,.tv [data-motion],.tv [data-motion] [data-winner] strong,.tv [data-path] { animation:none; }
+}

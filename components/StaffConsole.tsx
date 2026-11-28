@@ -26,6 +26,7 @@ const GamesSection = dynamic(() => import('../features/staff/GamesSection'), { s
 const DiscountsSection = dynamic(() => import('../features/staff/DiscountsSection'), { ssr: false })
 const ClientProfileSection = dynamic(() => import('../features/staff/ClientProfileSection'), { ssr: false })
 const RolesSection = dynamic(() => import('../features/staff/RolesSection'), { ssr: false })
+const StaffTournaments = dynamic(() => import('../features/staff/tournaments/StaffTournaments'), { ssr: false })
 const ReportSection = dynamic(() => import('../features/staff/ReportSection'), { ssr: false })
 
 
@@ -161,6 +162,13 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
   const canRestoreDeleted = rank >= 120
   const canOpenRoleProfiles = rank >= 20 && Boolean(onOpenPlayerProfile)
   const [activeTab, setActiveTab] = useState<StaffTab>(rank >= 50 ? 'new' : 'report')
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('tournament_tv')
+    if (id && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) {
+      const frame = requestAnimationFrame(() => setActiveTab('tournaments'))
+      return () => cancelAnimationFrame(frame)
+    }
+  }, [])
   const lastFocusedOrder = useRef('')
   const confirmedOrderRef = useRef<HTMLTableRowElement>(null)
   const [confirmedSummary, setConfirmedSummary] = useState<ConfirmedBookingSummary | null>(null)
@@ -331,6 +339,7 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
       ...(canCreateCustomerAccounts || canAwardAchievements ? (['clientProfile'] satisfies StaffTab[]) : []),
       'today',
       'orders',
+      'tournaments',
       'report',
       'roles',
       'games',
@@ -582,7 +591,8 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
                   : currentTab === 'roles' ? ['profiles']
                     : currentTab === 'restore' ? ['restore']
                       : currentTab === 'orders' ? ['games', 'orders']
-                        : reportView === 'qr' ? ['qrReport'] : ['games', 'report']
+                        : currentTab === 'tournaments' ? []
+                          : reportView === 'qr' ? ['qrReport'] : ['games', 'report']
   const currentTabError = currentDataKeys.map((key) => dataErrors[key]).filter(Boolean).join(' · ')
   const currentTabLoading = currentDataKeys.some((key) => loadingData[key] || (!loadedDataRef.current[key] && !dataErrors[key]))
     || (currentTab === 'orders' && browsedOrders?.key !== ordersQueryKey && !dataErrors.orders)
@@ -1351,6 +1361,8 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
           </nav>
         </div>
       )}
+
+      {currentTab === 'tournaments' && <StaffTournaments language={resolvedLanguage} rank={rank} />}
 
       {currentTab === 'report' && (<ReportSection
         resolvedLanguage={resolvedLanguage}

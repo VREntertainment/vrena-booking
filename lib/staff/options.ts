@@ -29,7 +29,7 @@ import type {
 } from './types.ts'
 
 export const staffTabGroups: Array<{ id: StaffTabGroupId; tabs: StaffTab[] }> = [
-  { id: 'operate', tabs: ['new', 'clientProfile', 'today', 'orders'] },
+  { id: 'operate', tabs: ['new', 'clientProfile', 'today', 'orders', 'tournaments'] },
   { id: 'reports', tabs: ['report'] },
   { id: 'team', tabs: ['attendance', 'hr', 'roles'] },
   { id: 'setup', tabs: ['games', 'prices', 'discounts'] },

@@ -4,7 +4,7 @@ import type { LanguageCode } from '../i18n/languages'
 import type { ProgressivePitBracket } from '../hrPayrollPolicy'
 import type { StaffKioskOperator } from '../../components/StaffKioskGate'
 
-export type StaffTab = 'new' | 'clientProfile' | 'today' | 'attendance' | 'hr' | 'games' | 'prices' | 'discounts' | 'roles' | 'restore' | 'orders' | 'report'
+export type StaffTab = 'new' | 'clientProfile' | 'today' | 'attendance' | 'hr' | 'games' | 'prices' | 'discounts' | 'roles' | 'restore' | 'orders' | 'report' | 'tournaments'
 
 export type StaffTabGroupId = 'operate' | 'reports' | 'team' | 'setup' | 'admin'
 
