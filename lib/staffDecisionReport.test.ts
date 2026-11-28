@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { reportPresetRange } from './staff/dates.ts'
-import { decisionPeriod, type ReportOrderFact } from './staff/decisionReport.ts'
+import { decisionFinancial, decisionPeriod, type ReportOrderFact } from './staff/decisionReport.ts'
 
 function order(id: string, overrides: Partial<ReportOrderFact> = {}): ReportOrderFact {
   return {
@@ -91,4 +91,18 @@ test('this month covers only completed days in the current month', () => {
   assert.deepEqual(reportPresetRange('this_month', '2026-12-02'), ['2026-12-01', '2026-12-01'])
   const [start, end] = reportPresetRange('this_month', '2026-12-01')
   assert.ok(start > end)
+})
+
+test('Unpaid includes only eligible bookings through yesterday in the selected venue', () => {
+  const orders = [
+    order('part', { booking_date: '2026-11-27', payment_status: 'partially_paid' }),
+    order('cancelled', { booking_date: '2026-11-27', order_status: 'cancelled', payment_status: 'unpaid' }),
+    order('no-show', { booking_date: '2026-11-27', order_status: 'no_show', payment_status: 'unpaid' }),
+    order('today', { booking_date: '2026-11-28', payment_status: 'unpaid' }),
+    order('future', { booking_date: '2026-11-29', payment_status: 'unpaid' }),
+    order('other', { booking_date: '2026-11-27', payment_status: 'unpaid', sessions: { date: '2026-11-27', venue_key: 'cafe-des-stagiaires' } }),
+  ]
+  const totals = decisionFinancial(orders, [{ order_id: 'part', amount: 50_000, payment_method: 'cash' }], 'ha-do-centrosa', '2026-11-27')
+  assert.equal(totals.unpaidAmount, 150_000)
+  assert.equal(totals.methodTotals.cash, 50_000)
 })

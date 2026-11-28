@@ -34,8 +34,8 @@ export type ReportsActionContext = {
   reportOrders: import("../../lib/staff/types").StaffOrder[]
   games: import("../../lib/staff/types").StaffGame[]
   reportPaymentsByOrderId: Map<string, import("../../lib/staff/types").StaffOrderPayment[]>
-  reportExporting: "excel" | "pdf" | "accountant" | null
-  setReportExporting: React.Dispatch<React.SetStateAction<"excel" | "pdf" | "accountant" | null>>
+  reportExporting: "excel" | "powerpoint" | "accountant" | null
+  setReportExporting: React.Dispatch<React.SetStateAction<"excel" | "powerpoint" | "accountant" | null>>
   setReportExportFeedback: React.Dispatch<React.SetStateAction<{ message: string; tone: "error" | "success" } | null>>
   accountantReportId: import("../../lib/staff/types").AccountantExportReportId
   accountantExportStore: string
@@ -106,13 +106,7 @@ export function createStaffReportsActions(getContext: () => ReportsActionContext
     await download(context)
   }
 
-  async function exportPdfReport() {
-    const context = getContext()
-    const { exportPdfReport: download } = await import('./reportDownload.actions')
-    await download(context)
-  }
-
-  async function runReportExport(kind: 'excel' | 'pdf' | 'accountant', task: () => Promise<void>) {
+  async function runReportExport(kind: 'excel' | 'powerpoint' | 'accountant', task: () => Promise<void>) {
     const { reportExporting, setReportExporting, setReportExportFeedback, text } = getContext()
 
     if (reportExporting) return
@@ -143,7 +137,6 @@ export function createStaffReportsActions(getContext: () => ReportsActionContext
     selectReportView,
     applyReportDateRange,
     exportExcelReport,
-    exportPdfReport,
     runReportExport,
     downloadAccountantExport,
   }

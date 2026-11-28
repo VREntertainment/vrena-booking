@@ -4,10 +4,10 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Banknote, MapPin } from 'lucide-react'
 import { ReportToolbarMenu } from './ReportToolbarMenu'
 import { brandedGameName } from '../../lib/anvio'
-import { orderedRange, previousPeriodRange } from '../../lib/staff/dates'
-import { decisionPeriod, reportDayCount, reportVenue, reportVenueKeys, type ReportVenue, type ReportVenueFilter } from '../../lib/staff/decisionReport'
+import { orderedRange, previousPeriodRange, reportPresetRange } from '../../lib/staff/dates'
+import { decisionFinancial, decisionPeriod, reportDayCount, reportVenue, reportVenueKeys, type ReportVenue, type ReportVenueFilter } from '../../lib/staff/decisionReport'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
-import type { StaffReportSummary } from '../../lib/staff/types'
+import type { ReportSlide } from './reportPowerPoint'
 import { supabase } from '../../lib/supabase/client'
 import { bookingSourceLabel } from '../../lib/staff/reportDisplay'
 import { loadDecisionReport } from './decisionReportData'
@@ -16,8 +16,8 @@ import styles from './ReportCharts.module.css'
 
 type Props = {
   start: string; end: string; compareStart: string; compareEnd: string; compare: boolean
-  language: 'en' | 'vi'; text: StaffConsoleCopy; financial: StaffReportSummary | null
-  toolbar: (venueControl: ReactNode) => ReactNode
+  language: 'en' | 'vi'; text: StaffConsoleCopy
+  toolbar: (venueControl: ReactNode, exportPowerPoint?: () => Promise<void>) => ReactNode
 }
 type VenueMetric = 'revenue' | 'bookings' | 'players' | 'paidPlayers'
 type Facts = Awaited<ReturnType<typeof loadDecisionReport>>
@@ -71,7 +71,7 @@ function gameLabel(id: string, catalog: Map<string, CatalogEntry>) {
   return `${catalog.get(game.parent_slug)?.title || game.parent_slug} — ${game.title}`
 }
 
-export default function BusinessReport({ start, end, compareStart, compareEnd, compare, language, text, financial, toolbar }: Props) {
+export default function BusinessReport({ start, end, compareStart, compareEnd, compare, language, text, toolbar }: Props) {
   const [selectedVenues, setSelectedVenues] = useState<ReadonlySet<ReportVenue> | null>(null)
   const [revenueBasis, setRevenueBasis] = useState<'net' | 'gross'>('net')
   const [metric, setMetric] = useState<'revenue' | 'sales' | 'bookings' | 'players' | 'paidPlayers'>('revenue')
@@ -91,7 +91,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
     async function load() {
       try {
         const [current, previous, venues, games] = await Promise.all([
-          loadDecisionReport({ start: from, end: to }, signal),
+          loadDecisionReport({ start: from, end: to }, signal, true),
           loadDecisionReport({ start: compareFrom, end: compareTo }, signal).catch((error: unknown) => {
             if (compare) throw error
             return null
@@ -119,8 +119,10 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   const selected = selectedVenues ? locations.filter((item) => selectedVenues.has(item)) : locations
   const filter = selectedVenues === null ? 'all' : new Set(selected)
   const allSelected = selectedVenues === null || selected.length === locations.length && locations.length > 0
+  const selectedVenueLabel = allSelected ? selected.map(item => venueNames[item]).join(', ') || t.all
+    : selected.length ? selected.map(item => venueNames[item]).join(', ') : language === 'vi' ? 'Chưa chọn địa điểm' : 'No venues selected'
   const venueControl = <ReportToolbarMenu label={t.venue} hideLabel icon={<MapPin size={15} aria-hidden="true" />}
-    value={allSelected ? t.all : selected.length ? selected.map((item) => venueNames[item]).join(', ') : language === 'vi' ? 'Chưa chọn địa điểm' : 'No venues selected'}>
+    value={allSelected ? t.all : selectedVenueLabel}>
     <label><input type="checkbox" checked={allSelected} disabled={!locations.length}
       ref={(node) => { if (node) node.indeterminate = !allSelected && selected.length > 0 }}
       onChange={(event) => setSelectedVenues(event.target.checked ? null : new Set())} />{t.all}</label>
@@ -216,7 +218,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
     const detail = [...parts.map((part) => `${part.label} ${count(part.value)}`), ...(previous ? [`${t.previous} ${count(before)}`] : [])].join(' · ')
     return { id, label: gameLabel(id, catalog), value, detail, parts }
   }).sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
-  const venueTotals = reportVenueKeys.filter((item) => locations.includes(item) || current.byVenue[item].bookings || previous?.byVenue[item].bookings)
+  const venueTotals = selected
   const venuePrevious = previous ?? (loaded.previous
     ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, [], filter, binDays, loaded.previous.netSales) : null)
   const venuePeriods = [venuePrevious, current]
@@ -250,15 +252,73 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
     { label: t.cancelled, value: current.cancelled, previous: previous?.cancelled, format: count },
     { label: t.noShows, value: current.noShows, previous: previous?.noShows, format: count },
   ]
-  const payments = financial ? [
-    { label: text.labels.cash, value: financial.cashTotal },
-    { label: text.labels.bankTransfer, value: financial.bankTransferTotal },
-    { label: text.paymentMethods.card_manual, value: financial.cardTotal },
-    { label: text.paymentMethods.momo_manual, value: financial.momoTotal },
-    { label: text.paymentMethods.vnpay, value: financial.vnpayTotal },
+  const [yesterday] = reportPresetRange('yesterday')
+  const financial = decisionFinancial(loaded.current.orders, loaded.current.receipts, filter, yesterday)
+  const payments = [
+    { label: text.labels.cash, value: financial.methodTotals.cash },
+    { label: text.labels.bankTransfer, value: financial.methodTotals.bank_transfer },
+    { label: text.paymentMethods.card_manual, value: financial.methodTotals.card_manual },
+    { label: text.paymentMethods.momo_manual, value: financial.methodTotals.momo_manual },
+    { label: text.paymentMethods.vnpay, value: financial.methodTotals.vnpay },
     { label: text.unpaid, value: financial.unpaidAmount },
-  ].sort((a, b) => b.value - a.value) : []
-  return <>{toolbar(controls)}<div className={styles.dashboard}>
+  ].sort((a, b) => b.value - a.value)
+  const paymentNotes = `${text.labels.totalPaid} ${money(financial.totalPaid)} · ${text.labels.discounts} ${money(financial.discounts)}`
+  const sourcesTitle = language === 'vi' ? 'Nguồn đặt chỗ' : 'Booking sources'
+  const sources = financial.bookingSources.map(item => ({
+    label: bookingSourceLabel(item.source, text), value: item.bookings, detail: money(item.sales),
+  })).sort((a, b) => b.value - a.value)
+  const venueBars = venueTotals.map(item => ({
+    id: item, name: venueNames[item], color: colors[item],
+    values: venuePeriods.map(period => venueValue(period, item, 'revenue')),
+    details: venuePeriods.map(period => {
+      const totals = period?.byVenue[item]
+      if (!totals) return ''
+      const { bookings, paidPlayers } = totals
+      return `${t.paidPlayerCount(count(paidPlayers), paidPlayers)} · ${t.sessionCount(count(bookings), bookings)}`
+    }),
+  }))
+  const weekdaySeries = [
+    { label: t.current, color: dotColor, values: current.weekdays },
+    ...(previous ? [{ label: t.previous, color: dotColor, values: previous.weekdays, comparison: true }] : []),
+  ]
+  const hours = hourIndices.map(hourText)
+  const hourlySeries = [
+    { label: t.current, color: dotColor, values: hourIndices.map(hour => current.times[hour]) },
+    ...(previous ? [{ label: t.previous, color: dotColor, values: hourIndices.map(hour => previous.times[hour]), comparison: true }] : []),
+  ]
+  const heatDates = heat === previous && previousDates ? previousDates : currentDates
+  const heatValues = heat.hours.map(values => hourIndices.map(hour => values[hour]))
+  const heatMax = Math.max(...heat.hours.flat())
+  const visibleGames = showGames ? games : games.slice(0, 8)
+  const venueAxis = `${revenueLabel} (${t.millionVnd})`
+  const venueNumber = (value: number | null) => value === null ? '—' : reportNumber(language, value / 1e6, Math.abs(value) < 10_000 ? 6 : 2)
+  const gameplayCoverage = loaded.current.played ? `${count(current.recordedSessions)} ${t.gameCoverage}` : t.gameMissing
+  const gameplayEmpty = loaded.current.played ? t.gameEmpty : t.gameMissing
+
+  async function exportPowerPoint() {
+    const vnd = language === 'vi' ? 'đồng' : 'VND'
+    const titles = { summary: language === 'vi' ? 'Tổng quan' : 'Overview', games: language === 'vi' ? 'Phiên chơi' : 'Sessions' }
+    const slides: ReportSlide[] = [
+      { kind: 'summary', title: titles.summary, period: comparedDates, previousLabel: t.previous,
+        rows: summary.map(item => ({ label: item.label, value: item.value == null ? '—' : item.format(item.value), previous: item.previous == null ? undefined : item.format(item.previous) })) },
+      { kind: 'trend', title: t.trend, period: comparedDates, unit: moneyMetric ? `${metrics[metric]} (${vnd})` : metrics[metric], labels: axis, series: trendSeries, format: moneyMetric ? shortMoney : count },
+      ...(venueBars.length > 1 ? [{
+        kind: 'venue' as const, title: t.venueComparison, period: currentDates, unit: venueAxis,
+        groups: venueBars, periods: venueSeriesPeriods, valueLabel: venueNumber,
+        format: (value: number) => reportNumber(language, value / 1e6, 6),
+      }] : []),
+      { kind: 'trend', title: t.day, period: comparedDates, unit: t.bookings, labels: weekdays, series: weekdaySeries, format: count, columns: true },
+      { kind: 'trend', title: t.time, period: comparedDates, unit: t.bookings, labels: hours, series: hourlySeries, format: count, columns: true },
+      { kind: 'heat', title: t.heat, period: heatDates, unit: t.bookings, labels: hours, rows: weekdays, values: heatValues, max: heatMax },
+      { kind: 'ranking', title: t.games, period: comparedDates, unit: titles.games, rows: visibleGames,
+        format: count, empty: gameplayEmpty, note: gameplayCoverage, legend: venueTotals.map(item => ({ label: venueNames[item], color: colors[item] })) },
+      { kind: 'ranking', title: t.mix, period: currentDates, unit: vnd, rows: payments, format: money, empty: t.noData, note: paymentNotes },
+      { kind: 'ranking', title: sourcesTitle, period: currentDates, unit: t.bookings, rows: sources, format: count, empty: t.noData },
+    ]
+    const { downloadReportPowerPoint } = await import('./reportPowerPoint')
+    await downloadReportPowerPoint({ from, to, dates: currentDates, venue: selectedVenueLabel, slides })
+  }
+  return <>{toolbar(controls, exportPowerPoint)}<div className={styles.dashboard}>
     <dl className={styles.metrics}>{summary.map((item) => <div key={item.label}>
       <dt>{item.label}</dt><dd>{item.value == null ? '—' : item.format(item.value)}</dd>
       {previous && <small>{t.previous} · {item.previous == null ? '—' : item.format(item.previous)}</small>}
@@ -278,20 +338,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
           {t.priorUnavailable} <button type="button" onClick={() => setRetry((value) => value + 1)}>{t.retry}</button>
         </p>}
         <ReportVenueBars label={revenueLabel} periods={venueSeriesPeriods}
-          venues={venueTotals.map((item) => ({
-            id: item,
-            name: venueNames[item],
-            color: colors[item],
-            values: venuePeriods.map((period) => venueValue(period, item, 'revenue')),
-            details: venuePeriods.map((period) => {
-              const totals = period?.byVenue[item]
-              if (!totals) return ''
-              const { bookings, paidPlayers } = totals
-              return `${t.paidPlayerCount(count(paidPlayers), paidPlayers)} · ${t.sessionCount(count(bookings), bookings)}`
-            }),
-          }))}
-          axisLabel={`${revenueLabel} (${t.millionVnd})`}
-          formatValue={(value) => value === null ? '—' : reportNumber(language, value / 1e6, Math.abs(value) < 10_000 ? 6 : 2)}
+          venues={venueBars} axisLabel={venueAxis} formatValue={venueNumber}
           formatTick={(value) => reportNumber(language, value / 1e6, 6)} />
         <details className={`${styles.details} ${styles.venueData}`}>
           <summary>{t.viewVenueData}</summary>
@@ -311,42 +358,32 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
         </details>
       </ReportPanel>}
       <ReportPanel title={t.day} period={comparedDates} description={current.weekdays[peakDay] ? `${t.peak} · ${weekdays[peakDay]} · ${count(current.weekdays[peakDay])}` : t.noData}>
-        <ReportTrend label={t.day} labels={weekdays} mode="columns" series={[
-          { label: t.current, color: dotColor, values: current.weekdays },
-          ...(previous ? [{ label: t.previous, color: dotColor, values: previous.weekdays, comparison: true }] : []),
-        ]} valueLabel={count} language={language} />
+        <ReportTrend label={t.day} labels={weekdays} mode="columns" series={weekdaySeries} valueLabel={count} language={language} />
       </ReportPanel>
       <ReportPanel title={t.time} period={comparedDates} description={current.times[peakHour] ? `${t.peak} · ${hourText(peakHour)} · ${count(current.times[peakHour])}` : t.noData}>
-        <ReportTrend label={t.time} labels={hourIndices.map(hourText)} mode="columns" series={[
-          { label: t.current, color: dotColor, values: hourIndices.map((hour) => current.times[hour]) },
-          ...(previous ? [{ label: t.previous, color: dotColor, values: hourIndices.map((hour) => previous.times[hour]), comparison: true }] : []),
-        ]} valueLabel={count} language={language} />
+        <ReportTrend label={t.time} labels={hours} mode="columns" series={hourlySeries} valueLabel={count} language={language} />
       </ReportPanel>
-      <ReportPanel title={t.heat} period={heat === previous && previousDates ? previousDates : currentDates} description={t.heatDescription} wide actions={previous && <div className={styles.controls}>
+      <ReportPanel title={t.heat} period={heatDates} description={t.heatDescription} wide actions={previous && <div className={styles.controls}>
         <label>{t.period}<select value={heatComparison ? 'previous' : 'current'} onChange={(event) => setHeatComparison(event.target.value === 'previous')}>
           <option value="current">{t.current}</option><option value="previous">{t.previous}</option>
         </select></label>
       </div>}>
-        <ReportHeatmap rows={weekdays} columns={hourIndices.map(hourText)} values={heat.hours.map((hours) => hourIndices.map((hour) => hours[hour]))}
-          label={t.heat} legend={['0', count(Math.max(...heat.hours.flat()))]} language={language} />
+        <ReportHeatmap rows={weekdays} columns={hours} values={heatValues}
+          label={t.heat} legend={['0', count(heatMax)]} language={language} />
       </ReportPanel>
       <ReportPanel title={t.games} period={comparedDates} description={t.gameDescription} wide>
-        <p className={styles.note}>{loaded.current.played ? `${count(current.recordedSessions)} ${t.gameCoverage}` : t.gameMissing}</p>
+        <p className={styles.note}>{gameplayCoverage}</p>
         <div className={styles.legend}>{venueTotals.map((item) => <span key={item}><i data-color={colors[item]} />{venueNames[item]}</span>)}</div>
-        <ReportRanking rows={showGames ? games : games.slice(0, 8)} valueLabel={count} empty={loaded.current.played ? t.gameEmpty : t.gameMissing} />
+        <ReportRanking rows={visibleGames} valueLabel={count} empty={gameplayEmpty} />
         {games.length > 8 && <button type="button" className="secondary" onClick={() => setShowGames(!showGames)}>{showGames ? t.less : t.more}</button>}
       </ReportPanel>
-      {financial && <>
-      <ReportPanel title={t.mix} period={currentDates} description={t.all}>
-        <p className={styles.note}>{text.labels.totalPaid} <strong>{money(financial.totalPaid)}</strong> · {text.labels.discounts} <strong>{money(financial.discounts)}</strong></p>
+      <ReportPanel title={t.mix} period={currentDates} description={selectedVenueLabel}>
+        <p className={styles.note}>{paymentNotes}</p>
         <ReportRanking rows={payments} valueLabel={money} empty={t.noData} />
       </ReportPanel>
-      <ReportPanel title={language === 'vi' ? 'Nguồn đặt chỗ' : 'Booking sources'} period={currentDates} description={t.all}>
-        <ReportRanking rows={(financial.bookingSources ?? []).map((item) => ({
-          label: bookingSourceLabel(item.source, text), value: item.bookings, detail: money(item.sales),
-        })).sort((a, b) => b.value - a.value)} valueLabel={count} empty={t.noData} />
+      <ReportPanel title={sourcesTitle} period={currentDates} description={selectedVenueLabel}>
+        <ReportRanking rows={sources} valueLabel={count} empty={t.noData} />
       </ReportPanel>
-      </>}
     </div>
   </div></>
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { supabase } from '../../lib/supabase/client'
-import type { ReportNetSale, ReportOrderFact, ReportPlayedFact } from '../../lib/staff/decisionReport'
+import type { ReportNetSale, ReportOrderFact, ReportPlayedFact, ReportReceipt } from '../../lib/staff/decisionReport'
 
 type Range = { start: string; end: string }
 const pageSize = 500
@@ -21,10 +21,10 @@ async function allPages<T>(load: (cursor: string | undefined) => PromiseLike<Pag
   }
 }
 
-export async function loadDecisionReport(range: Range, signal: AbortSignal) {
+export async function loadDecisionReport(range: Range, signal: AbortSignal, includePayments = false) {
   const orders = allPages<ReportOrderFact>((cursor) => {
     let query = supabase.from('staff_orders').select(
-      'id,session_id,booking_date,booking_time,arena_id,players_count,total,order_status,payment_status,sessions(date,venue_key)'
+      'id,session_id,booking_date,booking_time,arena_id,players_count,total,order_status,payment_status,discount_total,payment_method,booking_source,sessions(date,venue_key)'
     ).gte('booking_date', range.start).lte('booking_date', range.end).order('id').limit(pageSize)
     if (cursor) query = query.gt('id', cursor)
     return query.abortSignal(signal).returns<ReportOrderFact[]>()
@@ -44,5 +44,17 @@ export async function loadDecisionReport(range: Range, signal: AbortSignal) {
   const [orderRows, playedRows, sales] = await Promise.all([orders, played, netSales])
   const summary = sales.data as unknown as { days: ReportNetSale[] } | null
   if (sales.error || !Array.isArray(summary?.days)) throw new Error(sales.error?.message || 'Net sales are unavailable.')
-  return { orders: orderRows, played: playedRows, netSales: summary.days }
+  const receipts: ReportReceipt[] = []
+  if (includePayments) {
+    for (let index = 0; index < orderRows.length; index += 150) {
+      const ids = orderRows.slice(index, index + 150).map((order) => order.id)
+      receipts.push(...await allPages<ReportReceipt & { id: string }>((cursor) => {
+        let query = supabase.from('staff_order_payments').select('id,order_id,amount,payment_method')
+          .in('order_id', ids).order('id').limit(pageSize)
+        if (cursor) query = query.gt('id', cursor)
+        return query.abortSignal(signal).returns<(ReportReceipt & { id: string })[]>()
+      }, (receipt) => receipt.id))
+    }
+  }
+  return { orders: orderRows, played: playedRows, netSales: summary.days, receipts }
 }

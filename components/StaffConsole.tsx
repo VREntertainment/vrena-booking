@@ -869,7 +869,6 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
     selectReportView,
     applyReportDateRange,
     exportExcelReport,
-    exportPdfReport,
     runReportExport,
     downloadAccountantExport,
   } = createStaffReportsActions(() => ({
@@ -1371,7 +1370,6 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
         reportExporting={reportExporting}
         runReportExport={runReportExport}
         exportExcelReport={exportExcelReport}
-        exportPdfReport={exportPdfReport}
         accountantExportOpen={accountantExportOpen}
         setAccountantExportOpen={setAccountantExportOpen}
         accountantExportStore={accountantExportStore}
@@ -1386,7 +1384,6 @@ export default function StaffConsole({ profile, authEmail, language, kioskOperat
         setAccountantReportId={setAccountantReportId}
         downloadAccountantExport={downloadAccountantExport}
         reportExportFeedback={reportExportFeedback}
-        report={report}
         reportReady={currentTabReady}
         orderRows={orderRows}
         reportOrders={reportOrders}

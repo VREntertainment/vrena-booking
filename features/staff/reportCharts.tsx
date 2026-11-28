@@ -11,7 +11,7 @@ export function reportNumber(language: 'en' | 'vi', value: number, digits = 0) {
   return new Intl.NumberFormat(language === 'vi' ? 'vi-VN' : 'en-GB', { maximumFractionDigits: digits }).format(value)
 }
 
-function scaleFor(values: number[]) {
+export function reportScale(values: number[]) {
   const upper = Math.max(0, ...values)
   const lower = Math.min(0, ...values)
   const target = Math.max(1, (upper - lower) / 4)
@@ -42,7 +42,7 @@ export function ReportVenueBars({ label, venues, periods, formatValue, formatTic
   formatTick: (value: number) => string
   axisLabel?: string
 }) {
-  const { ticks, y } = scaleFor(venues.flatMap((venue) => venue.values.filter((value): value is number => value !== null)))
+  const { ticks, y } = reportScale(venues.flatMap((venue) => venue.values.filter((value): value is number => value !== null)))
   const axis = ticks.slice().reverse()
   const x = (value: number) => 100 - y(value)
   const zero = x(0)
@@ -116,7 +116,7 @@ export function ReportTrend({ label, labels, series, mode = 'line', valueLabel, 
   const values = series.flatMap((item) => item.values.filter((value): value is number => value != null && Number.isFinite(value)))
   if (!labels.length || !values.length) return <p className={styles.empty}>{language === 'vi' ? 'Không có dữ liệu trong kỳ này.' : 'No data for this period.'}</p>
 
-  const scale = scaleFor(values)
+  const scale = reportScale(values)
   const last = labels.length - 1
   const active = Math.min(focus ?? last, last)
   const x = (index: number) => mode === 'columns'
