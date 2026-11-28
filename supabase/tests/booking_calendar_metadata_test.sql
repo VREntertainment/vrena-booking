@@ -59,9 +59,9 @@ begin
   if (public.staff_get_booking_details(fixture)->>'client_confirmed')::boolean then raise exception 'Confirmation did not clear.'; end if;
 
   -- Every category and an explicitly empty source can be saved and reloaded.
-  perform public.staff_update_booking_details(fixture,payload||'{"booking_category":"event","booking_source":"whatsapp","game_changed":false}');
+  perform public.staff_update_booking_details(fixture,payload||'{"booking_category":"event","booking_source":"google_maps","game_changed":false}');
   select * into row_value from public.sessions where id=fixture;
-  if row_value.booking_category<>'event' or row_value.booking_source<>'whatsapp' then raise exception 'Event/source persistence failed.'; end if;
+  if row_value.booking_category<>'event' or row_value.booking_source<>'google_maps' then raise exception 'Event/source persistence failed.'; end if;
   perform public.staff_update_booking_details(fixture,payload||'{"booking_category":"standard","booking_source":null,"game_changed":false}');
   if not exists(select 1 from public.sessions where id=fixture and booking_category='standard' and booking_source is null) then raise exception 'Standard/empty-source persistence failed.'; end if;
 
@@ -98,8 +98,8 @@ begin
     'p_booking_category','birthday','p_booking_kind','event','p_duration_minutes',60,
     'p_customer_name','Calendar metadata verification','p_booking_date','2099-11-18','p_booking_time','16:30',
     'p_players_count',4,'p_arena_id','cafe:arena-1','p_arena_count',1,'p_session_count',1,
-    'p_game_id',null,'p_order_status','confirmed','p_payment_splits','[]'::jsonb),'phone');
-  if not exists(select 1 from public.sessions where id=(created->>'session_id')::uuid and booking_category='birthday' and booking_source='phone' and not game_selection_explicit and confirmed_game_id is null and cardinality(game_options)=0) then raise exception 'Staff creation did not preserve category/source/empty games.'; end if;
+    'p_game_id',null,'p_order_status','confirmed','p_payment_splits','[]'::jsonb),'google_maps');
+  if not exists(select 1 from public.sessions where id=(created->>'session_id')::uuid and booking_category='birthday' and booking_source='google_maps' and not game_selection_explicit and confirmed_game_id is null and cardinality(game_options)=0) then raise exception 'Staff creation did not preserve category/source/empty games.'; end if;
 
   if not (public.staff_get_booking_details((created->>'session_id')::uuid)->>'client_confirmed')::boolean then raise exception 'Staff-created confirmed booking missing contact icon.'; end if;
   perform set_config('request.jwt.claim.sub','',true);
