@@ -71,9 +71,9 @@ begin
 
   if trial then
     update public.staff_orders o set subtotal=0, payment_method='free_ticket',
-      price_override_original_total=null
+      price_override_original_total=null, price_override_reason=null
     where o.id=(result->>'order_id')::uuid and o.session_id=v_session_id;
-    result := (result - 'original_total') || jsonb_build_object('subtotal', 0, 'discount_total', 0);
+    result := (result - 'original_total' - 'price_override_reason') || jsonb_build_object('subtotal', 0, 'discount_total', 0);
   end if;
   return result;
 end $$;
