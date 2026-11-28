@@ -41,7 +41,7 @@ const labels = {
     previous: 'Comparison', current: 'Selected period', noData: 'No data for this period.', load: 'Loading venue and booking metrics…',
     missing: 'The booking metrics could not load.', gameMissing: 'Recorded gameplay data could not load.',
     gameEmpty: 'No recorded games are available for this selection.', gameCoverage: 'sessions with recorded gameplay',
-    venueComparison: 'Venue Comparison', millionVnd: 'million VND', paidPlayerCount: (formatted: string, value: number) => `${formatted} paid ${value === 1 ? 'player' : 'players'}`, viewVenueData: 'View venue data', priorUnavailable: 'Previous-period data could not load.',
+    venueComparison: 'Venue Comparison', sessions: 'Sessions', sessionCount: (formatted: string, value: number) => `${formatted} ${value === 1 ? 'session' : 'sessions'}`, millionVnd: 'million VND', paidPlayerCount: (formatted: string, value: number) => `${formatted} paid ${value === 1 ? 'player' : 'players'}`, viewVenueData: 'View venue data', priorUnavailable: 'Previous-period data could not load.',
     peak: 'Busiest', cancelled: 'Cancelled', noShows: 'No-shows', retry: 'Retry', metric: 'Metric', period: 'Period',
     mix: 'Payment mix',
     more: 'More games', less: 'Show fewer games',
@@ -57,7 +57,7 @@ const labels = {
     previous: 'Kỳ so sánh', current: 'Kỳ đã chọn', noData: 'Không có dữ liệu trong kỳ này.', load: 'Đang tải số liệu địa điểm và đặt chỗ…',
     missing: 'Không thể tải số liệu đặt chỗ.', gameMissing: 'Không thể tải dữ liệu trò chơi đã chơi.',
     gameEmpty: 'Chưa ghi nhận trò chơi nào cho lựa chọn này.', gameCoverage: 'phiên đã ghi nhận trò chơi',
-    venueComparison: 'So sánh địa điểm', millionVnd: 'triệu đồng', paidPlayerCount: (formatted: string) => `${formatted} người chơi đã thanh toán`, viewVenueData: 'Xem dữ liệu địa điểm', priorUnavailable: 'Không tải được dữ liệu kỳ trước.',
+    venueComparison: 'So sánh địa điểm', sessions: 'Phiên', sessionCount: (formatted: string) => `${formatted} phiên`, millionVnd: 'triệu đồng', paidPlayerCount: (formatted: string) => `${formatted} người chơi đã thanh toán`, viewVenueData: 'Xem dữ liệu địa điểm', priorUnavailable: 'Không tải được dữ liệu kỳ trước.',
     peak: 'Cao nhất', cancelled: 'Đã hủy', noShows: 'Không đến', retry: 'Thử lại', metric: 'Chỉ số', period: 'Kỳ',
     mix: 'Cơ cấu thanh toán',
     more: 'Thêm trò chơi', less: 'Thu gọn',
@@ -220,7 +220,8 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   const venuePrevious = previous ?? (loaded.previous
     ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, [], filter, binDays, loaded.previous.netSales) : null)
   const venuePeriods = [venuePrevious, current]
-  const venueMetricKeys = Object.keys(venueMetrics) as VenueMetric[]
+  const venueTableMetrics = { ...venueMetrics, bookings: t.sessions }
+  const venueMetricKeys = Object.keys(venueTableMetrics) as VenueMetric[]
   const priorGrossAvailable = Boolean(loaded.previous?.posThrough && loaded.previous.netSales.every((sale) => sale.gross_sales != null))
   const periodDate = new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-GB', {
     day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
@@ -276,36 +277,32 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
         {!venuePrevious && <p className={styles.note} role="status">
           {t.priorUnavailable} <button type="button" onClick={() => setRetry((value) => value + 1)}>{t.retry}</button>
         </p>}
-        <div className={styles.venueChartGrid}>
-          {venueMetricKeys.filter((metricKey) => metricKey !== 'paidPlayers').map((metricKey) => (
-            <ReportVenueBars key={metricKey} label={venueMetrics[metricKey]} periods={venueSeriesPeriods}
-              venues={venueTotals.map((item) => ({
-                id: item,
-                name: venueNames[item],
-                color: colors[item],
-                values: venuePeriods.map((period) => venueValue(period, item, metricKey)),
-                details: metricKey === 'revenue' ? venuePeriods.map((period) => {
-                  const players = period?.byVenue[item].paidPlayers
-                  return players == null ? '' : t.paidPlayerCount(count(players), players)
-                }) : undefined,
-              }))}
-              axisLabel={metricKey === 'revenue' ? `${revenueLabel} (${t.millionVnd})` : undefined}
-              formatValue={(value) => metricKey === 'revenue' && value !== null
-                ? reportNumber(language, value / 1e6, Math.abs(value) < 10_000 ? 6 : 2)
-                : formatVenueValue(value, metricKey)}
-              formatTick={(value) => reportNumber(language, metricKey === 'revenue' ? value / 1e6 : value, metricKey === 'revenue' ? 6 : 1)} />
-          ))}
-        </div>
+        <ReportVenueBars label={revenueLabel} periods={venueSeriesPeriods}
+          venues={venueTotals.map((item) => ({
+            id: item,
+            name: venueNames[item],
+            color: colors[item],
+            values: venuePeriods.map((period) => venueValue(period, item, 'revenue')),
+            details: venuePeriods.map((period) => {
+              const totals = period?.byVenue[item]
+              if (!totals) return ''
+              const { bookings, paidPlayers } = totals
+              return `${t.paidPlayerCount(count(paidPlayers), paidPlayers)} · ${t.sessionCount(count(bookings), bookings)}`
+            }),
+          }))}
+          axisLabel={`${revenueLabel} (${t.millionVnd})`}
+          formatValue={(value) => value === null ? '—' : reportNumber(language, value / 1e6, Math.abs(value) < 10_000 ? 6 : 2)}
+          formatTick={(value) => reportNumber(language, value / 1e6, 6)} />
         <details className={`${styles.details} ${styles.venueData}`}>
           <summary>{t.viewVenueData}</summary>
           <div className={styles.tableWrap}><table className={styles.venueTable} role="table" aria-label={t.venueComparison}><thead><tr><th scope="col">{t.venue}</th><th scope="col">{t.period}</th>
-          {Object.values(venueMetrics).map((label) => <th scope="col" key={label}>{label}</th>)}</tr></thead>
+          {Object.values(venueTableMetrics).map((label) => <th scope="col" key={label}>{label}</th>)}</tr></thead>
           <tbody>{venueTotals.map((item) => venuePeriods.map((period, index) => <tr key={`${item}-${index}`}>
             <th scope="row" className={styles.venueLabel} data-color={colors[item]}>{venueNames[item]}</th>
             <td className={styles.venuePeriod}>{venueSeriesPeriods[index].label}</td>
             {venueMetricKeys.map((key) => (
               <td key={key} className={styles.venueMetric}>
-                <span className={styles.mobileMetricLabel} aria-hidden="true">{metrics[key]}</span>
+                <span className={styles.mobileMetricLabel} aria-hidden="true">{venueTableMetrics[key]}</span>
                 <span>{formatVenueValue(venueValue(period, item, key), key)}</span>
               </td>
             ))}
