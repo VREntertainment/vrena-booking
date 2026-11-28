@@ -117,6 +117,8 @@ export default function ReportSection({
   const [previousStart, previousEnd] = previousPeriodRange(reportStart, reportEnd)
   const isPrevious = compareEnabled && compareStart === previousStart && compareEnd === previousEnd
   const datePresets = ['today', 'this_week', 'last_week', 'this_month', 'last_30'] as const satisfies readonly StaffReportRangePreset[]
+  const [monthStart, monthEnd] = reportPresetRange('this_month')
+  const monthHasCompletedDays = monthStart <= monthEnd
   const activePreset = datePresets.find((preset) => {
     const [start, end] = reportPresetRange(preset)
     return reportStart === start && reportEnd === end
@@ -130,6 +132,7 @@ export default function ReportSection({
   }
   const selectPreset = (preset: StaffReportRangePreset) => {
     const [start, end] = reportPresetRange(preset)
+    if (start > end) return
     const [priorStart, priorEnd] = isPrevious ? previousPeriodRange(start, end) : [compareStart, compareEnd]
     applyReportDateRange(start, end, compareEnabled, priorStart, priorEnd)
   }
@@ -139,8 +142,12 @@ export default function ReportSection({
     <div className={styles.reportToolbar} role="group" aria-label={vi ? 'Bộ lọc báo cáo' : 'Report controls'}>
       <ReportToolbarMenu label={text.labels.dateRange} hideLabel icon={<CalendarRange size={15} aria-hidden="true" />}
         value={activePreset ? presetLabel(activePreset) : customLabel} detail={periodLabel(reportStart, reportEnd)}>
-        {datePresets.map((preset) => <button key={preset} type="button" aria-pressed={activePreset === preset}
-          onClick={() => selectPreset(preset)}>{presetLabel(preset)}</button>)}
+        {datePresets.map((preset) => {
+          const disabled = preset === 'this_month' && !monthHasCompletedDays
+          return <button key={preset} type="button" aria-pressed={activePreset === preset} disabled={disabled}
+            title={disabled ? (vi ? 'Tháng này chưa có ngày nào kết thúc.' : 'There are no completed days this month yet.') : undefined}
+            onClick={() => selectPreset(preset)}>{presetLabel(preset)}</button>
+        })}
         <button type="button" aria-pressed={!activePreset} onClick={openCustomRange}>{customLabel}</button>
       </ReportToolbarMenu>
       {venueControl}

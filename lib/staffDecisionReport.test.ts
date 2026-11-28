@@ -85,3 +85,10 @@ test('net sales follow receipt dates and the venue filter independently of booke
 test('the default reporting window uses the last 30 completed days', () => {
   assert.deepEqual(reportPresetRange('last_30', '2026-11-27'), ['2026-10-28', '2026-11-26'])
 })
+
+test('this month covers only completed days in the current month', () => {
+  assert.deepEqual(reportPresetRange('this_month', '2026-11-28'), ['2026-11-01', '2026-11-27'])
+  assert.deepEqual(reportPresetRange('this_month', '2026-12-02'), ['2026-12-01', '2026-12-01'])
+  const [start, end] = reportPresetRange('this_month', '2026-12-01')
+  assert.ok(start > end)
+})
