@@ -11,7 +11,7 @@ import type { StaffReportSummary } from '../../lib/staff/types'
 import { supabase } from '../../lib/supabase/client'
 import { bookingSourceLabel } from '../../lib/staff/reportDisplay'
 import { loadDecisionReport } from './decisionReportData'
-import { ReportHeatmap, ReportPanel, ReportRanking, ReportTrend, reportNumber, type ChartColor } from './reportCharts'
+import { ReportHeatmap, ReportPanel, ReportRanking, ReportTrend, ReportVenueBars, reportNumber, type ChartColor } from './reportCharts'
 import styles from './ReportCharts.module.css'
 
 type Props = {
@@ -19,6 +19,7 @@ type Props = {
   language: 'en' | 'vi'; text: StaffConsoleCopy; financial: StaffReportSummary | null
   toolbar: (venueControl: ReactNode) => ReactNode
 }
+type VenueMetric = 'revenue' | 'bookings' | 'players' | 'paidPlayers'
 type Facts = Awaited<ReturnType<typeof loadDecisionReport>>
 type CatalogEntry = { id: string; title: string; parent_slug: string; kind: string }
 type Snapshot = { key: string; current: Facts; previous: Facts | null; locations: string[]; games: CatalogEntry[] }
@@ -40,7 +41,7 @@ const labels = {
     previous: 'Comparison', current: 'Selected period', noData: 'No data for this period.', load: 'Loading venue and booking metrics…',
     missing: 'The booking metrics could not load.', gameMissing: 'Recorded gameplay data could not load.',
     gameEmpty: 'No recorded games are available for this selection.', gameCoverage: 'sessions with recorded gameplay',
-    venueComparison: 'Venue comparison', venueDescription: 'Compare revenue, bookings, players and paid players side by side.',
+    venueComparison: 'Venue Comparison', venueMetric: 'Comparison metric', viewVenueData: 'View venue data',
     businessScope: 'Payments and booking sources · all accessible venues',
     receipts: 'Cash and bank amounts follow original receipts. Voucher redemption is not cash received.',
     peak: 'Busiest', cancelled: 'Cancelled', noShows: 'No-shows', retry: 'Retry', metric: 'Metric', period: 'Period',
@@ -58,7 +59,7 @@ const labels = {
     previous: 'Kỳ so sánh', current: 'Kỳ đã chọn', noData: 'Không có dữ liệu trong kỳ này.', load: 'Đang tải số liệu địa điểm và đặt chỗ…',
     missing: 'Không thể tải số liệu đặt chỗ.', gameMissing: 'Không thể tải dữ liệu trò chơi đã chơi.',
     gameEmpty: 'Chưa ghi nhận trò chơi nào cho lựa chọn này.', gameCoverage: 'phiên đã ghi nhận trò chơi',
-    venueComparison: 'So sánh địa điểm', venueDescription: 'So sánh doanh thu, lượt đặt, người chơi và người chơi đã thanh toán.',
+    venueComparison: 'So sánh địa điểm', venueMetric: 'Chỉ số so sánh', viewVenueData: 'Xem dữ liệu địa điểm',
     businessScope: 'Thanh toán và nguồn đặt · tất cả địa điểm được phép',
     receipts: 'Tiền mặt và chuyển khoản theo biên nhận gốc. Sử dụng voucher không tạo tiền thu mới.',
     peak: 'Cao nhất', cancelled: 'Đã hủy', noShows: 'Không đến', retry: 'Thử lại', metric: 'Chỉ số', period: 'Kỳ',
@@ -78,6 +79,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   const [selectedVenues, setSelectedVenues] = useState<ReadonlySet<ReportVenue> | null>(null)
   const [revenueBasis, setRevenueBasis] = useState<'net' | 'gross'>('net')
   const [metric, setMetric] = useState<'revenue' | 'sales' | 'bookings' | 'players' | 'paidPlayers'>('revenue')
+  const [venueMetric, setVenueMetric] = useState<VenueMetric>('revenue')
   const [showGames, setShowGames] = useState(false)
   const [heatComparison, setHeatComparison] = useState(false)
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
@@ -217,6 +219,17 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
     return { id, label: gameLabel(id, catalog), value, detail, parts }
   }).sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
   const venueTotals = reportVenueKeys.filter((item) => locations.includes(item) || current.byVenue[item].bookings || previous?.byVenue[item].bookings)
+  const venuePeriods = [current, ...(previous ? [previous] : [])]
+  const periodDate = new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
+  })
+  const dateRange = (first: string, last: string) => periodDate.formatRange(wholeDate(first), wholeDate(last))
+  const venueSeriesPeriods = [
+    { label: t.current, dates: dateRange(from, to) },
+    ...(previous ? [{ label: t.previous, dates: dateRange(compareFrom, compareTo) }] : []),
+  ]
+  const venueValue = (period: typeof current, item: ReportVenue, key: VenueMetric) =>
+    period.byVenue[item][key === 'revenue' ? revenueKey : key]
   const summary = [
     { label: revenueLabel, value: current[revenueKey], previous: previous?.[revenueKey], format: money },
     { label: t.bookings, value: current.bookings, previous: previous?.bookings, format: count },
@@ -251,20 +264,34 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
         <ReportTrend label={metrics[metric]} labels={axis} series={trendSeries} valueLabel={displayMetric}
           tickLabel={moneyMetric ? shortMoney : count} language={language} />
       </ReportPanel>
-      {venueTotals.length > 1 && <ReportPanel title={t.venueComparison} description={t.venueDescription} wide>
-        <div className={styles.tableWrap}><table className={styles.venueTable} role="table"><thead><tr><th scope="col">{t.venue}</th>{previous && <th scope="col">{t.period}</th>}
+      {venueTotals.length > 1 && <ReportPanel title={t.venueComparison} wide actions={
+        <label className={styles.venueChartField}>{t.venueMetric}
+          <select value={venueMetric} onChange={(event) => setVenueMetric(event.target.value as VenueMetric)}>
+            {Object.entries(venueMetrics).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+          </select>
+        </label>
+      }>
+        <ReportVenueBars label={venueMetrics[venueMetric]} periods={venueSeriesPeriods}
+          venues={venueTotals.map((item) => ({
+            name: venueNames[item], color: colors[item], values: venuePeriods.map((period) => venueValue(period, item, venueMetric)),
+          }))}
+          formatValue={venueMetric === 'revenue' ? money : count} formatTick={venueMetric === 'revenue' ? shortMoney : (value) => reportNumber(language, value, 1)} />
+        <details className={`${styles.details} ${styles.venueData}`}>
+          <summary>{t.viewVenueData}</summary>
+          <div className={styles.tableWrap}><table className={styles.venueTable} role="table" aria-label={t.venueComparison}><thead><tr><th scope="col">{t.venue}</th>{previous && <th scope="col">{t.period}</th>}
           {Object.values(venueMetrics).map((label) => <th scope="col" key={label}>{label}</th>)}</tr></thead>
-          <tbody>{venueTotals.map((item) => [current, ...(previous ? [previous] : [])].map((period, index) => <tr key={`${item}-${index}`}>
+          <tbody>{venueTotals.map((item) => venuePeriods.map((period, index) => <tr key={`${item}-${index}`}>
             <th scope="row" className={styles.venueLabel} data-color={colors[item]}>{venueNames[item]}</th>
             {previous && <td className={styles.venuePeriod}>{index ? t.previous : t.current}</td>}
             {(Object.keys(venueMetrics) as Array<keyof typeof venueMetrics>).map((key) => (
               <td key={key} className={styles.venueMetric}>
                 <span className={styles.mobileMetricLabel} aria-hidden="true">{metrics[key]}</span>
-                <span>{key === 'revenue' ? money(period.byVenue[item][revenueKey]) : count(period.byVenue[item][key])}</span>
+                <span>{(key === 'revenue' ? money : count)(venueValue(period, item, key))}</span>
               </td>
             ))}
           </tr>))}</tbody>
-        </table></div>
+          </table></div>
+        </details>
       </ReportPanel>}
       <ReportPanel title={t.day} description={current.weekdays[peakDay] ? `${t.peak} · ${weekdays[peakDay]} · ${count(current.weekdays[peakDay])}` : t.noData}>
         <ReportTrend label={t.day} labels={weekdays} mode="columns" series={[
