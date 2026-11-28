@@ -5,38 +5,31 @@ as $$
   with access as (
     select public.is_staff_console_user(20) as staff
   ),
-  posted as (
-    select (p.created_at at time zone 'Asia/Ho_Chi_Minh')::date as sale_date,
+  eligible_orders as (
+    select o.id, o.booking_date as sale_date, o.total, o.payment_status,
            coalesce(s.venue_key, case
              when o.arena_id = 'cafe:arena-1' then 'cafe-des-stagiaires'
              when o.arena_id in ('arena-1', 'arena-2', 'sim-racing-1', 'sim-racing-2') then 'ha-do-centrosa'
-             else 'other' end) as venue_key,
-           p.amount
-    from public.staff_order_payments p
-    join staff_location_scope.staff_orders o on o.id = p.order_id
-    left join public.sessions s on s.id = o.session_id
-    where (select staff from access)
-      and s.deleted_at is null
-      and o.order_status not in ('draft', 'cancelled', 'refunded')
-      and o.payment_status <> 'refunded'
-      -- A voucher transfers an existing payment without recording a new receipt.
-      and p.payment_method not in ('voucher', 'voucher_conversion')
-      and p.created_at >= (p_start_date::timestamp at time zone 'Asia/Ho_Chi_Minh')
-      and p.created_at < ((p_end_date + 1)::timestamp at time zone 'Asia/Ho_Chi_Minh')
-    union all
-    select o.booking_date,
-           coalesce(s.venue_key, case
-             when o.arena_id = 'cafe:arena-1' then 'cafe-des-stagiaires'
-             when o.arena_id in ('arena-1', 'arena-2', 'sim-racing-1', 'sim-racing-2') then 'ha-do-centrosa'
-             else 'other' end),
-           o.total
+             else 'other' end) as venue_key
     from staff_location_scope.staff_orders o
     left join public.sessions s on s.id = o.session_id
     where (select staff from access)
       and s.deleted_at is null
       and o.order_status not in ('draft', 'cancelled', 'refunded')
-      and o.payment_status = 'paid'
+      and o.payment_status <> 'refunded'
+      -- Back-entered payments belong to the booking period.
       and o.booking_date between p_start_date and p_end_date
+  ),
+  posted as (
+    select o.sale_date, o.venue_key, p.amount
+    from eligible_orders o
+    join public.staff_order_payments p on p.order_id = o.id
+    -- A voucher transfers an existing payment without recording a new receipt.
+    where p.payment_method not in ('voucher', 'voucher_conversion')
+    union all
+    select o.sale_date, o.venue_key, o.total
+    from eligible_orders o
+    where o.payment_status = 'paid'
       and not exists (select 1 from public.staff_order_payments p where p.order_id = o.id)
   ),
   daily as (
