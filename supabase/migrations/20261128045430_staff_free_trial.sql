@@ -24,8 +24,9 @@ begin
   execute replace(definition, duration_check, $new$
     (v_duration not between 20 and 240 and (
       v_duration not between 1 and 1440 or not exists (
-        select 1 from staff_location_scope.sessions s
+        select 1 from public.sessions s
         where s.id=p_session_id and s.booking_category='free_trial' and s.deleted_at is null
+          and exists(select 1 from staff_location_scope.sessions allowed where allowed.id=s.id)
       )
     ))$new$);
 end
