@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useImperativeHandle, useState, type Ref } from 'react'
 import { supabase } from '../../lib/supabase/client'
 import { brandedGameName } from '../../lib/anvio'
 import { gameAvailableAtVenue } from '../../lib/bookingMetadata'
@@ -9,8 +9,13 @@ import styles from './StaffGamesPlayed.module.css'
 
 type Option = { id: string; parent_slug: string; title: string; kind: string }
 type Saved = { game_ids: string[]; updated_at: string }
+export type PlayedGamesDraft = {
+  gameIds: string[]
+  expectedUpdatedAt: string | null
+  blocked: boolean
+}
 
-export default function StaffGamesPlayed({ sessionId, language = 'en', disabled = false }: { sessionId: string; language?: string; disabled?: boolean }) {
+export default function StaffGamesPlayed({ sessionId, language = 'en', disabled = false, draftRef }: { sessionId: string; language?: string; disabled?: boolean; draftRef?: Ref<PlayedGamesDraft | null> }) {
   const vi = language === 'vi'
   const [options, setOptions] = useState<Option[]>([])
   const [selected, setSelected] = useState<string[]>([])
@@ -59,6 +64,12 @@ export default function StaffGamesPlayed({ sessionId, language = 'en', disabled 
   }
   const venueOptions = options.filter(item => gameAvailableAtVenue(item.parent_slug, venue))
   const unavailable = selected.filter(id => !venueOptions.some(item => item.id === id))
+  useImperativeHandle<PlayedGamesDraft | null, PlayedGamesDraft | null>(draftRef, () => {
+    const savedIds = saved?.game_ids ?? []
+    if (savedIds.length === selected.length && selected.every(id => savedIds.includes(id))) return null
+    return { gameIds: selected, expectedUpdatedAt: saved?.updated_at ?? null,
+      blocked: loading || saving || Boolean(error) || unavailable.length > 0 }
+  }, [error, loading, saved, saving, selected, unavailable.length])
   const parents = venueOptions.filter(item => item.kind === 'game')
   const visible = (item: Option, parent: Option) => `${parent.title} ${item.title}`.toLocaleLowerCase().includes(query.toLocaleLowerCase().trim())
   const toggle = (id: string) => { setSelected(current => current.includes(id) ? current.filter(value => value !== id) : [...current, id]); setConfirmed(false) }
