@@ -64,7 +64,7 @@ export default function StaffGamesPlayed({ sessionId, language = 'en', disabled 
   }
   const venueOptions = options.filter(item => gameAvailableAtVenue(item.parent_slug, venue))
   const unavailable = selected.filter(id => !venueOptions.some(item => item.id === id))
-  useImperativeHandle(draftRef, () => {
+  useImperativeHandle<PlayedGamesDraft | null, PlayedGamesDraft | null>(draftRef, () => {
     const savedIds = saved?.game_ids ?? []
     if (savedIds.length === selected.length && selected.every(id => savedIds.includes(id))) return null
     return { gameIds: selected, expectedUpdatedAt: saved?.updated_at ?? null,
