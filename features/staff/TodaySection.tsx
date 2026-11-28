@@ -243,7 +243,7 @@ export default function TodaySection({
                 actions={<>
                   {canCreateOrders && <button type="button" data-close-order-menu onClick={() => setExpanded(true)}>{visitText.record}</button>}
                   <StaffSavedBookingShare sessionId={session.id} language={resolvedLanguage} disabled={saving || session.status === 'cancelled'} />
-                  {canCreateOrders && <button type="button" data-close-order-menu disabled={saving} onClick={() => onEditBooking(session.id)}>{vi ? 'Sửa đặt chỗ / Chuyển cửa hàng' : 'Edit booking / Move shop'}</button>}
+                  {canCreateOrders && <button type="button" data-close-order-menu disabled={saving} onClick={() => onEditBooking(session.id)}>{vi ? 'Sửa chi tiết đặt chỗ' : 'Edit booking details'}</button>}
                   {order && canCreateOrders && !terminal && <>
                     <button type="button" data-close-order-menu disabled={saving} onClick={() => {
                       if (!progress.recorded) {
@@ -255,6 +255,9 @@ export default function TodaySection({
                     }}><ButtonIconText icon={<Check aria-hidden="true" size={14} />}>{text.actions.done}</ButtonIconText></button>
                     <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => setStatusConfirmation({ id: session.id, status: 'no_show' })}>
                       <ButtonIconText icon={<UserX aria-hidden="true" size={14} />}>{text.actions.noShow}</ButtonIconText>
+                    </button>
+                    <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => setStatusConfirmation({ id: session.id, status: 'cancelled' })}>
+                      {vi ? 'Hủy đặt chỗ' : 'Cancel booking'}
                     </button>
                   </>}
                   {canCreateOrders && <button type="button" data-close-order-menu data-negative disabled={saving} onClick={() => openOperationDeleteDraft(session, order || null)}>

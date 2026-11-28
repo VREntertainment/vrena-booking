@@ -235,6 +235,17 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         }}>{locations.map((location) => <option key={location.venue_key} value={location.venue_key}>{location.name}</option>)}</select></label>
         <label>{bookingText.bookingSource}<select value={draft.source} disabled={isSimRacing} onChange={(event) => patch({ source: event.target.value })}><option value="">{text.unspecified}</option>{Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label>{bookingCategoryCopy[language].label}<select disabled={isSimRacing || isFreeTrial} value={draft.category} onChange={(event) => patch({ category: event.target.value as BookingCategory })}>{(isFreeTrial ? ['free_trial'] as const : ['standard', 'birthday', 'event'] as const).map((value) => <option key={value} value={value}>{bookingCategoryCopy[language][value]}</option>)}</select></label>
+        <label>{text.game}<select disabled={isSimRacing} value={draft.game} onChange={(event) => {
+          const slug = event.target.value
+          const selectedGame = availableGames.find((item) => item.slug === slug)
+          const compatibleArenas = arenas.filter((id) => !selectedGame?.available_arena_ids?.length || selectedGame.available_arena_ids.includes(id))
+          const compatibleSelection = draft.arenaIds.filter((id) => compatibleArenas.includes(id))
+          patch({ game: slug, arenaIds: compatibleSelection.length ? draft.arenaIds : compatibleArenas.slice(0, 1) })
+        }}>
+          <option value="">{bookingCategoryCopy[language].noGames}</option>
+          {draft.game && !game && <option value={draft.game}>{draft.game}</option>}
+          {availableGames.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}
+        </select></label>
         <label>{text.date}<input required type="date" value={draft.date} onChange={(event) => patch({ date: event.target.value })} /></label>
         <label>{text.time}<input required type="time" min={draft.allowOutsideHours ? '00:00' : staffBookingHours(draft.venue, draft.duration).min} max={draft.allowOutsideHours ? '23:59' : staffBookingHours(draft.venue, draft.duration).max} value={draft.time} onChange={(event) => patch({ time: event.target.value })} /></label>
         <label className="full calendar-outside-hours"><input type="checkbox" checked={draft.allowOutsideHours} onChange={(event) => patch({ allowOutsideHours: event.target.checked })} /><span>{text.outsideHours}</span></label>
