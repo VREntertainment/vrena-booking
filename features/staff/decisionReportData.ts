@@ -24,7 +24,7 @@ async function allPages<T>(load: (cursor: string | undefined) => PromiseLike<Pag
 export async function loadDecisionReport(range: Range, signal: AbortSignal, includePayments = false) {
   const orders = allPages<ReportOrderFact>((cursor) => {
     let query = supabase.from('staff_orders').select(
-      'id,session_id,booking_date,booking_time,arena_id,players_count,total,order_status,payment_status,discount_total,payment_method,booking_source,sessions(date,venue_key)'
+      'id,session_id,booking_date,booking_time,arena_id,players_count,total,order_status,payment_status,discount_total,payment_method,booking_source,sessions(date,venue_key,booking_category,status,deleted_at)'
     ).gte('booking_date', range.start).lte('booking_date', range.end).order('id').limit(pageSize)
     if (cursor) query = query.gt('id', cursor)
     return query.abortSignal(signal).returns<ReportOrderFact[]>()

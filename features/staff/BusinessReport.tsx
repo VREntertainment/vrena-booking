@@ -9,6 +9,7 @@ import { decisionFinancial, decisionPeriod, reportDayCount, reportVenue, reportV
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import type { ReportSlide } from './reportPowerPoint'
 import { supabase } from '../../lib/supabase/client'
+import { bookingCategoryCopy } from '../../lib/bookingMetadata'
 import { bookingSourceLabel } from '../../lib/staff/reportDisplay'
 import { loadDecisionReport } from './decisionReportData'
 import { ReportHeatmap, ReportPanel, ReportRanking, ReportTrend, ReportVenueBars, ReportVenueLegend, reportNumber, type ChartColor } from './reportCharts'
@@ -42,7 +43,7 @@ const labels = {
     missing: 'The booking metrics could not load.', gameMissing: 'Recorded gameplay data could not load.',
     gameEmpty: 'No recorded games are available for this selection.', gameCoverage: 'sessions with recorded gameplay',
     venueComparison: 'Venue Comparison', sessions: 'Sessions', sessionCount: (formatted: string, value: number) => `${formatted} ${value === 1 ? 'session' : 'sessions'}`, millionVnd: 'million VND', paidPlayerCount: (formatted: string, value: number) => `${formatted} paid ${value === 1 ? 'player' : 'players'}`, viewVenueData: 'View venue data', priorUnavailable: 'Previous-period data could not load.',
-    peak: 'Busiest', cancelled: 'Cancelled', noShows: 'No-shows', retry: 'Retry', metric: 'Metric', period: 'Period',
+    peak: 'Busiest', noShows: 'No-shows', retry: 'Retry', metric: 'Metric', period: 'Period',
     mix: 'Payment mix',
     more: 'More games', less: 'Show fewer games',
   },
@@ -58,7 +59,7 @@ const labels = {
     missing: 'Không thể tải số liệu đặt chỗ.', gameMissing: 'Không thể tải dữ liệu trò chơi đã chơi.',
     gameEmpty: 'Chưa ghi nhận trò chơi nào cho lựa chọn này.', gameCoverage: 'phiên đã ghi nhận trò chơi',
     venueComparison: 'So sánh địa điểm', sessions: 'Phiên', sessionCount: (formatted: string) => `${formatted} phiên`, millionVnd: 'triệu đồng', paidPlayerCount: (formatted: string) => `${formatted} người chơi đã thanh toán`, viewVenueData: 'Xem dữ liệu địa điểm', priorUnavailable: 'Không tải được dữ liệu kỳ trước.',
-    peak: 'Cao nhất', cancelled: 'Đã hủy', noShows: 'Không đến', retry: 'Thử lại', metric: 'Chỉ số', period: 'Kỳ',
+    peak: 'Cao nhất', noShows: 'Không đến', retry: 'Thử lại', metric: 'Chỉ số', period: 'Kỳ',
     mix: 'Cơ cấu thanh toán',
     more: 'Thêm trò chơi', less: 'Thu gọn',
   },
@@ -249,7 +250,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
     { label: t.paid, value: current.paidPlayers, previous: previous?.paidPlayers, format: count },
     { label: t.perDay, value: current.playersPerDay, previous: previous?.playersPerDay, format: (value: number) => reportNumber(language, value, 1) },
     { label: t.perSession, value: current.playersPerSession, previous: previous?.playersPerSession, format: (value: number) => reportNumber(language, value, 1) },
-    { label: t.cancelled, value: current.cancelled, previous: previous?.cancelled, format: count },
+    { label: bookingCategoryCopy[language].free_trial, value: current.freeTrials, previous: previous?.freeTrials, format: count },
     { label: t.noShows, value: current.noShows, previous: previous?.noShows, format: count },
   ]
   const [yesterday] = reportPresetRange('yesterday')

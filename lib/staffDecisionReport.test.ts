@@ -106,3 +106,25 @@ test('Unpaid includes only eligible bookings through yesterday in the selected v
   assert.equal(totals.unpaidAmount, 150_000)
   assert.equal(totals.methodTotals.cash, 50_000)
 })
+
+test('the free trial metric counts unique active sessions in the selected dates and venues', () => {
+  const trial = { date: '2026-11-23', venue_key: 'ha-do-centrosa', booking_category: 'free_trial' }
+  const orders = [
+    order('trial', { session_id: 'trial', sessions: trial, players_count: 4, total: 0 }),
+    order('duplicate', { session_id: 'trial', sessions: trial }),
+    order('standard', { total: 0 }),
+    order('other-venue', { session_id: 'other', sessions: { ...trial, venue_key: 'cafe-des-stagiaires' } }),
+    order('other-date', { session_id: 'prior', booking_date: '2026-11-22', sessions: { ...trial, date: '2026-11-22' } }),
+    order('cancelled-order', { session_id: 'cancelled-order', order_status: 'cancelled', sessions: trial }),
+    order('cancelled-session', { session_id: 'cancelled-session', sessions: { ...trial, status: 'cancelled' } }),
+    order('deleted-session', { session_id: 'deleted-session', sessions: { ...trial, deleted_at: '2026-11-23T12:00:00Z' } }),
+    order('refunded', { session_id: 'refunded', payment_status: 'refunded', sessions: trial }),
+    order('no-show', { session_id: 'no-show', order_status: 'no_show', sessions: trial }),
+  ]
+  const count = (period: string, venue: Parameters<typeof decisionPeriod>[4]) =>
+    decisionPeriod(period, period, orders, [], venue, 1).freeTrials
+  assert.equal(count('2026-11-23', 'ha-do-centrosa'), 1)
+  assert.equal(count('2026-11-23', 'all'), 2)
+  assert.equal(count('2026-11-22', 'ha-do-centrosa'), 1)
+  assert.equal(count('2026-11-22', 'cafe-des-stagiaires'), 0)
+})
