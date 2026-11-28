@@ -119,6 +119,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
   const availableGames = games.filter((game) => gameAvailableAtVenue(game.slug, draft?.venue || 'ha-do-centrosa'))
   const game = availableGames.find((item) => item.slug === draft?.game)
   const isSimRacing = session?.confirmed_game_id === 'sim-racing'
+  const isFreeTrial = session?.booking_category === 'free_trial'
   const arenas = venueArenas(draft?.venue || 'ha-do-centrosa')
   const selectedCompatibleArenas = draft?.arenaIds.filter((id) => !game?.available_arena_ids?.length || game.available_arena_ids.includes(id)) || []
   const originalPrimaryArena = orders[0]?.arena_id
@@ -151,7 +152,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
           expected_updated_at: version, name: draft.name.trim(), date: draft.date, start_time: draft.time,
           venue_key: draft.venue, game_slug: draft.game, players: draft.players, duration_minutes: draft.duration,
           arena_count: draft.arenaIds.length, arena_id: isSimRacing ? 'sim-racing-1' : primaryArena, status: session.status, notes: draft.notes,
-          booking_category: draft.category, game_changed: draft.game !== (selectedBookingGames(session)[0] || ''),
+          booking_category: draft.category === 'free_trial' ? undefined : draft.category, game_changed: draft.game !== (selectedBookingGames(session)[0] || ''),
           client_confirmed: draft.clientConfirmed, booking_source: draft.source || null, allow_outside_hours: draft.allowOutsideHours,
           order_adjustments: orders.filter((order) => prices[order.id] && Number(prices[order.id].total) !== order.total).map((order) => ({ order_id: order.id, total: Number(prices[order.id].total), reason: prices[order.id].reason.trim(), expected_updated_at: order.updated_at })),
         } })
@@ -209,7 +210,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
           patch({ venue, game: nextGame?.slug || '', duration: nextGame?.slug === draft.game ? draft.duration : nextGame?.duration_minutes || draft.duration, arenaIds: [venue === 'cafe-des-stagiaires' ? 'cafe:arena-1' : nextGame?.available_arena_ids?.[0] || 'arena-1'], time: !draft.allowOutsideHours && venue === 'cafe-des-stagiaires' && draft.time < '15:30' ? '15:30' : draft.time })
         }}>{locations.map((location) => <option key={location.venue_key} value={location.venue_key}>{location.name}</option>)}</select></label>
         <label>{bookingText.bookingSource}<select value={draft.source} disabled={isSimRacing} onChange={(event) => patch({ source: event.target.value })}><option value="">{text.unspecified}</option>{Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-        <label>{bookingCategoryCopy[language].label}<select disabled={isSimRacing} value={draft.category} onChange={(event) => patch({ category: event.target.value as BookingCategory })}>{(['standard', 'birthday', 'event'] as const).map((value) => <option key={value} value={value}>{bookingCategoryCopy[language][value]}</option>)}</select></label>
+        <label>{bookingCategoryCopy[language].label}<select disabled={isSimRacing || isFreeTrial} value={draft.category} onChange={(event) => patch({ category: event.target.value as BookingCategory })}>{(isFreeTrial ? ['free_trial'] as const : ['standard', 'birthday', 'event'] as const).map((value) => <option key={value} value={value}>{bookingCategoryCopy[language][value]}</option>)}</select></label>
         <label>{text.date}<input required type="date" value={draft.date} onChange={(event) => patch({ date: event.target.value })} /></label>
         <label>{text.time}<input required type="time" min={draft.allowOutsideHours ? '00:00' : staffBookingHours(draft.venue, draft.duration).min} max={draft.allowOutsideHours ? '23:59' : staffBookingHours(draft.venue, draft.duration).max} value={draft.time} onChange={(event) => patch({ time: event.target.value })} /></label>
         <label className="full calendar-outside-hours"><input type="checkbox" checked={draft.allowOutsideHours} onChange={(event) => patch({ allowOutsideHours: event.target.checked })} /><span>{text.outsideHours}</span></label>
@@ -219,7 +220,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
           {draft.venue !== session?.venue_key && <p className="field-help">{language === 'vi' ? 'Lưu địa điểm mới trước khi sửa trò chơi đã chơi.' : 'Save the new venue before editing games played.'}</p>}
         </details>
         <label>{text.players}<input disabled={isSimRacing} required min={1} max={64} type="number" value={draft.players} onChange={(event) => patch({ players: Number(event.target.value) })} /></label>
-        <label>{text.duration}<input disabled={isSimRacing} required min={isSimRacing ? 15 : 20} max={240} type="number" value={draft.duration} onChange={(event) => patch({ duration: Number(event.target.value) })} /></label>
+        <label>{text.duration}<input disabled={isSimRacing} required min={isFreeTrial ? 1 : isSimRacing ? 15 : 20} max={isFreeTrial ? 1440 : 240} type="number" value={draft.duration} onChange={(event) => patch({ duration: Number(event.target.value) })} /></label>
         <fieldset className="full calendar-arena-options">
           <legend>{text.arenas}</legend>
           {isSimRacing ? <span>SIM Racing</span> : arenas.map((id, index) => {

@@ -33,5 +33,5 @@ export function validStaffSessionCount(count: number) {
 }
 
 export function staffBookingDuration(booking: Pick<BookingForm, 'bookingKind' | 'reservedMinutes' | 'sessionCount' | 'date'>, sessionMinutes: number) {
-  return booking.bookingKind === 'event' ? booking.reservedMinutes : sessionMinutes * booking.sessionCount
+  return booking.bookingKind === 'standard' ? sessionMinutes * booking.sessionCount : booking.reservedMinutes
 }

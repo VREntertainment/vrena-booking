@@ -1,7 +1,7 @@
 'use client'
 
 import { reservationPhone, officialReservationContact, guestEmailIsValid } from '../../lib/reservationContact'
-import { bookingCategoryCopy, type BookingCategory } from '../../lib/bookingMetadata'
+import { bookingCategories, bookingCategoryCopy, type BookingCategory } from '../../lib/bookingMetadata'
 import { useStaffLocations } from '../../hooks/useStaffLocations'
 import { brandedGameName } from '../../lib/anvio'
 
@@ -90,6 +90,8 @@ export type NewSectionProps = {
   createOrder: () => Promise<void>
 }
 
+const requiredMark = <span className="staff-required-mark" aria-hidden="true">*</span>
+
 export default function NewSection({
   initialCalendarTime,
   sessionLengthError,
@@ -173,20 +175,20 @@ export default function NewSection({
   }, [locationAllowed, selectionKey, availabilityKey, booking.arenaCount, booking.venueKey, booking.date, booking.time, canCreateOrders, quote.duration, retry, selectedBookingArena, selectedGame, validTime, outsideHours, setBooking])
   const mutedTimes = slots?.key === availabilityKey ? slots.values.filter(slot => !slot.available || slot.past).map(slot => slot.time) : []
   const en = resolvedLanguage !== 'vi'
+  const isFreeTrial = booking.bookingKind === 'free_trial'
   const invalidPhone = Boolean(booking.customerPhone.trim() && !reservationPhone(booking.customerPhone))
   const invalidEmail = Boolean(booking.customerEmail.trim() && !guestEmailIsValid(booking.customerEmail))
   const phoneError = en ? 'Enter a valid phone number for the selected country.' : 'Nhập số điện thoại hợp lệ cho quốc gia đã chọn.'
   const emailError = en ? 'Enter a valid email address.' : 'Nhập địa chỉ email hợp lệ.'
   const reason = !locationAllowed || !canCreateOrders ? (en ? 'You do not have permission to book this venue.' : 'Bạn không có quyền đặt chỗ tại địa điểm này.')
     : saving ? (en ? 'Saving booking…' : 'Đang lưu đặt chỗ…')
-    : !booking.guestBooking && !booking.customerName.trim() ? (en ? 'Enter the customer name or select Guest booking.' : 'Nhập tên khách hoặc chọn Đặt chỗ cho khách.')
     : officialReservationContact(booking.customerEmail, booking.customerPhone) ? (en ? 'Use the customer’s personal phone and email.' : 'Dùng số điện thoại và email cá nhân của khách.')
     : invalidPhone ? phoneError
     : invalidEmail ? emailError
     : !validTime ? (en ? 'Choose a valid starting time and duration.' : 'Chọn giờ bắt đầu và thời lượng hợp lệ.')
-    : !validStaffSessionCount(booking.sessionCount) ? (en ? 'Enter a valid number of sessions.' : 'Nhập số lượt chơi hợp lệ.')
+    : !isFreeTrial && !validStaffSessionCount(booking.sessionCount) ? (en ? 'Enter a valid number of sessions.' : 'Nhập số lượt chơi hợp lệ.')
     : !Number.isInteger(booking.players) || booking.players < 1 || booking.players > 16 ? (en ? 'Choose between 1 and 16 players.' : 'Chọn từ 1 đến 16 người chơi.')
-    : !validBookingTotalOverride(booking) ? (en ? 'Enter a valid total and a reason for the price override.' : 'Nhập tổng tiền hợp lệ và lý do thay đổi giá.')
+    : !isFreeTrial && !validBookingTotalOverride(booking) ? (en ? 'Enter a valid total and a reason for the price override.' : 'Nhập tổng tiền hợp lệ và lý do thay đổi giá.')
     : availabilityState === 'error' ? bookingText.availabilityError
     : availabilityState === 'checking' ? bookingText.checkingAvailability
     : availabilityState !== 'available' ? bookingText.unavailable : ''
@@ -218,8 +220,8 @@ export default function NewSection({
             <h4 id="staff-new-details">{bookingText.detailsSection}</h4>
             <div className="form-grid compact-form-grid staff-new-fields">
               <label>
-                {bookingText.venue}
-                <select value={locationAllowed ? booking.venueKey : ""} onChange={(event) => setBooking((current) => ({
+                <span>{bookingText.venue}{requiredMark}</span>
+                <select required value={locationAllowed ? booking.venueKey : ""} onChange={(event) => setBooking((current) => ({
                   ...current,
                   venueKey: event.target.value as BookingForm['venueKey'],
                   gameId: '', arenaId: '', arenaCount: 1, discountId: '',
@@ -230,21 +232,22 @@ export default function NewSection({
                 </select>
               </label>
               <label>
-                {bookingText.bookingSource}
-                <select value={booking.bookingSource} onChange={(event) => setBooking((current) => ({ ...current, bookingSource: event.target.value as BookingForm['bookingSource'] }))}>
+                <span>{bookingText.bookingSource}{requiredMark}</span>
+                <select required value={booking.bookingSource} onChange={(event) => setBooking((current) => ({ ...current, bookingSource: event.target.value as BookingForm['bookingSource'] }))}>
                   {Object.entries(bookingText.sources).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
               </label>
                 <label>
-                  {bookingCategoryCopy[resolvedLanguage].label}
-                  <select value={booking.bookingCategory} onChange={(event) => {
+                  <span>{bookingCategoryCopy[resolvedLanguage].label}{requiredMark}</span>
+                  <select required value={booking.bookingCategory} onChange={(event) => {
                     const category = event.target.value as BookingCategory
-                    setBooking((current) => ({ ...current, bookingCategory: category, bookingKind: category === 'standard' ? 'standard' : 'event',
+                    setBooking((current) => ({ ...current, bookingCategory: category, bookingKind: category === 'free_trial' ? 'free_trial' : category === 'standard' ? 'standard' : 'event',
+                      reservedMinutes: category === 'free_trial' ? 15 : current.bookingKind === 'free_trial' ? 30 : current.reservedMinutes,
                       note: category === 'event' && !Object.values(staffBookingCopy).some((copy) => current.note.includes(copy.vatNotes.split('\n')[0]))
                         ? [current.note, bookingText.vatNotes].filter(Boolean).join('\n\n') : current.note,
                     }))
                   }}>
-                    {(['standard', 'birthday', 'event'] as const).map((value) => <option key={value} value={value}>{bookingCategoryCopy[resolvedLanguage][value]}</option>)}
+                    {bookingCategories.map((value) => <option key={value} value={value}>{bookingCategoryCopy[resolvedLanguage][value]}</option>)}
                   </select>
                 </label>
                 <label className="staff-guest-toggle staff-new-checkbox">
@@ -335,7 +338,7 @@ export default function NewSection({
                     </div>
                   )}
                 </div>
-                <p className="field-help full staff-new-compact-help" id="staff-new-customer-help">{booking.customerId ? bookingText.selectedCustomerHint : bookingText.newCustomerHint}</p>
+                <p className="field-help full staff-new-compact-help" id="staff-new-customer-help">{booking.customerId ? bookingText.selectedCustomerHint : booking.customerName.trim() ? bookingText.newCustomerHint : bookingText.guestHint}</p>
                 <label className="full">
                   {bookingText.contactName}
                   <input maxLength={120} value={booking.contactName} onChange={(event) => setBooking({ ...booking, contactName: event.target.value })} />
@@ -366,22 +369,26 @@ export default function NewSection({
             <div className="form-grid compact-form-grid staff-new-fields">
               <div className="full staff-new-schedule">
               <label>
-                {text.labels.date}
+                <span>{text.labels.date}{requiredMark}</span>
                 <StaffPickerField ariaLabel={text.aria.bookingDate} inputRef={bookingDateInputRef} placeholder={text.chooseDate} type="date" value={booking.date} onChange={(value) => setBooking({ ...booking, date: value })} />
               </label>
                 <label>
-                  {bookingText.startTime}
+                  <span>{bookingText.startTime}{requiredMark}</span>
                   <StaffPickerField ariaLabel={text.aria.bookingTime} timeOptions={slots?.key === availabilityKey ? slots.values.map(slot => slot.time) : undefined} mutedTimes={mutedTimes} placeholder={text.chooseTime} minTime={outsideHours ? '00:00' : hours.min} maxTime={outsideHours ? '23:59' : hours.max} type="time" value={booking.time} onChange={(value) => { manualTimeSelection.current = selectionKey; setBooking({ ...booking, time: value }) }} />
                 </label>
                 <label>
-                  {bookingText.endTime}
+                  <span>{bookingText.endTime}{booking.bookingKind === 'event' && requiredMark}</span>
                   {booking.bookingKind === 'event' ? <StaffPickerField ariaLabel={bookingText.endTime} type="time" mode="duration" minTime={booking.time} maxTime={outsideHours ? '24:00' : hours.close} value={staffBookingEndTime(booking.time, quote.duration)} onChange={(value) => {
                     const minutes = (time: string) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5))
                     setBooking({ ...booking, reservedMinutes: minutes(value) - minutes(booking.time) })
                   }} /> : <input aria-label={bookingText.endTime} readOnly value={staffBookingEndTime(booking.time, quote.duration)} />}
                 </label>
               </div>
-              {!validStaffSessionCount(booking.sessionCount) && <p className="notice full" role="alert">{bookingText.invalidSessionCount}</p>}
+              {isFreeTrial && <label>
+                <span>{bookingText.reservedMinutes}{requiredMark}</span>
+                <input required min={1} max={1440} step={1} type="number" value={booking.reservedMinutes || ''} onChange={(event) => setBooking({ ...booking, reservedMinutes: Number(event.target.value) })} />
+              </label>}
+              {!isFreeTrial && !validStaffSessionCount(booking.sessionCount) && <p className="notice full" role="alert">{bookingText.invalidSessionCount}</p>}
               <label className="full staff-guest-toggle staff-new-checkbox">
                 <input type="checkbox" aria-label={bookingText.allowOutsideHours} aria-describedby="staff-new-hours-hint" checked={outsideHours} onChange={(event) => setBooking({ ...booking, allowOutsideHours: event.target.checked })} />
                 <span>
@@ -390,7 +397,7 @@ export default function NewSection({
                 </span>
               </label>
               {booking.bookingKind === 'standard' && !quote.sessionMinutes && <p className="notice full" role="status">{sessionLengthError ? bookingText.sessionLengthError : bookingText.loadingSessionLength}{sessionLengthError && <button type="button" onClick={refreshSessionLength}>{bookingText.retry}</button>}</p>}
-              {(booking.bookingKind === 'event' || quote.sessionMinutes) && !validTime && <p className="notice full" role="alert">{outsideHours ? bookingText.invalidDuration : bookingText.outsideHours}</p>}
+              {(booking.bookingKind !== 'standard' || quote.sessionMinutes) && !validTime && <p className="notice full" role="alert">{outsideHours ? bookingText.invalidDuration : bookingText.outsideHours}</p>}
               <label>
                 {text.labels.game}
                 <select value={selectedGame?.id || 'none'} onChange={(event) => setBooking({ ...booking, gameId: event.target.value, arenaId: '', discountId: '' })}>
@@ -401,28 +408,28 @@ export default function NewSection({
                 </select>
               </label>
                 <label>
-                  {text.labels.arena}
-                  <select value={selectedBookingArena} onChange={(event) => setBooking({ ...booking, arenaId: event.target.value })}>
+                  <span>{text.labels.arena}{requiredMark}</span>
+                  <select required value={selectedBookingArena} onChange={(event) => setBooking({ ...booking, arenaId: event.target.value })}>
                     {bookingArenas.map((arena) => <option key={arena} value={arena}>{text.labels.arena} {arena.endsWith('2') ? 2 : 1}</option>)}
                   </select>
                 </label>
                 {booking.venueKey === 'ha-do-centrosa' && <label>
-                  {bookingText.arenaCount}
-                  <select value={booking.arenaCount} onChange={(event) => setBooking({ ...booking, arenaCount: Number(event.target.value) })}>
+                  <span>{bookingText.arenaCount}{requiredMark}</span>
+                  <select required value={booking.arenaCount} onChange={(event) => setBooking({ ...booking, arenaCount: Number(event.target.value) })}>
                     <option value={1}>1</option><option value={2}>2</option>
                   </select>
                 </label>}
                 <label>
-                  {text.labels.players}
-                  <input min={1} max={16} type="number" value={booking.players} onChange={(event) => setBooking({ ...booking, players: Number(event.target.value) })} />
+                  <span>{text.labels.players}{requiredMark}</span>
+                  <input required min={1} max={16} type="number" value={booking.players} onChange={(event) => setBooking({ ...booking, players: Number(event.target.value) })} />
                 </label>
-                <label>
-                  {bookingText.sessionCount}
-                  <input min={1} max={32} step={1} type="number" value={booking.sessionCount || ''} onChange={(event) => setBooking({ ...booking, sessionCount: Number(event.target.value) })} />
-                </label>
+                {!isFreeTrial && <label>
+                  <span>{bookingText.sessionCount}{requiredMark}</span>
+                  <input required min={1} max={32} step={1} type="number" value={booking.sessionCount || ''} onChange={(event) => setBooking({ ...booking, sessionCount: Number(event.target.value) })} />
+                </label>}
             </div>
           </section>
-          <section className="staff-new-section" aria-labelledby="staff-new-discounts">
+          {!isFreeTrial && <section className="staff-new-section" aria-labelledby="staff-new-discounts">
             <h4 id="staff-new-discounts">{bookingText.discountsSection}</h4>
             <div className="form-grid compact-form-grid staff-new-fields">
               <label>
@@ -480,10 +487,13 @@ export default function NewSection({
                 {bookingText.appliedDiscount} {quote.discountLabel} · −{formatVnd(quote.discountTotal)}
               </p>}
             </div>
-          </section>
+          </section>}
           <section className="staff-new-section" aria-labelledby="staff-new-payments">
             <div className="form-grid compact-form-grid staff-new-fields">
-            <div className="staff-payment-splits full">
+            {isFreeTrial ? <div className="full">
+              <h4 id="staff-new-payments">{text.labels.paymentStatus}</h4>
+              <p className="field-help">{en ? 'No payment required.' : 'Không cần thanh toán.'} · {paymentStatusLabel('paid', text)}</p>
+            </div> : <div className="staff-payment-splits full">
               <div className="staff-list-head">
                 <h4 id="staff-new-payments">{text.labels.paymentSplits}</h4>
                 <button className="staff-payment-add secondary" type="button" onClick={addBookingPaymentSplit}>
@@ -518,10 +528,10 @@ export default function NewSection({
                 {' · '}
                 {text.labels.status} {paymentStatusLabel(paymentStatusFromAmount(quote.total, bookingPaidTotal), text)}
               </p>
-            </div>
+            </div>}
             <label>
-              {text.labels.orderStatus}
-              <select value={booking.orderStatus} onChange={(event) => setBooking({ ...booking, orderStatus: event.target.value as BookingForm['orderStatus'] })}>
+              <span>{text.labels.orderStatus}{requiredMark}</span>
+              <select required value={booking.orderStatus} onChange={(event) => setBooking({ ...booking, orderStatus: event.target.value as BookingForm['orderStatus'] })}>
                 {orderStatuses.map((status) => <option key={status} value={status}>{text.orderStatuses[status]}</option>)}
               </select>
             </label>
@@ -540,16 +550,16 @@ export default function NewSection({
           {availabilityState === 'available' && validTime && <StaffBookingShareButton details={{ booking, quote }} language={resolvedLanguage} />}
         </div>
         {availabilityState === 'available' && validTime ? <StaffBookingSummary booking={booking} venueName={bookingVenueName} language={resolvedLanguage} text={text} quote={quote} /> : <p className="field-help" role="status">{availabilityState === 'checking' ? bookingText.checkingAvailability : en ? 'Choose an available date, arena and starting time to preview this booking.' : 'Chọn ngày, arena và giờ bắt đầu còn trống để xem trước đặt chỗ.'}</p>}
-        <p className="field-help">{bookingText.durationHelp}</p>
-        <p className="field-help">{text.labels.rule}: {quote.ruleName} · {text.labels.discountType}: {quote.discountLabel}</p>
-        <fieldset className="staff-total-override" disabled={!canCreateOrders || saving}>
+        {!isFreeTrial && <p className="field-help">{bookingText.durationHelp}</p>}
+        {!isFreeTrial && <p className="field-help">{text.labels.rule}: {quote.ruleName} · {text.labels.discountType}: {quote.discountLabel}</p>}
+        {!isFreeTrial && <fieldset className="staff-total-override" disabled={!canCreateOrders || saving}>
           <label className="staff-override-toggle"><input type="checkbox" checked={booking.overrideTotalEnabled} onChange={(event) => setBooking({ ...booking, overrideTotalEnabled: event.target.checked, overrideTotal: event.target.checked ? String(quote.total) : '', overrideReason: event.target.checked ? booking.overrideReason : '' })} /><span>{bookingText.overrideTotal}</span></label>
           {booking.overrideTotalEnabled && <>
-            <label>{bookingText.finalTotal}<input required min={0} max={2147483647} step={1} type="number" value={booking.overrideTotal} onChange={(event) => setBooking({ ...booking, overrideTotal: event.target.value })} /></label>
-            <label>{bookingText.overrideReason}<textarea required value={booking.overrideReason} onChange={(event) => setBooking({ ...booking, overrideReason: event.target.value })} /></label>
+            <label><span>{bookingText.finalTotal}{requiredMark}</span><input required min={0} max={2147483647} step={1} type="number" value={booking.overrideTotal} onChange={(event) => setBooking({ ...booking, overrideTotal: event.target.value })} /></label>
+            <label><span>{bookingText.overrideReason}{requiredMark}</span><textarea required value={booking.overrideReason} onChange={(event) => setBooking({ ...booking, overrideReason: event.target.value })} /></label>
             <p className="field-help">{bookingText.overrideHelp}</p>
           </>}
-        </fieldset>
+        </fieldset>}
         {validTime && <p className="field-help staff-booking-availability" role="status" aria-live="polite">
           {availabilityState === 'available' ? bookingText.available : availabilityState === 'unavailable' ? bookingText.unavailable : availabilityState === 'error' ? bookingText.availabilityError : bookingText.checkingAvailability}
           {(availabilityState === 'error' || availabilityState === 'unavailable') && <button type="button" className="secondary" onClick={() => { setAvailability(null); setRetry((value) => value + 1) }}>{bookingText.retry}</button>}

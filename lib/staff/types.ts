@@ -771,7 +771,7 @@ export type StaffHourlyRevenuePoint = {
 
 export type BookingForm = {
   bookingCategory: import('../bookingMetadata').BookingCategory
-  bookingKind: 'standard' | 'event'
+  bookingKind: 'standard' | 'event' | 'free_trial'
   arenaCount: number
   sessionCount: number
   reservedMinutes: number
