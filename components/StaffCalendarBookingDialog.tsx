@@ -2,7 +2,7 @@
 
 import { useStaffLocations } from '../hooks/useStaffLocations'
 
-import StaffGamesPlayed from './staff/StaffGamesPlayed'
+import StaffGamesPlayed, { type PlayedGamesDraft } from './staff/StaffGamesPlayed'
 
 import { staffBookingName } from '../lib/staffBookingName'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
@@ -46,6 +46,8 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
   const bookingText = staffBookingCopy[language]
   const dialog = useRef<HTMLDialogElement>(null)
   const busy = useRef(false)
+  const gamesPlayedDraft = useRef<PlayedGamesDraft | null>(null)
+  const originalDraft = useRef<Draft | null>(null)
   const { locations } = useStaffLocations()
   const [draft, setDraft] = useState<Draft | null>(null)
   const [session, setSession] = useState<Session | null>(null)
@@ -103,12 +105,14 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         setOrders(linked.data || [])
         setVersion(record.updated_at)
         setPersisted({ name: staffBookingName(record.name, activeGames.map((item) => item.name)), venue: record.venue_key || 'ha-do-centrosa', date: record.date, time: record.start_time.slice(0, 5) })
-        setDraft({ category: bookingCategory(record), name: staffBookingName(record.name, activeGames.map((item) => item.name)), date: record.date, time: record.start_time.slice(0, 5), venue: record.venue_key || 'ha-do-centrosa',
+        const initialDraft: Draft = { category: bookingCategory(record), name: staffBookingName(record.name, activeGames.map((item) => item.name)), date: record.date, time: record.start_time.slice(0, 5), venue: record.venue_key || 'ha-do-centrosa',
           game: selectedBookingGames(record)[0] || '', players: record.ticket_player_count || record.max_players,
           duration: record.duration_minutes, arenaIds,
           clientConfirmed: record.client_confirmed === true, notes: record.notes || '', source: record.booking_source ?? order?.booking_source ?? '',
           allowOutsideHours: !validStaffBookingTime(record.venue_key || 'ha-do-centrosa', record.duration_minutes, record.start_time.slice(0, 5)),
-        })
+        }
+        originalDraft.current = initialDraft
+        setDraft(initialDraft)
       } catch (cause) {
         if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : String(cause))
       }
@@ -127,34 +131,54 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
     ? originalPrimaryArena : selectedCompatibleArenas[0] || draft?.arenaIds[0]
   const patch = (value: Partial<Draft>) => setDraft((current) => current ? { ...current, ...value } : current)
 
-  async function mutate(deleted: boolean) {
+  async function mutate(deleted: boolean, form?: HTMLFormElement) {
     if (!draft || !session || busy.current) return
-    if (!deleted && !validStaffBookingTime(draft.venue, draft.duration, draft.time, draft.allowOutsideHours)) { setError(text.invalidTime); return }
-    if (!deleted && orders.some((order) => {
-      const price = prices[order.id]
-      return price && Number(price.total) !== order.total && (!price.total || Number(price.total) < price.paid || Number(price.total) > 2147483647)
-    })) {
-      setError(text.invalidPrice)
+    const played = deleted ? null : gamesPlayedDraft.current
+    if (played && (played.blocked || draft.venue !== session.venue_key)) {
+      setError(language === 'vi' ? 'Kiểm tra các trò chơi đã chọn trước khi lưu.' : 'Review the selected games before saving.')
       return
     }
     const changedContact = contactDraft ? Object.fromEntries(contactFields.flatMap((field) => {
       const value = contactDraft[field]?.trim() || null
       return value === (client?.[field] ?? null) ? [] : [[field, value]]
     })) : {}
+    const orderAdjustments = orders.filter((order) => prices[order.id] && Number(prices[order.id].total) !== order.total)
+    const gamesOnly = played && JSON.stringify(draft) === JSON.stringify(originalDraft.current)
+      && !Object.keys(changedContact).length && !orderAdjustments.length
+    if (!deleted && !gamesOnly) {
+      if (form && !form.reportValidity()) return
+      if (!validStaffBookingTime(draft.venue, draft.duration, draft.time, draft.allowOutsideHours)) { setError(text.invalidTime); return }
+      if (orderAdjustments.some((order) => {
+        const price = prices[order.id]
+        return !price.total || Number(price.total) < price.paid || Number(price.total) > 2147483647
+      })) {
+        setError(text.invalidPrice)
+        return
+      }
+    }
     busy.current = true
     setSaving(true)
     setError('')
     try {
+      if (gamesOnly) {
+        const result = await supabase.rpc('staff_confirm_games_played', {
+          p_session_id: sessionId, p_game_ids: played.gameIds, p_expected_updated_at: played.expectedUpdatedAt,
+        })
+        if (result.error) throw new Error(result.error.message)
+        onSaved(draft.date, false, draft.venue)
+        return
+      }
       const result = deleted
         ? await supabase.rpc('staff_delete_session_operation', { p_session_id: session.id, p_delete_reason: 'Deleted from shared booking calendar' })
         : await supabase.rpc(isSimRacing ? 'staff_update_sim_racing_booking' : 'staff_update_booking_details', { p_session_id: session.id, p_booking: {
           ...(Object.keys(changedContact).length ? { booking_client_contact: changedContact } : {}),
+          ...(played ? { games_played: { game_ids: played.gameIds, expected_updated_at: played.expectedUpdatedAt } } : {}),
           expected_updated_at: version, name: draft.name.trim(), date: draft.date, start_time: draft.time,
           venue_key: draft.venue, game_slug: draft.game, players: draft.players, duration_minutes: draft.duration,
           arena_count: draft.arenaIds.length, arena_id: isSimRacing ? 'sim-racing-1' : primaryArena, status: session.status, notes: draft.notes,
           booking_category: draft.category === 'free_trial' ? undefined : draft.category, game_changed: draft.game !== (selectedBookingGames(session)[0] || ''),
           client_confirmed: draft.clientConfirmed, booking_source: draft.source || null, allow_outside_hours: draft.allowOutsideHours,
-          order_adjustments: orders.filter((order) => prices[order.id] && Number(prices[order.id].total) !== order.total).map((order) => ({ order_id: order.id, total: Number(prices[order.id].total), reason: prices[order.id].reason.trim(), expected_updated_at: order.updated_at })),
+          order_adjustments: orderAdjustments.map((order) => ({ order_id: order.id, total: Number(prices[order.id].total), reason: prices[order.id].reason.trim(), expected_updated_at: order.updated_at })),
         } })
       if (result.error) throw new Error(result.error.message)
       void notifyBookingUpdateEmail(supabase, {
@@ -170,7 +194,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
     } finally { busy.current = false; setSaving(false) }
   }
 
-  function submit(event: FormEvent) { event.preventDefault(); void mutate(false) }
+  function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void mutate(false, event.currentTarget) }
 
   return <dialog ref={dialog} className="calendar-booking-dialog" aria-labelledby="calendar-edit-title" onCancel={(event) => { event.preventDefault(); if (!busy.current) onClose() }}>
     <div className="calendar-dialog-heading"><h2 id="calendar-edit-title">{confirmDelete ? text.remove : text.title}</h2><button aria-label={text.close} className="calendar-dialog-close" disabled={saving} onClick={onClose} type="button"><X size={20} /></button></div>
@@ -179,7 +203,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
     {draft && (confirmDelete ? <div className="calendar-delete-confirm">
       <strong>{persisted?.name || draft.name}</strong><p>{(persisted?.venue || draft.venue) === 'ha-do-centrosa' ? 'VRena Hà Đô Centrosa' : 'Vrena Thao Dien'} · {persisted?.date || draft.date} · {persisted?.time || draft.time}</p>
       <p>{text.deleteHelp}</p><div className="action-row"><button className="danger" disabled={saving} onClick={() => void mutate(true)} type="button">{text.confirm}</button><button className="secondary" disabled={saving} onClick={() => setConfirmDelete(false)} type="button">{text.keep}</button></div>
-    </div> : <form onSubmit={submit}>
+    </div> : <form noValidate onSubmit={submit}>
       <fieldset disabled={saving} className="calendar-edit-fields">
         <p className="full calendar-booking-creator">{text.reservedBy}: <strong>{creator || text.notRecorded}</strong>{createdAt && <> · <time dateTime={createdAt}>{bookingTime.format(new Date(createdAt))}</time></>}</p>
         <section className="full calendar-client-details" aria-labelledby="calendar-client-title">
@@ -216,7 +240,7 @@ export default function StaffCalendarBookingDialog({ sessionId, language, onClos
         <label className="full calendar-outside-hours"><input type="checkbox" checked={draft.allowOutsideHours} onChange={(event) => patch({ allowOutsideHours: event.target.checked })} /><span>{text.outsideHours}</span></label>
         <details className="full calendar-games-details">
           <summary>{text.gamesPlayed}</summary>
-          <StaffGamesPlayed sessionId={sessionId} language={language} disabled={saving || draft.venue !== session?.venue_key} />
+          <StaffGamesPlayed draftRef={gamesPlayedDraft} sessionId={sessionId} language={language} disabled={saving || draft.venue !== session?.venue_key} />
           {draft.venue !== session?.venue_key && <p className="field-help">{language === 'vi' ? 'Lưu địa điểm mới trước khi sửa trò chơi đã chơi.' : 'Save the new venue before editing games played.'}</p>}
         </details>
         <label>{text.players}<input disabled={isSimRacing} required min={1} max={64} type="number" value={draft.players} onChange={(event) => patch({ players: Number(event.target.value) })} /></label>
