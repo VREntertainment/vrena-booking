@@ -135,7 +135,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
     </label>)}
   </ReportToolbarMenu>
 
-  const grossAvailable = Boolean(loaded?.current.posThrough && loaded.current.netSales.every((sale) => sale.gross_sales != null)
+  const grossAvailable = Boolean(loaded?.current.netSales.every((sale) => sale.gross_sales != null)
     && (!compare || loaded.previous?.netSales.every((sale) => sale.gross_sales != null)))
   const useGross = revenueBasis === 'gross' && grossAvailable
   const revenueKey = useGross ? 'grossSales' : 'netSales'
@@ -222,7 +222,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   const venuePeriods = [venuePrevious, current]
   const venueTableMetrics = { ...venueMetrics, bookings: t.sessions }
   const venueMetricKeys = Object.keys(venueTableMetrics) as VenueMetric[]
-  const priorGrossAvailable = Boolean(loaded.previous?.posThrough && loaded.previous.netSales.every((sale) => sale.gross_sales != null))
+  const priorGrossAvailable = Boolean(loaded.previous?.netSales.every((sale) => sale.gross_sales != null))
   const periodDate = new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-GB', {
     day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
   })
@@ -299,7 +299,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
           {Object.values(venueTableMetrics).map((label) => <th scope="col" key={label}>{label}</th>)}</tr></thead>
           <tbody>{venueTotals.map((item) => venuePeriods.map((period, index) => <tr key={`${item}-${index}`}>
             <th scope="row" className={styles.venueLabel} data-color={colors[item]}>{venueNames[item]}</th>
-            <td className={styles.venuePeriod}>{venueSeriesPeriods[index].label}</td>
+            <td className={styles.venuePeriod}>{venueSeriesPeriods[index].dates}</td>
             {venueMetricKeys.map((key) => (
               <td key={key} className={styles.venueMetric}>
                 <span className={styles.mobileMetricLabel} aria-hidden="true">{venueTableMetrics[key]}</span>

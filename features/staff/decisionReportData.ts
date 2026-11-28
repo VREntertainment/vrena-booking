@@ -42,7 +42,7 @@ export async function loadDecisionReport(range: Range, signal: AbortSignal) {
   }).abortSignal(signal)
 
   const [orderRows, playedRows, sales] = await Promise.all([orders, played, netSales])
-  const summary = sales.data as unknown as { days: ReportNetSale[]; posThrough: string | null } | null
+  const summary = sales.data as unknown as { days: ReportNetSale[] } | null
   if (sales.error || !Array.isArray(summary?.days)) throw new Error(sales.error?.message || 'Net sales are unavailable.')
-  return { orders: orderRows, played: playedRows, netSales: summary.days, posThrough: summary.posThrough }
+  return { orders: orderRows, played: playedRows, netSales: summary.days }
 }
