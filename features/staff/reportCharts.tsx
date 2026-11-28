@@ -49,7 +49,7 @@ export function ReportVenueBars({ label, venues, periods, formatValue, formatTic
   const id = useId()
   const showMidpoint = zero === 0 || zero === 100
 
-  return <div className={styles.venueChart} data-wide={Boolean(axisLabel) || undefined} role="group" aria-labelledby={id} aria-describedby={axisLabel ? `${id}-units` : undefined}>
+  return <div className={styles.venueChart} role="group" aria-labelledby={id} aria-describedby={axisLabel ? `${id}-units` : undefined}>
     <h5 id={id} className={styles.venueChartTitle}>{label}</h5>
     <div className={styles.venuePlot}>
       <div className={styles.venueGridlines} aria-hidden="true">
