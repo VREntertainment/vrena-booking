@@ -31,7 +31,7 @@ export async function loadDecisionReport(range: Range, signal: AbortSignal) {
   }, (order) => order.id)
 
   const played = allPages<ReportPlayedFact>((cursor) => {
-    let query = supabase.from('staff_session_games_played').select('session_id,game_ids,sessions!inner(date,venue_key,status,duration_minutes,ticket_player_count)')
+    let query = supabase.from('staff_session_games_played').select('session_id,game_ids,sessions!inner(date,venue_key,status)')
       .gte('sessions.date', range.start).lte('sessions.date', range.end).order('session_id').limit(pageSize)
     if (cursor) query = query.gt('session_id', cursor)
     return query.abortSignal(signal).returns<ReportPlayedFact[]>()
