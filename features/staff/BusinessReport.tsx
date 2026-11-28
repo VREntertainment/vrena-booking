@@ -4,14 +4,14 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { Banknote, MapPin } from 'lucide-react'
 import { ReportToolbarMenu } from './ReportToolbarMenu'
 import { brandedGameName } from '../../lib/anvio'
-import { orderedRange } from '../../lib/staff/dates'
+import { orderedRange, previousPeriodRange } from '../../lib/staff/dates'
 import { decisionPeriod, reportDayCount, reportVenue, reportVenueKeys, type ReportVenue, type ReportVenueFilter } from '../../lib/staff/decisionReport'
 import type { StaffConsoleCopy } from '../../lib/staff/copy'
 import type { StaffReportSummary } from '../../lib/staff/types'
 import { supabase } from '../../lib/supabase/client'
 import { bookingSourceLabel } from '../../lib/staff/reportDisplay'
 import { loadDecisionReport } from './decisionReportData'
-import { ReportHeatmap, ReportPanel, ReportRanking, ReportTrend, ReportVenueBars, reportNumber, type ChartColor } from './reportCharts'
+import { ReportHeatmap, ReportPanel, ReportRanking, ReportTrend, ReportVenueBars, ReportVenueLegend, reportNumber, type ChartColor } from './reportCharts'
 import styles from './ReportCharts.module.css'
 
 type Props = {
@@ -32,7 +32,7 @@ const labelDate = (date: string, language: string) => new Intl.DateTimeFormat(la
 const labels = {
   en: {
     venue: 'Venue', all: 'All accessible venues', other: 'Unassigned venue',
-    sales: 'Booked sales', revenue: 'Revenue', net: 'Net sales', gross: 'Gross sales', grossUnavailable: 'Gross sales are unavailable for part of this period.', posThrough: 'KiotViet data through', bookings: 'Bookings', players: 'Booked players', paid: 'Paid players',
+    sales: 'Booked sales', revenue: 'Revenue', net: 'Net sales', gross: 'Gross sales', grossUnavailable: 'Gross sales are unavailable for part of this period.', bookings: 'Bookings', players: 'Booked players', paid: 'Paid players',
     perDay: 'Players per day', perSession: 'Players per session',
     trend: 'Booking trend', trendDescription: 'Compare the same day or interval within each selected period.',
     day: 'Bookings by weekday', time: 'Bookings by start hour', heat: 'Peak booking slots',
@@ -41,16 +41,14 @@ const labels = {
     previous: 'Comparison', current: 'Selected period', noData: 'No data for this period.', load: 'Loading venue and booking metrics…',
     missing: 'The booking metrics could not load.', gameMissing: 'Recorded gameplay data could not load.',
     gameEmpty: 'No recorded games are available for this selection.', gameCoverage: 'sessions with recorded gameplay',
-    venueComparison: 'Venue Comparison', venueMetric: 'Comparison metric', viewVenueData: 'View venue data',
-    businessScope: 'Payments and booking sources · all accessible venues',
-    receipts: 'Cash and bank amounts follow original receipts. Voucher redemption is not cash received.',
+    venueComparison: 'Venue Comparison', viewVenueData: 'View venue data', priorUnavailable: 'Previous-period data could not load.',
     peak: 'Busiest', cancelled: 'Cancelled', noShows: 'No-shows', retry: 'Retry', metric: 'Metric', period: 'Period',
     mix: 'Payment mix',
     more: 'More games', less: 'Show fewer games',
   },
   vi: {
     venue: 'Địa điểm', all: 'Tất cả địa điểm được phép', other: 'Chưa xác định địa điểm',
-    sales: 'Doanh số đặt chỗ', revenue: 'Doanh thu', net: 'Doanh thu thuần', gross: 'Doanh thu gộp', grossUnavailable: 'Thiếu dữ liệu doanh thu gộp cho một phần của kỳ này.', posThrough: 'Dữ liệu KiotViet đến', bookings: 'Lượt đặt', players: 'Người chơi đã đặt', paid: 'Người chơi đã thanh toán',
+    sales: 'Doanh số đặt chỗ', revenue: 'Doanh thu', net: 'Doanh thu thuần', gross: 'Doanh thu gộp', grossUnavailable: 'Thiếu dữ liệu doanh thu gộp cho một phần của kỳ này.', bookings: 'Lượt đặt', players: 'Người chơi đã đặt', paid: 'Người chơi đã thanh toán',
     perDay: 'Người chơi mỗi ngày', perSession: 'Người chơi mỗi phiên',
     trend: 'Xu hướng đặt chỗ', trendDescription: 'So sánh theo cùng vị trí ngày hoặc khoảng thời gian trong mỗi kỳ.',
     day: 'Lượt đặt theo ngày trong tuần', time: 'Lượt đặt theo giờ bắt đầu', heat: 'Khung giờ được đặt nhiều nhất',
@@ -59,9 +57,7 @@ const labels = {
     previous: 'Kỳ so sánh', current: 'Kỳ đã chọn', noData: 'Không có dữ liệu trong kỳ này.', load: 'Đang tải số liệu địa điểm và đặt chỗ…',
     missing: 'Không thể tải số liệu đặt chỗ.', gameMissing: 'Không thể tải dữ liệu trò chơi đã chơi.',
     gameEmpty: 'Chưa ghi nhận trò chơi nào cho lựa chọn này.', gameCoverage: 'phiên đã ghi nhận trò chơi',
-    venueComparison: 'So sánh địa điểm', venueMetric: 'Chỉ số so sánh', viewVenueData: 'Xem dữ liệu địa điểm',
-    businessScope: 'Thanh toán và nguồn đặt · tất cả địa điểm được phép',
-    receipts: 'Tiền mặt và chuyển khoản theo biên nhận gốc. Sử dụng voucher không tạo tiền thu mới.',
+    venueComparison: 'So sánh địa điểm', viewVenueData: 'Xem dữ liệu địa điểm', priorUnavailable: 'Không tải được dữ liệu kỳ trước.',
     peak: 'Cao nhất', cancelled: 'Đã hủy', noShows: 'Không đến', retry: 'Thử lại', metric: 'Chỉ số', period: 'Kỳ',
     mix: 'Cơ cấu thanh toán',
     more: 'Thêm trò chơi', less: 'Thu gọn',
@@ -79,14 +75,13 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   const [selectedVenues, setSelectedVenues] = useState<ReadonlySet<ReportVenue> | null>(null)
   const [revenueBasis, setRevenueBasis] = useState<'net' | 'gross'>('net')
   const [metric, setMetric] = useState<'revenue' | 'sales' | 'bookings' | 'players' | 'paidPlayers'>('revenue')
-  const [venueMetric, setVenueMetric] = useState<VenueMetric>('revenue')
   const [showGames, setShowGames] = useState(false)
   const [heatComparison, setHeatComparison] = useState(false)
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
   const [failed, setFailed] = useState('')
   const [retry, setRetry] = useState(0)
   const [from, to] = orderedRange(start, end)
-  const [compareFrom, compareTo] = orderedRange(compareStart, compareEnd)
+  const [compareFrom, compareTo] = compare ? orderedRange(compareStart, compareEnd) : previousPeriodRange(from, to)
   const key = `${from}/${to}/${compare ? `${compareFrom}/${compareTo}` : ''}/${retry}`
   const t = labels[language]
 
@@ -97,7 +92,10 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
       try {
         const [current, previous, venues, games] = await Promise.all([
           loadDecisionReport({ start: from, end: to }, signal),
-          compare ? loadDecisionReport({ start: compareFrom, end: compareTo }, signal) : null,
+          loadDecisionReport({ start: compareFrom, end: compareTo }, signal).catch((error: unknown) => {
+            if (compare) throw error
+            return null
+          }),
           supabase.rpc('staff_access_locations').abortSignal(signal),
           supabase.from('staff_playable_games').select('id,title,parent_slug,kind').abortSignal(signal),
         ])
@@ -138,7 +136,7 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   </ReportToolbarMenu>
 
   const grossAvailable = Boolean(loaded?.current.posThrough && loaded.current.netSales.every((sale) => sale.gross_sales != null)
-    && (!loaded.previous || loaded.previous.netSales.every((sale) => sale.gross_sales != null)))
+    && (!compare || loaded.previous?.netSales.every((sale) => sale.gross_sales != null)))
   const useGross = revenueBasis === 'gross' && grossAvailable
   const revenueKey = useGross ? 'grossSales' : 'netSales'
   const revenueLabel = useGross ? t.gross : t.net
@@ -154,14 +152,14 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
   const binDays = days > 62 ? Math.ceil(days / (62 * 7)) * 7 : 1
   const periods = loaded ? {
     current: decisionPeriod(from, to, loaded.current.orders, loaded.current.played ?? [], filter, binDays, loaded.current.netSales),
-    previous: loaded.previous ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, loaded.previous.played ?? [], filter, binDays, loaded.previous.netSales) : null,
+    previous: compare && loaded.previous ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, loaded.previous.played ?? [], filter, binDays, loaded.previous.netSales) : null,
   } : null
   const byLocation = periods && loaded ? selected.flatMap((item) =>
     periods.current.byVenue[item].bookings || periods.previous?.byVenue[item].bookings ||
     periods.current.byVenue[item][revenueKey] || periods.previous?.byVenue[item][revenueKey] ? [{
       item,
       current: decisionPeriod(from, to, loaded.current.orders, [], item, binDays, loaded.current.netSales).buckets,
-      previous: loaded.previous ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, [], item, binDays, loaded.previous.netSales).buckets : [],
+      previous: compare && loaded.previous ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, [], item, binDays, loaded.previous.netSales).buckets : [],
     }] : []) : []
 
   const count = (value: number) => reportNumber(language, value)
@@ -219,17 +217,28 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
     return { id, label: gameLabel(id, catalog), value, detail, parts }
   }).sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))
   const venueTotals = reportVenueKeys.filter((item) => locations.includes(item) || current.byVenue[item].bookings || previous?.byVenue[item].bookings)
-  const venuePeriods = [current, ...(previous ? [previous] : [])]
+  const venuePrevious = previous ?? (loaded.previous
+    ? decisionPeriod(compareFrom, compareTo, loaded.previous.orders, [], filter, binDays, loaded.previous.netSales) : null)
+  const venuePeriods = [current, venuePrevious]
+  const venueMetricKeys = Object.keys(venueMetrics) as VenueMetric[]
+  const priorGrossAvailable = Boolean(loaded.previous?.posThrough && loaded.previous.netSales.every((sale) => sale.gross_sales != null))
   const periodDate = new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-GB', {
     day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
   })
   const dateRange = (first: string, last: string) => periodDate.formatRange(wholeDate(first), wholeDate(last))
+  const currentDates = dateRange(from, to)
+  const previousDates = previous ? dateRange(compareFrom, compareTo) : null
+  const comparedDates = previousDates ? `${currentDates} ${language === 'vi' ? 'so với' : 'vs.'} ${previousDates}` : currentDates
   const venueSeriesPeriods = [
-    { label: t.current, dates: dateRange(from, to) },
-    ...(previous ? [{ label: t.previous, dates: dateRange(compareFrom, compareTo) }] : []),
+    { label: t.current, dates: currentDates },
+    { label: t.previous, dates: dateRange(compareFrom, compareTo) },
   ]
-  const venueValue = (period: typeof current, item: ReportVenue, key: VenueMetric) =>
-    period.byVenue[item][key === 'revenue' ? revenueKey : key]
+  const venueValue = (period: typeof current | null, item: ReportVenue, metricKey: VenueMetric) =>
+    !period || period === venuePrevious && metricKey === 'revenue' && useGross && !priorGrossAvailable
+      ? null
+      : period.byVenue[item][metricKey === 'revenue' ? revenueKey : metricKey]
+  const formatVenueValue = (value: number | null, metricKey: VenueMetric) =>
+    value === null ? '—' : (metricKey === 'revenue' ? money : count)(value)
   const summary = [
     { label: revenueLabel, value: current[revenueKey], previous: previous?.[revenueKey], format: money },
     { label: t.bookings, value: current.bookings, previous: previous?.bookings, format: count },
@@ -253,10 +262,8 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
       <dt>{item.label}</dt><dd>{item.value == null ? '—' : item.format(item.value)}</dd>
       {previous && <small>{t.previous} · {item.previous == null ? '—' : item.format(item.previous)}</small>}
     </div>)}</dl>
-    {selected.some((venue) => venue !== 'other') && loaded.current.posThrough &&
-      <p className={styles.note}>{t.posThrough} {labelDate(loaded.current.posThrough, language)} {loaded.current.posThrough.slice(0, 4)}</p>}
     <div className={styles.grid}>
-      <ReportPanel title={t.trend} description={t.trendDescription} wide actions={<div className={styles.controls}>
+      <ReportPanel title={t.trend} period={comparedDates} description={t.trendDescription} wide actions={<div className={styles.controls}>
         <label>{t.metric}<select value={metric} onChange={(event) => setMetric(event.target.value as typeof metric)}>
           {Object.entries(metrics).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
         </select></label>
@@ -264,48 +271,51 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
         <ReportTrend label={metrics[metric]} labels={axis} series={trendSeries} valueLabel={displayMetric}
           tickLabel={moneyMetric ? shortMoney : count} language={language} />
       </ReportPanel>
-      {venueTotals.length > 1 && <ReportPanel title={t.venueComparison} wide actions={
-        <label className={styles.venueChartField}>{t.venueMetric}
-          <select value={venueMetric} onChange={(event) => setVenueMetric(event.target.value as VenueMetric)}>
-            {Object.entries(venueMetrics).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-          </select>
-        </label>
-      }>
-        <ReportVenueBars label={venueMetrics[venueMetric]} periods={venueSeriesPeriods}
-          venues={venueTotals.map((item) => ({
-            name: venueNames[item], color: colors[item], values: venuePeriods.map((period) => venueValue(period, item, venueMetric)),
-          }))}
-          formatValue={venueMetric === 'revenue' ? money : count} formatTick={venueMetric === 'revenue' ? shortMoney : (value) => reportNumber(language, value, 1)} />
+      {venueTotals.length > 1 && <ReportPanel title={t.venueComparison} wide>
+        <ReportVenueLegend periods={venueSeriesPeriods} />
+        {!venuePrevious && <p className={styles.note} role="status">
+          {t.priorUnavailable} <button type="button" onClick={() => setRetry((value) => value + 1)}>{t.retry}</button>
+        </p>}
+        <div className={styles.venueChartGrid}>
+          {venueMetricKeys.map((metricKey) => (
+            <ReportVenueBars key={metricKey} label={venueMetrics[metricKey]} periods={venueSeriesPeriods}
+              venues={venueTotals.map((item) => ({
+                name: venueNames[item], color: colors[item], values: venuePeriods.map((period) => venueValue(period, item, metricKey)),
+              }))}
+              formatValue={(value) => formatVenueValue(value, metricKey)}
+              formatTick={metricKey === 'revenue' ? shortMoney : (value) => reportNumber(language, value, 1)} />
+          ))}
+        </div>
         <details className={`${styles.details} ${styles.venueData}`}>
           <summary>{t.viewVenueData}</summary>
-          <div className={styles.tableWrap}><table className={styles.venueTable} role="table" aria-label={t.venueComparison}><thead><tr><th scope="col">{t.venue}</th>{previous && <th scope="col">{t.period}</th>}
+          <div className={styles.tableWrap}><table className={styles.venueTable} role="table" aria-label={t.venueComparison}><thead><tr><th scope="col">{t.venue}</th><th scope="col">{t.period}</th>
           {Object.values(venueMetrics).map((label) => <th scope="col" key={label}>{label}</th>)}</tr></thead>
           <tbody>{venueTotals.map((item) => venuePeriods.map((period, index) => <tr key={`${item}-${index}`}>
             <th scope="row" className={styles.venueLabel} data-color={colors[item]}>{venueNames[item]}</th>
-            {previous && <td className={styles.venuePeriod}>{index ? t.previous : t.current}</td>}
-            {(Object.keys(venueMetrics) as Array<keyof typeof venueMetrics>).map((key) => (
+            <td className={styles.venuePeriod}>{index ? t.previous : t.current}</td>
+            {venueMetricKeys.map((key) => (
               <td key={key} className={styles.venueMetric}>
                 <span className={styles.mobileMetricLabel} aria-hidden="true">{metrics[key]}</span>
-                <span>{(key === 'revenue' ? money : count)(venueValue(period, item, key))}</span>
+                <span>{formatVenueValue(venueValue(period, item, key), key)}</span>
               </td>
             ))}
           </tr>))}</tbody>
           </table></div>
         </details>
       </ReportPanel>}
-      <ReportPanel title={t.day} description={current.weekdays[peakDay] ? `${t.peak} · ${weekdays[peakDay]} · ${count(current.weekdays[peakDay])}` : t.noData}>
+      <ReportPanel title={t.day} period={comparedDates} description={current.weekdays[peakDay] ? `${t.peak} · ${weekdays[peakDay]} · ${count(current.weekdays[peakDay])}` : t.noData}>
         <ReportTrend label={t.day} labels={weekdays} mode="columns" series={[
           { label: t.current, color: dotColor, values: current.weekdays },
           ...(previous ? [{ label: t.previous, color: dotColor, values: previous.weekdays, comparison: true }] : []),
         ]} valueLabel={count} language={language} />
       </ReportPanel>
-      <ReportPanel title={t.time} description={current.times[peakHour] ? `${t.peak} · ${hourText(peakHour)} · ${count(current.times[peakHour])}` : t.noData}>
+      <ReportPanel title={t.time} period={comparedDates} description={current.times[peakHour] ? `${t.peak} · ${hourText(peakHour)} · ${count(current.times[peakHour])}` : t.noData}>
         <ReportTrend label={t.time} labels={hourIndices.map(hourText)} mode="columns" series={[
           { label: t.current, color: dotColor, values: hourIndices.map((hour) => current.times[hour]) },
           ...(previous ? [{ label: t.previous, color: dotColor, values: hourIndices.map((hour) => previous.times[hour]), comparison: true }] : []),
         ]} valueLabel={count} language={language} />
       </ReportPanel>
-      <ReportPanel title={t.heat} description={t.heatDescription} wide actions={previous && <div className={styles.controls}>
+      <ReportPanel title={t.heat} period={heat === previous && previousDates ? previousDates : currentDates} description={t.heatDescription} wide actions={previous && <div className={styles.controls}>
         <label>{t.period}<select value={heatComparison ? 'previous' : 'current'} onChange={(event) => setHeatComparison(event.target.value === 'previous')}>
           <option value="current">{t.current}</option><option value="previous">{t.previous}</option>
         </select></label>
@@ -313,19 +323,18 @@ export default function BusinessReport({ start, end, compareStart, compareEnd, c
         <ReportHeatmap rows={weekdays} columns={hourIndices.map(hourText)} values={heat.hours.map((hours) => hourIndices.map((hour) => hours[hour]))}
           label={t.heat} legend={['0', count(Math.max(...heat.hours.flat()))]} language={language} />
       </ReportPanel>
-      <ReportPanel title={t.games} description={t.gameDescription} wide>
+      <ReportPanel title={t.games} period={comparedDates} description={t.gameDescription} wide>
         <p className={styles.note}>{loaded.current.played ? `${count(current.recordedSessions)} ${t.gameCoverage}` : t.gameMissing}</p>
         <div className={styles.legend}>{venueTotals.map((item) => <span key={item}><i data-color={colors[item]} />{venueNames[item]}</span>)}</div>
         <ReportRanking rows={showGames ? games : games.slice(0, 8)} valueLabel={count} empty={loaded.current.played ? t.gameEmpty : t.gameMissing} />
         {games.length > 8 && <button type="button" className="secondary" onClick={() => setShowGames(!showGames)}>{showGames ? t.less : t.more}</button>}
       </ReportPanel>
       {financial && <>
-      <ReportPanel title={t.mix} description={t.businessScope}>
+      <ReportPanel title={t.mix} period={currentDates} description={t.all}>
         <p className={styles.note}>{text.labels.totalPaid} <strong>{money(financial.totalPaid)}</strong> · {text.labels.discounts} <strong>{money(financial.discounts)}</strong></p>
         <ReportRanking rows={payments} valueLabel={money} empty={t.noData} />
-        <p className={styles.note}>{t.receipts}</p>
       </ReportPanel>
-      <ReportPanel title={language === 'vi' ? 'Nguồn đặt chỗ' : 'Booking sources'} description={t.businessScope}>
+      <ReportPanel title={language === 'vi' ? 'Nguồn đặt chỗ' : 'Booking sources'} period={currentDates} description={t.all}>
         <ReportRanking rows={(financial.bookingSources ?? []).map((item) => ({
           label: bookingSourceLabel(item.source, text), value: item.bookings, detail: money(item.sales),
         })).sort((a, b) => b.value - a.value)} valueLabel={count} empty={t.noData} />
