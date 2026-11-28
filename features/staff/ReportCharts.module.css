@@ -39,6 +39,7 @@
 .panelHead { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .dashboard .panelHead h4 { margin: 0; font-size: clamp(1rem, 1.45vw, 1.27rem); font-weight: 750; line-height: 1.22; }
 .dashboard .panelHead p { margin: 5px 0 0; color: var(--report-muted); font-size: .8rem; line-height: 1.45; }
+.dashboard .panelHead .chartPeriod { color: var(--report-ink); font-weight: 600; }
 .note { font-size: .8rem; color: var(--report-muted); }
 .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .controls label { display: flex; align-items: center; gap: 8px; color: var(--report-muted); font-size: .8rem; }
@@ -132,13 +133,18 @@
 .dashboard .tableWrap table { width: 100%; font-size: .78rem; border-collapse: collapse; text-align: left; }
 .dashboard .tableWrap th, .dashboard .tableWrap td { border-bottom: 1px solid var(--report-grid); padding: 7px 8px; font-variant-numeric: tabular-nums; }
 .dashboard .tableWrap th:first-child, .dashboard .tableWrap td:first-child { padding-inline-start: 0; }
-.ranking { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
-.ranking li { min-width: 0; display: grid; gap: 4px; font-size: .8rem; }
+.ranking { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.ranking li { min-width: 0; display: grid; gap: 5px; font-size: .8rem; }
 .ranking li > div:first-child { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .ranking li > div span { overflow-wrap: anywhere; }
 .ranking strong { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .ranking small { color: var(--report-muted); }
-.track { height: 5px; display: flex; background: var(--report-grid); }
+.track {
+  display: flex;
+  height: 8px;
+  border-inline: 1px solid var(--report-grid);
+  background: repeating-linear-gradient(to right, transparent 0 calc(25% - 1px), var(--report-grid) calc(25% - 1px) 25%);
+}
 .track i { display: block; height: 100%; background: var(--series); }
 .empty, .selection { font-size: .8rem; color: var(--report-muted); margin: 10px 0; }
 .dashboard .tableWrap .heatmap { text-align: center; }
@@ -372,29 +378,27 @@
   .dashboard .toolbarActions > button, .dashboard .toolbarControl > :global(.staff-picker-shell) { min-height: 44px; }
 }
 
-.venueChartField {
-  display: grid;
-  width: min(100%, 12rem);
-  gap: 5px;
-  color: var(--player-text-muted);
-  font-size: .8125rem;
-  font-weight: 600;
-}
-.dashboard .venueChartField select {
-  width: 100%;
-  min-height: 44px;
-  background: var(--player-field-bg);
-  color: var(--player-field-text);
-  border-color: var(--player-field-border-strong);
-  border-radius: var(--player-radius-sm);
-}
-.venueChartField select:focus-visible, .venueData summary:focus-visible {
+.venueData summary:focus-visible {
   outline: 2px solid var(--vrena-focus-halo);
   outline-offset: 2px;
 }
+.venueChartGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+}
+.venueChartTitle {
+  margin: 0 0 5px;
+  color: var(--report-ink);
+  font-size: .9rem;
+  font-weight: 700;
+}
+@media (max-width: 850px) {
+  .venueChartGrid { grid-template-columns: minmax(0, 1fr); }
+}
 .venueChart {
-  --venue-chart-label: clamp(8.5rem, 19vw, 12rem);
-  --venue-chart-value: clamp(5.75rem, 12vw, 8rem);
+  --venue-chart-label: clamp(6.75rem, 10vw, 8.75rem);
+  --venue-chart-value: clamp(5.5rem, 9vw, 7rem);
   --venue-chart-gap: 14px;
   min-width: 0;
 }
@@ -430,7 +434,7 @@
 }
 .venueChartLegend i[data-previous] { background: transparent; border-style: dashed; }
 
-.venueBarGroups { display: grid; gap: 16px; }
+.venueBarGroups { display: grid; gap: 5px; }
 .venueBarGroup {
   display: grid;
   grid-template-columns: var(--venue-chart-label) minmax(0, 1fr);
@@ -452,9 +456,9 @@
   grid-template-columns: minmax(0, 1fr) var(--venue-chart-value);
   align-items: center;
   gap: var(--venue-chart-gap);
-  min-height: 25px;
+  min-height: 20px;
 }
-.venueBarTrack { position: relative; height: 25px; min-width: 0; }
+.venueBarTrack { position: relative; height: 20px; min-width: 0; }
 .venueGridline {
   position: absolute;
   inset-block: 0;
