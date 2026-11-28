@@ -427,9 +427,17 @@
   line-height: 1.45;
 }
 .venueChartLegend strong { color: var(--report-ink); font-weight: 650; }
-.venueChartLegend i, .venueBar { background: var(--vrena-cyan-800); }
-.venueChartLegend i[data-previous], .venueBar[data-previous] { background: var(--vrena-blue-900); }
-.venueChartLegend i { flex: none; width: 22px; height: 9px; }
+.venueChartLegend i {
+  --series: var(--report-muted);
+  flex: none;
+  width: 22px;
+  height: 9px;
+}
+.venueChartLegend i, .venueBar { background: var(--series); }
+.venueChartLegend i[data-previous], .venueBar[data-previous] {
+  border: 1px dashed var(--series);
+  background: color-mix(in srgb, var(--series) 16%, var(--report-surface));
+}
 
 .venuePlot { position: relative; }
 .venueGridlines {
@@ -475,11 +483,12 @@
 .venueBar > span {
   display: none;
   padding-inline: 8px;
-  color: var(--vrena-white);
+  color: var(--vrena-neutral-950);
   font-size: .78rem;
   font-weight: 700;
   white-space: nowrap;
 }
+.venueBar[data-previous] > span { color: var(--report-ink); }
 @container (min-width: 12rem) {
   .venueBar > span { display: block; }
 }
